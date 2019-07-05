@@ -1,0 +1,26 @@
+intel opencl header path:
+$(INTELOCLSDKROOT)/include
+
+preprocessor macros to use 2.0 depreciated functions
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+
+opencl raytracing
+https://raytracey.blogspot.com/2016/11/opencl-path-tracing-tutorial-1-firing.html
+
+vs19 package not loading
+https://stackoverflow.com/questions/17574089/how-can-i-fix-the-microsoft-visual-studio-error-package-did-not-load-correctly
+https://software.intel.com/en-us/articles/intel-software-development-tools-integration-to-vs2017-issue
+
+opencl project
+https://streamhpc.com/blog/2015-03-16/how-to-install-opencl-on-windows/
+
+window apis: sdl, SFML
+https://www.reddit.com/r/opengl/comments/2r7n0u/glfw_or_sdl_alternatives/
+https://stackoverflow.com/questions/53202352/portable-real-time-renderer-window-without-graphical-api
+
+RAII
+https://www.tomdalling.com/blog/software-design/resource-acquisition-is-initialisation-raii-explained/
+
+copy dll post build
+https://stackoverflow.com/questions/495795/how-do-i-use-a-third-party-dll-file-in-visual-studio-c
+xcopy /y /d /k  "$(SolutionDir)\vendor\SDL2\lib\x64\SDL2.dll" "$(TargetDir)"
