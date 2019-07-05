@@ -33,7 +33,5 @@ private:
 
 	void printErrorLog(const cl::Program& program, const cl::Device& device);
 
-	void selectRenderMode(unsigned int& rendermode);
-
 	inline float clamp(float x) { return x < 0.0f ? 0.0f : x > 1.0f ? 1.0f : x; }
 };

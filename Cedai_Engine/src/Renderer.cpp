@@ -81,15 +81,10 @@ void Renderer::init(int image_width, int image_height) {
 	// Create image buffer on the OpenCL device
 	cl_output = Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_float3));
 
-	// pick a rendermode
-	unsigned int rendermode;
-	selectRenderMode(rendermode);
-
 	// specify OpenCL kernel arguments
 	kernel.setArg(0, cl_output);
 	kernel.setArg(1, image_width);
 	kernel.setArg(2, image_height);
-	kernel.setArg(3, rendermode);
 
 	// every pixel in the image has its own thread or "work item",
 	// so the total amount of work items equals the number of pixels
@@ -105,7 +100,6 @@ void Renderer::draw(float *pixels) {
 
 	// read and copy OpenCL output to CPU
 	queue.enqueueReadBuffer(cl_output, CL_TRUE, 0, image_width * image_height * sizeof(cl_float3), cpu_output);
-	//cout << "Rendering done! It took: " << elapsedTime.count() << "s" << endl;
 
 	for (int i = 0; i < image_width * image_height; i++) {
 		pixels[3 * i]	  = cpu_output[i].s[0];
@@ -154,30 +148,4 @@ void Renderer::printErrorLog(const Program& program, const Device& device) {
 	}
 	system("PAUSE");
 	exit(1);
-}
-
-void Renderer::selectRenderMode(unsigned int& rendermode) {
-	rendermode = 3;
-	return;
-
-	cout << endl << "Rendermodes: " << endl << endl;
-	cout << "\t(1) Simple gradient" << endl;
-	cout << "\t(2) Sphere with plain colour" << endl;
-	cout << "\t(3) Sphere with cosine weighted colour" << endl;
-	cout << "\t(4) Stripey sphere" << endl;
-	cout << "\t(5) Sphere with screen door effect" << endl;
-	cout << "\t(6) Sphere with normals" << endl;
-
-	unsigned int input;
-	cout << endl << "Select rendermode (1-6): ";
-	cin >> input;
-
-	// handle incorrect user input
-	while (input < 1 || input > 6) {
-		cin.clear(); //clear errors/bad flags on cin
-		cin.ignore(cin.rdbuf()->in_avail(), '\n'); // ignores exact number of chars in cin buffer
-		cout << "No such option. Select rendermode: ";
-		cin >> input;
-	}
-	rendermode = input;
 }
