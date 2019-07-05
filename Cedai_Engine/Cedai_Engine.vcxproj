@@ -99,12 +99,17 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\c_sdl.h" />
-    <ClInclude Include="src\opencl.h" />
+    <ClInclude Include="src\Cedai.h" />
+    <ClInclude Include="src\Interface.h" />
+    <ClInclude Include="src\Renderer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\c_sdl.cpp" />
-    <ClCompile Include="src\opencl.cpp" />
+    <ClCompile Include="src\Cedai.cpp" />
+    <ClCompile Include="src\Interface.cpp" />
+    <ClCompile Include="src\Renderer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\kernels\opencl_kernel.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

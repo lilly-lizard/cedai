@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="kernels">
+      <UniqueIdentifier>{B9003D24-25E0-BBBF-2EF8-46969A562221}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Cedai.h" />
+    <ClInclude Include="src\Interface.h" />
+    <ClInclude Include="src\Renderer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Cedai.cpp" />
+    <ClCompile Include="src\Interface.cpp" />
+    <ClCompile Include="src\Renderer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\kernels\opencl_kernel.cl">
+      <Filter>kernels</Filter>
+    </None>
+  </ItemGroup>
+</Project>
