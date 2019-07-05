@@ -9,7 +9,7 @@ public:
 
 	void init(int image_width, int image_height);
 
-	void draw(std::vector<float> &pixels);
+	void draw(float *pixels);
 
 	void cleanUp();
 

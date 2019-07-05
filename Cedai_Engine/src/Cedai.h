@@ -14,4 +14,6 @@ private:
 
 	Interface interface;
 	Renderer renderer;
+
+	float *pixels;
 };

@@ -19,8 +19,9 @@ void Renderer::init(int image_width, int image_height) {
 	vector<Platform> platforms;
 	Platform::get(&platforms);
 	cout << "Available OpenCL platforms : " << endl << endl;
-	for (int i = 0; i < platforms.size(); i++)
+	for (int i = 0; i < platforms.size(); i++) {
 		cout << "\t" << i + 1 << ": " << platforms[i].getInfo<CL_PLATFORM_NAME>() << endl;
+	}
 
 	// Pick one platform
 	Platform platform;
@@ -96,7 +97,7 @@ void Renderer::init(int image_width, int image_height) {
 	local_work_size = 64;
 }
 
-void Renderer::draw(vector<float> &pixels) {
+void Renderer::draw(float *pixels) {
 
 	// launch the kernel
 	queue.enqueueNDRangeKernel(kernel, NULL, global_work_size, local_work_size);
@@ -106,7 +107,6 @@ void Renderer::draw(vector<float> &pixels) {
 	queue.enqueueReadBuffer(cl_output, CL_TRUE, 0, image_width * image_height * sizeof(cl_float3), cpu_output);
 	//cout << "Rendering done! It took: " << elapsedTime.count() << "s" << endl;
 
-	pixels.resize(3 * image_width * image_height);
 	for (int i = 0; i < image_width * image_height; i++) {
 		pixels[3 * i]	  = cpu_output[i].s[0];
 		pixels[3 * i + 1] =	cpu_output[i].s[1];
@@ -119,40 +119,21 @@ void Renderer::cleanUp() {
 }
 
 void Renderer::pickPlatform(Platform& platform, const vector<Platform>& platforms) {
-
-	if (platforms.size() == 1) platform = platforms[0];
-	else {
-		int input = 0;
-		cout << "\nChoose an OpenCL platform: ";
-		cin >> input;
-
-		// handle incorrect user input
-		while (input < 1 || input > platforms.size()) {
-			cin.clear(); //clear errors/bad flags on cin
-			cin.ignore(cin.rdbuf()->in_avail(), '\n'); // ignores exact number of chars in cin buffer
-			cout << "No such option. Choose an OpenCL platform: ";
-			cin >> input;
-		}
-		platform = platforms[input - 1];
-	}
+	platform = platforms[0];
+	return;
 }
 
 void Renderer::pickDevice(Device& device, const vector<Device>& devices) {
 
 	if (devices.size() == 1) device = devices[0];
 	else {
-		int input = 0;
-		cout << "\nChoose an OpenCL device: ";
-		cin >> input;
-
-		// handle incorrect user input
-		while (input < 1 || input > devices.size()) {
-			cin.clear(); //clear errors/bad flags on cin
-			cin.ignore(cin.rdbuf()->in_avail(), '\n'); // ignores exact number of chars in cin buffer
-			cout << "No such option. Choose an OpenCL device: ";
-			cin >> input;
+		for (Device dev : devices) {
+			if (dev.getInfo< CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU) {
+				device = dev;
+				return;
+			}
 		}
-		device = devices[input - 1];
+		throw std::runtime_error("error: no suitable device found");
 	}
 }
 

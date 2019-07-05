@@ -9,9 +9,15 @@ const int screen_width = 640;
 const int screen_height = 480;
 
 #undef main // sdl2 defines main for some reason
-void main() {
+int main() {
 	Cedai App;
-	App.Run();
+	try {
+		App.Run();
+	} catch (const std::exception& e) {
+		std::cerr << e.what() << std::endl;
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
 }
 
 void Cedai::Run() {
@@ -25,20 +31,17 @@ void Cedai::Run() {
 void Cedai::init() {
 	renderer.init(screen_width, screen_height);
 	interface.init(screen_width, screen_height);
+	pixels = new float[screen_width * screen_height * 3];
 }
 
 void Cedai::loop() {
 	bool quit = false;
-	std::vector<float> pixels;
 	std::chrono::time_point<std::chrono::system_clock> prevTime;
 	std::chrono::duration<double> elapsedTime;
 
 	while (!quit) {
 		prevTime = std::chrono::system_clock::now();
 		renderer.draw(pixels);
-		elapsedTime = std::chrono::system_clock::now() - prevTime;
-		std::cout << "render took: " << elapsedTime.count() << "s" << std::endl;
-		prevTime = std::chrono::system_clock::now();
 		interface.draw(pixels);
 		quit = interface.processEvents();
 		elapsedTime = std::chrono::system_clock::now() - prevTime;
@@ -49,4 +52,5 @@ void Cedai::loop() {
 void Cedai::cleanUp() {
 	renderer.cleanUp();
 	interface.cleanUp();
+	delete pixels;
 }

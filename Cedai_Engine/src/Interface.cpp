@@ -26,7 +26,7 @@ void Interface::init(int screen_width, int screen_height) {
 	}
 }
 
-void Interface::draw(std::vector<float> &pixels) {
+void Interface::draw(float *pixels) {
 	// clear the renderer
 	SDL_RenderClear(ren);
 	// draw pixels

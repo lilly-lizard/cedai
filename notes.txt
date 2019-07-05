@@ -27,3 +27,7 @@ xcopy /y /d /k  "$(SolutionDir)\vendor\SDL2\lib\x64\SDL2.dll" "$(TargetDir)"
 
 SDL2
 https://www.willusher.io/pages/sdl2/
+
+draw to screen
+https://stackoverflow.com/questions/20753726/rendering-pixels-from-array-of-rgb-values-in-sdl-1-2
+https://stackoverflow.com/questions/20579658/how-to-draw-pixels-in-sdl-2-0
