@@ -1,21 +1,21 @@
 /* OpenCL ray tracing tutorial by Sam Lapere, 2016
 http://raytracey.blogspot.com */
 
-struct Ray
+typedef struct Ray
 {
 	float3 origin;
 	float3 dir;
-};
+} Ray;
 
-struct Sphere
+typedef struct Sphere
 {
 	float radius;
 	float3 pos;
-	float3 emi;
 	float3 color;
-};
+	float3 emission;
+} Sphere;
 
-bool intersect_sphere(const struct Sphere* sphere, const struct Ray* ray, float* t)
+bool intersect_sphere(const Sphere* sphere, const Ray* ray, float* t)
 {
 	float3 rayToCenter = sphere->pos - ray->origin;
 
@@ -39,7 +39,7 @@ bool intersect_sphere(const struct Sphere* sphere, const struct Ray* ray, float*
 	else return true;
 }
 
-struct Ray createCamRay(const int x_coord, const int y_coord, const int width, const int height){
+Ray createCamRay(const int x_coord, const int y_coord, const int width, const int height){
 
 	float fx = (float)x_coord / (float)width;  /* convert int in range [0 - width] to float in range [0-1] */
 	float fy = (float)y_coord / (float)height; /* convert int in range [0 - height] to float in range [0-1] */
@@ -53,47 +53,51 @@ struct Ray createCamRay(const int x_coord, const int y_coord, const int width, c
 	float3 pixel_pos = (float3)(fx2, -fy2, 0.0f);
 
 	/* create camera ray*/
-	struct Ray ray;
+	Ray ray;
 	ray.origin = (float3)(0.0f, 0.0f, 40.0f); /* fixed camera position */
 	ray.dir = normalize(pixel_pos - ray.origin); /* ray direction is vector from camera to pixel */
 
 	return ray;
 }
 
-__kernel void render_kernel(__global float3* output, int width, int height)
+__kernel void render_kernel(__constant Sphere* spheres, const int sphere_count, const int width, const int height, __global float3* output)
 {
 	const int work_item_id = get_global_id(0);		/* the unique global id of the work item for the current pixel */
-	int x_coord = work_item_id % width;					/* x-coordinate of the pixel */
-	int y_coord = work_item_id / width;					/* y-coordinate of the pixel */
+	int x_coord = work_item_id % width;				/* x-coordinate of the pixel */
+	int y_coord = work_item_id / width;				/* y-coordinate of the pixel */
 
 	float fx = (float)x_coord / (float)width;  /* convert int in range [0 - width] to float in range [0-1] */
 	float fy = (float)y_coord / (float)height; /* convert int in range [0 - height] to float in range [0-1] */
 
 	/*create a camera ray */
-	struct Ray camray = createCamRay(x_coord, y_coord, width, height);
-
-	/* create and initialise a sphere */
-	struct Sphere sphere1;
-	sphere1.radius = 0.4f;
-	sphere1.pos = (float3)(0.0f, 0.0f, 3.0f);
-	sphere1.color = (float3)(0.9f, 0.3f, 0.0f);
-
-	/* intersect ray with sphere */
-	float t = 1e20;
-	intersect_sphere(&sphere1, &camray, &t);
+	Ray camray = createCamRay(x_coord, y_coord, width, height);
+	
+	float t_smallest = 1e20;
+	int sphere_index = 0;
+	for (int i = 0; i < sphere_count; i++) {
+		/* intersect ray with sphere */
+		Sphere sphere = spheres[i];
+		float t = 1e20;
+		intersect_sphere(&sphere, &camray, &t);
+		if (t < t_smallest) {
+			sphere_index = i;
+			t_smallest = t;
+		}
+	}
 
 	/* if ray misses sphere, return background colour 
 	background colour is a blue-ish gradient dependent on image height */
-	if (t > 1e19) {
+	if (t_smallest > 1e19) {
 		output[work_item_id] = (float3)(fy * 0.1f, fy * 0.3f, 0.3f);
 		return;
 	}
 
 	/* for more interesting lighting: compute normal 
 	and cosine of angle between normal and ray direction */
-	float3 hitpoint = camray.origin + camray.dir * t;
-	float3 normal = normalize(hitpoint - sphere1.pos);
+	Sphere sphere = spheres[sphere_index];
+	float3 hitpoint = camray.origin + camray.dir * t_smallest;
+	float3 normal = normalize(hitpoint - sphere.pos);
 	float cosine_factor = dot(normal, camray.dir) * -1.0f;
 
-	output[work_item_id] = sphere1.color * cosine_factor; /* with cosine weighted colour */
+	output[work_item_id] = sphere.color * cosine_factor; /* with cosine weighted colour */
 }

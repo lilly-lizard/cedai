@@ -77,14 +77,21 @@ void Renderer::init(int image_width, int image_height) {
 
 	// allocate memory on CPU to hold image
 	cpu_output = new cl_float3[image_width * image_height];
-
 	// Create image buffer on the OpenCL device
 	cl_output = Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_float3));
 
+	// allocate memory on CPU to write spheres from
+	createSpheres();
+	// create sphere buffer on the OpenCL device
+	cl_spheres = Buffer(context, CL_MEM_READ_ONLY, sphere_count * sizeof(Sphere));
+	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), cpu_spheres);
+
 	// specify OpenCL kernel arguments
-	kernel.setArg(0, cl_output);
-	kernel.setArg(1, image_width);
-	kernel.setArg(2, image_height);
+	kernel.setArg(0, cl_spheres);
+	kernel.setArg(1, sphere_count);
+	kernel.setArg(2, image_width);
+	kernel.setArg(3, image_height);
+	kernel.setArg(4, cl_output);
 
 	// every pixel in the image has its own thread or "work item",
 	// so the total amount of work items equals the number of pixels
@@ -129,6 +136,25 @@ void Renderer::pickDevice(Device& device, const vector<Device>& devices) {
 		}
 		throw std::runtime_error("error: no suitable device found");
 	}
+}
+
+void Renderer::createSpheres() {
+
+	sphere_count = 2;
+	cpu_spheres = new Sphere[sphere_count];
+
+	cpu_spheres[0].radius	= 0.4f;
+	cpu_spheres[0].position = {{0.2f, 0.1f, -10.0f}};
+	cpu_spheres[0].color	= {{0.9f, 0.3f, 0.0f}};
+	cpu_spheres[0].emission	= {{0.0f, 0.0f, 0.0f}};
+
+	cpu_spheres[1].radius	= 0.2f;
+	cpu_spheres[1].position = {{-0.2f, 0.2f, -9.0f}};
+	cpu_spheres[1].color	= {{0.2f, 0.8f, 0.9f}};
+	cpu_spheres[1].emission = {{0.0f, 0.0f, 0.0f}};
+
+	cl_spheres = Buffer(context, CL_MEM_READ_ONLY, sphere_count * sizeof(Sphere));
+	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), cpu_spheres);
 }
 
 void Renderer::printErrorLog(const Program& program, const Device& device) {
