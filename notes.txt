@@ -24,3 +24,6 @@ https://www.tomdalling.com/blog/software-design/resource-acquisition-is-initiali
 copy dll post build
 https://stackoverflow.com/questions/495795/how-do-i-use-a-third-party-dll-file-in-visual-studio-c
 xcopy /y /d /k  "$(SolutionDir)\vendor\SDL2\lib\x64\SDL2.dll" "$(TargetDir)"
+
+SDL2
+https://www.willusher.io/pages/sdl2/
