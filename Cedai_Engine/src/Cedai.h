@@ -22,6 +22,7 @@ private:
 
 	void processInputs();
 	void updateView();
+	void printViewData();
 
 	Interface interface;
 	Renderer renderer;
@@ -33,8 +34,8 @@ private:
 	float strafeSpeed = 1.5;
 	float forwardSpeed = 2;
 	float backSpeed = 1;
-	float radiansPerMousePosHoriz = 0.0002f;
-	float radiansPerMousePosVert = 0.0002f;
+	float radiansPerMousePosHoriz = 0.01f;
+	float radiansPerMousePosVert =	0.01f;
 	float radiansPerSecondFront = (float)M_PI / 4;
 
 	glm::vec3 viewerPosition =	glm::vec3(0, 0, 0);				 // your position in the world

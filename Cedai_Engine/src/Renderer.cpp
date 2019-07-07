@@ -97,7 +97,7 @@ void Renderer::init(int image_width, int image_height) {
 	local_work_size = 64;
 }
 
-void Renderer::draw(float *pixels, const float view[4][4]) {
+void Renderer::render(float *pixels, const float view[4][4]) {
 	cl_float16 cl_view = {{	view[0][0], view[0][1], view[0][2], view[0][3],
 							view[1][0], view[1][1], view[1][2], view[1][3],
 							view[2][0], view[2][1], view[2][2], view[2][3],

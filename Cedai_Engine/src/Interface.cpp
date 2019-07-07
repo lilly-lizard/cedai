@@ -29,6 +29,7 @@ void Interface::init(int screen_width, int screen_height) {
 		return;
 	}
 
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 	mapKeys();
 }
 

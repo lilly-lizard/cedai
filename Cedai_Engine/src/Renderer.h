@@ -19,7 +19,7 @@ public:
 
 	void init(int image_width, int image_height);
 
-	void draw(float *pixels, const float view[4][4]);
+	void render(float *pixels, const float view[4][4]);
 
 	void cleanUp();
 

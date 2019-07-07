@@ -7,6 +7,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
+#include <iomanip>
 
 using namespace std::chrono;
 
@@ -54,15 +55,17 @@ void Cedai::loop() {
 	while (!quit) {
 		prevTime = system_clock::now();
 
+		// input handling
 		interface.processEvents();
 		processInputs();
 		quit = (inputs & CD_INPUTS::QUIT) || (inputs & CD_INPUTS::ESC);
 
-		renderer.draw(pixels, view);
+		// render and draw
+		renderer.render(pixels, view);
 		interface.draw(pixels);
 
 		elapsedTime = system_clock::now() - prevTime;
-		CD_TRACE("draw took: {}s", elapsedTime.count());
+		//CD_TRACE("draw took: {}s", elapsedTime.count());
 	}
 }
 
@@ -86,6 +89,7 @@ void Cedai::processInputs() {
 	viewerForward = glm::rotate(viewerForward, viewAngleVert, viewerCross);
 	viewerUp = glm::cross(viewerForward, viewerCross);
 
+	printViewData();
 	updateView();
 }
 
@@ -105,4 +109,16 @@ void Cedai::updateView() {
 	view[3][0] = viewerPosition[0];
 	view[3][1] = viewerPosition[1];
 	view[3][2] = viewerPosition[2];
+}
+
+void Cedai::printViewData() {
+	//static const int width = 7;
+	//static const int prec = 2;
+	//std::cout << std::fixed << std::setw(width) << std::showpoint << std::setprecision(prec) << viewerForward.x << std::setw(width) << std::setprecision(prec) << viewerForward.y << std::setw(width) << std::setprecision(prec) << viewerForward.z << " :: "
+	//	<< std::setw(width) << std::setprecision(prec) << viewerCross.x << std::setw(width) << std::setprecision(prec) << viewerCross.y << std::setw(width) << std::setprecision(prec) << viewerCross.z << " :: "
+	//	<< std::setw(width) << std::setprecision(prec) << viewerUp.x << std::setw(width) << std::setprecision(prec) << viewerUp.y << std::setw(width) << std::setprecision(prec) << viewerUp.z << std::endl;
+
+	CD_TRACE("forward:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerForward[0], viewerForward[1], viewerForward[2]);
+	CD_TRACE("cross:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerCross[0], viewerCross[1], viewerCross[2]);
+	CD_TRACE("up:		{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerUp[0], viewerUp[1], viewerUp[2]);
 }
