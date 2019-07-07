@@ -29,7 +29,8 @@ project "Cedai_Engine" -- game engine
 		"Cedai_Engine/src",
 		"$(INTELOCLSDKROOT)/include",	-- opencl
 		"vendor/glm",					-- glm
-		"vendor/SDL2/include"			-- SDL2
+		"vendor/SDL2/include",			-- SDL2
+		"vendor/spdlog/include"			-- spdlog
 	}
 
 	libdirs

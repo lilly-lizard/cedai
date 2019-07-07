@@ -59,7 +59,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>CD_PLATFORM_WINDOWS;CD_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;$(INTELOCLSDKROOT)\include;..\vendor\glm;..\vendor\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>src;$(INTELOCLSDKROOT)\include;..\vendor\glm;..\vendor\SDL2\include;..\vendor\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -79,7 +79,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>CD_PLATFORM_WINDOWS;CD_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;$(INTELOCLSDKROOT)\include;..\vendor\glm;..\vendor\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>src;$(INTELOCLSDKROOT)\include;..\vendor\glm;..\vendor\SDL2\include;..\vendor\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -102,11 +102,14 @@
     <ClInclude Include="src\Cedai.h" />
     <ClInclude Include="src\Interface.h" />
     <ClInclude Include="src\Renderer.h" />
+    <ClInclude Include="src\tools\Log.h" />
+    <ClInclude Include="src\tools\Inputs.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Cedai.cpp" />
     <ClCompile Include="src\Interface.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
+    <ClCompile Include="src\tools\Log.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\kernels\opencl_kernel.cl" />

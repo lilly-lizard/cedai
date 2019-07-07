@@ -12,7 +12,6 @@ struct Sphere {
 	cl_float dummy3;
 	cl_float3 position;
 	cl_float3 color;
-	cl_float3 emission;
 };
 
 class Renderer {
@@ -20,7 +19,7 @@ public:
 
 	void init(int image_width, int image_height);
 
-	void draw(float *pixels);
+	void draw(float *pixels, const float view[4][4]);
 
 	void cleanUp();
 

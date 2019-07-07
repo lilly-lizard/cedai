@@ -1,8 +1,12 @@
-#include <iostream>
 
 #include "Interface.h"
+#include "tools/Log.h"
+
+#include <iostream>
 
 void Interface::init(int screen_width, int screen_height) {
+	CD_INFO("Initialising interface...");
+
 	this->screen_width = screen_width;
 	this->screen_height = screen_height;
 
@@ -24,6 +28,13 @@ void Interface::init(int screen_width, int screen_height) {
 		SDL_Quit();
 		return;
 	}
+
+	mapKeys();
+}
+
+void Interface::mapKeys() {
+	keyBindings[SDLK_ESCAPE] = CD_INPUTS::ESC;
+	keyBindings[SDLK_w] = CD_INPUTS::FORWARD;
 }
 
 void Interface::draw(float *pixels) {
@@ -32,7 +43,6 @@ void Interface::draw(float *pixels) {
 	// draw pixels
 	for (int x = 0; x < screen_width; x++) {
 		for (int y = 0; y < screen_height; y++) {
-			//SDL_SetRenderDrawColor(ren, 255, 255 * x / screen_width, 255 * y / screen_height, 255);
 			SDL_SetRenderDrawColor(ren, 255 * pixels[(x + y * screen_width) * 3],
 										255 * pixels[(x + y * screen_width) * 3 + 1],
 										255 * pixels[(x + y * screen_width) * 3 + 2],
@@ -44,15 +54,31 @@ void Interface::draw(float *pixels) {
 	SDL_RenderPresent(ren);
 }
 
-bool Interface::processEvents() {
-	bool quit = false;
-	SDL_Event e;
+void Interface::processEvents() {
 	// process pending events
+	inputs = 0;
+	SDL_Event e;
+	bool mouse = false;
 	while (SDL_PollEvent(&e)) {
-		if (e.type == SDL_QUIT || e.type == SDL_KEYDOWN || e.type == SDL_MOUSEBUTTONDOWN)
-			quit = true;
+		if (e.type == SDL_QUIT || e.type == SDL_MOUSEBUTTONDOWN) {
+			inputs |= CD_INPUTS::QUIT;
+		}
+		if (e.type == SDL_KEYDOWN) {
+			for (auto&[key, input] : keyBindings) {
+				if (e.key.keysym.sym == key)
+					inputs |= input;
+			}
+		}
+		if (e.type == SDL_MOUSEMOTION) {
+			mouseX = e.motion.xrel;
+			mouseY = e.motion.yrel;
+			mouse = true;
+		}
 	}
-	return quit;
+	if (!mouse) {
+		mouseX = 0;
+		mouseY = 0;
+	}
 }
 
 void Interface::cleanUp() {

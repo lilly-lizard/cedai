@@ -9,11 +9,14 @@
     <ClInclude Include="src\Cedai.h" />
     <ClInclude Include="src\Interface.h" />
     <ClInclude Include="src\Renderer.h" />
+    <ClInclude Include="src\tools\Log.h" />
+    <ClInclude Include="src\tools\Inputs.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Cedai.cpp" />
     <ClCompile Include="src\Interface.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
+    <ClCompile Include="src\tools\Log.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\kernels\opencl_kernel.cl">
