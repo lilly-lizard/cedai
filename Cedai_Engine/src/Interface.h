@@ -26,6 +26,8 @@ private:
 
 	SDL_Window *win;
 	SDL_Renderer *ren;
+	SDL_Texture *tex;
+	uint8_t *rgba8_pixels;
 
 	std::map<SDL_Keycode, CD_INPUTS> keyBindings;
 	uint32_t inputs;

@@ -29,10 +29,13 @@ private:
 	int image_height;
 	std::size_t global_work_size;
 	std::size_t local_work_size;
-	int sphere_count;
-	Sphere* cpu_spheres;
 
 	cl_float4* cpu_output;
+	int sphere_count;
+	Sphere* cpu_spheres;
+	int light_count;
+	Sphere* cpu_lights;
+
 	cl::CommandQueue queue;
 	cl::Kernel kernel;
 	cl::Context context;
@@ -40,12 +43,14 @@ private:
 
 	cl::Buffer cl_output;
 	cl::Buffer cl_spheres;
+	cl::Buffer cl_lights;
 
 	void pickPlatform(cl::Platform& platform, const std::vector<cl::Platform>& platforms);
 
 	void pickDevice(cl::Device& device, const std::vector<cl::Device>& devices);
 
 	void createSpheres();
+	void createLights();
 
 	void printErrorLog(const cl::Program& program, const cl::Device& device);
 

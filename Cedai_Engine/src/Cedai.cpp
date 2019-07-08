@@ -49,11 +49,8 @@ void Cedai::init() {
 
 void Cedai::loop() {
 	bool quit = false;
-	time_point<system_clock> prevTime;
-	duration<double> elapsedTime;
 
 	while (!quit) {
-		prevTime = system_clock::now();
 
 		// input handling
 		interface.processEvents();
@@ -63,9 +60,7 @@ void Cedai::loop() {
 		// render and draw
 		renderer.render(pixels, view);
 		interface.draw(pixels);
-
-		elapsedTime = system_clock::now() - prevTime;
-		//CD_TRACE("draw took: {}s", elapsedTime.count());
+		printFPS();
 	}
 }
 
@@ -76,10 +71,17 @@ void Cedai::cleanUp() {
 }
 
 void Cedai::processInputs() {
+	// get time difference
+	static auto timeStart = high_resolution_clock::now();
+	float timeDif = duration<float, seconds::period>(high_resolution_clock::now() - timePrev).count();
+	timePrev = high_resolution_clock::now();
+
 	// get inputs from window interface
 	inputs = interface.getKeyInputs();
 	long mouseMovement[2];
 	interface.getMouseChange(mouseMovement[0], mouseMovement[1]);
+
+	// LOOK
 
 	float viewAngleHoriz = (double)mouseMovement[0] * radiansPerMousePosHoriz;
 	viewerForward = glm::rotate(viewerForward, viewAngleHoriz, viewerUp);
@@ -89,7 +91,32 @@ void Cedai::processInputs() {
 	viewerForward = glm::rotate(viewerForward, viewAngleVert, viewerCross);
 	viewerUp = glm::cross(viewerForward, viewerCross);
 
-	printViewData();
+	if ((bool)(inputs & CD_INPUTS::ROTATEL) != (bool)(inputs & CD_INPUTS::ROTATER)) {
+		float viewAngleFront = radiansPerSecondFront * timeDif * (inputs & CD_INPUTS::ROTATEL ? 1 : -1);
+		viewerUp = glm::rotate(viewerUp, viewAngleFront, viewerForward);
+		viewerCross = glm::cross(viewerUp, viewerForward);
+	}
+
+	static uint32_t frameCount = 0;
+	frameCount++;
+	if (frameCount % 30 == 0) {
+		viewerForward = glm::normalize(viewerForward);
+		viewerCross = glm::normalize(viewerCross);
+		viewerUp = glm::normalize(viewerUp);
+		frameCount = 0;
+	}
+
+	// POSITION
+
+	if ((bool)(inputs & CD_INPUTS::FORWARD) != (bool)(inputs & CD_INPUTS::BACKWARD))
+		viewerPosition += viewerForward * glm::vec3(inputs & CD_INPUTS::FORWARD ? forwardSpeed * timeDif : -backSpeed * timeDif);
+
+	if ((bool)(inputs & CD_INPUTS::LEFT) != (bool)(inputs & CD_INPUTS::RIGHT))
+		viewerPosition += viewerCross * glm::vec3(inputs & CD_INPUTS::RIGHT ? strafeSpeed * timeDif : -strafeSpeed * timeDif);
+
+	if ((bool)(inputs & CD_INPUTS::UP) != (bool)(inputs & CD_INPUTS::DOWN))
+		viewerPosition += viewerUp * glm::vec3(inputs & CD_INPUTS::UP ? strafeSpeed * timeDif : -strafeSpeed * timeDif);
+
 	updateView();
 }
 
@@ -121,4 +148,18 @@ void Cedai::printViewData() {
 	CD_TRACE("forward:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerForward[0], viewerForward[1], viewerForward[2]);
 	CD_TRACE("cross:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerCross[0], viewerCross[1], viewerCross[2]);
 	CD_TRACE("up:		{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerUp[0], viewerUp[1], viewerUp[2]);
+}
+
+void Cedai::printFPS() {
+	static int fps = 0;
+	static time_point<system_clock> prevTime = system_clock::now();
+
+	fps++;
+	duration<double> elapsedTime;
+	elapsedTime = system_clock::now() - prevTime;
+	if (elapsedTime.count() > 1) {
+		CD_TRACE("fps = {}", fps);
+		prevTime = system_clock::now();
+		fps = 0;
+	}
 }

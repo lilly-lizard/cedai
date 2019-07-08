@@ -23,6 +23,7 @@ private:
 	void processInputs();
 	void updateView();
 	void printViewData();
+	void printFPS();
 
 	Interface interface;
 	Renderer renderer;

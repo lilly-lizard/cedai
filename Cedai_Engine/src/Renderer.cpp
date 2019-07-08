@@ -77,19 +77,24 @@ void Renderer::init(int image_width, int image_height) {
 	// Create image buffer on the OpenCL device
 	cl_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_float3));
 
-	// allocate memory on CPU to write spheres from
+	// allocate memory on CPU to write game entities from
 	createSpheres();
-	// create sphere buffer on the OpenCL device
+	createLights();
+	// create buffers on the OpenCL device
 	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, sphere_count * sizeof(Sphere));
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), cpu_spheres);
+	cl_lights = cl::Buffer(context, CL_MEM_READ_ONLY, light_count * sizeof(Sphere));
+	queue.enqueueWriteBuffer(cl_lights, CL_TRUE, 0, light_count * sizeof(Sphere), cpu_lights);
 
 	// specify OpenCL kernel arguments
 	kernel.setArg(0, cl_spheres);
 	kernel.setArg(1, sphere_count);
-	//arg 2 = view matrix
-	kernel.setArg(3, image_width);
-	kernel.setArg(4, image_height);
-	kernel.setArg(5, cl_output);
+	kernel.setArg(2, cl_lights);
+	kernel.setArg(3, light_count);
+	//arg 4 = view matrix
+	kernel.setArg(5, image_width);
+	kernel.setArg(6, image_height);
+	kernel.setArg(7, cl_output);
 
 	// every pixel in the image has its own thread or "work item",
 	// so the total amount of work items equals the number of pixels
@@ -102,7 +107,7 @@ void Renderer::render(float *pixels, const float view[4][4]) {
 							view[1][0], view[1][1], view[1][2], view[1][3],
 							view[2][0], view[2][1], view[2][2], view[2][3],
 							view[3][0], view[3][1], view[3][2], view[3][3] }};
-	kernel.setArg(2, cl_view);
+	kernel.setArg(4, cl_view);
 
 	// launch the kernel
 	queue.enqueueNDRangeKernel(kernel, NULL, global_work_size, local_work_size);
@@ -116,10 +121,6 @@ void Renderer::render(float *pixels, const float view[4][4]) {
 		pixels[3 * i + 1] =	cpu_output[i].s[1];
 		pixels[3 * i + 2] =	cpu_output[i].s[2];
 	}
-}
-
-void Renderer::cleanUp() {
-	delete cpu_output;
 }
 
 void Renderer::pickPlatform(cl::Platform& platform, const std::vector<cl::Platform>& platforms) {
@@ -143,16 +144,34 @@ void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& dev
 
 void Renderer::createSpheres() {
 
-	sphere_count = 2;
+	sphere_count = 3;
 	cpu_spheres = new Sphere[sphere_count];
 
-	cpu_spheres[0].radius	= 0.4f;
-	cpu_spheres[0].position = {{0.2f, 0.1f, -10.0f}};
-	cpu_spheres[0].color	= {{0.9f, 0.3f, 0.0f}};
+	cpu_spheres[0].radius	= 1.0;
+	cpu_spheres[0].position = {{ 10, 3, 0 }};
+	cpu_spheres[0].color	= {{ 0.9, 0.5, 0.5 }};
 
-	cpu_spheres[1].radius	= 0.2f;
-	cpu_spheres[1].position = {{-0.2f, 0.2f, -9.0f}};
-	cpu_spheres[1].color	= {{0.2f, 0.8f, 0.9f}};
+	cpu_spheres[1].radius	= 0.5;
+	cpu_spheres[1].position = {{ 4, -1, 1 }};
+	cpu_spheres[1].color	= {{ 1.0, 1.0, 0.5 }};
+
+	cpu_spheres[2].radius	= 0.2;
+	cpu_spheres[2].position = {{ 5, -2, -1 }};
+	cpu_spheres[2].color	= {{ 0.5, 0.5, 0.9 }};
+}
+
+void Renderer::createLights() {
+
+	light_count = 2;
+	cpu_lights = new Sphere[light_count];
+
+	cpu_lights[0].radius = 0.1;
+	cpu_lights[0].position = { { 5, 1, 2 } };
+	cpu_lights[0].color = { { 1.0, 1.0, 0.8 } };
+
+	cpu_lights[1].radius = 0.1;
+	cpu_lights[1].position = { { 4, -2, -2 } };
+	cpu_lights[1].color = { { 1.0, 1.0, 0.8 } };
 }
 
 void Renderer::printErrorLog(const cl::Program& program, const cl::Device& device) {
@@ -162,4 +181,10 @@ void Renderer::printErrorLog(const cl::Program& program, const cl::Device& devic
 	CD_ERROR("Build log:\n" + buildlog);
 
 	throw std::runtime_error("opencl compilation error");
+}
+
+void Renderer::cleanUp() {
+	delete cpu_output;
+	delete cpu_spheres;
+	delete cpu_lights;
 }

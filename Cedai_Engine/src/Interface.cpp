@@ -21,7 +21,7 @@ void Interface::init(int screen_width, int screen_height) {
 		return;
 	}
 
-	ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED); //SDL_RENDERER_PRESENTVSYNC
 	if (ren == nullptr) {
 		SDL_DestroyWindow(win);
 		std::cout << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
@@ -29,29 +29,57 @@ void Interface::init(int screen_width, int screen_height) {
 		return;
 	}
 
+	tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height);
+	rgba8_pixels = new uint8_t[screen_width * screen_height * 4] { 0 };
+
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 	mapKeys();
 }
 
 void Interface::mapKeys() {
 	keyBindings[SDLK_ESCAPE] = CD_INPUTS::ESC;
-	keyBindings[SDLK_w] = CD_INPUTS::FORWARD;
+
+	keyBindings[SDLK_w] = CD_INPUTS::UP;
+	keyBindings[SDLK_a] = CD_INPUTS::LEFT;
+	keyBindings[SDLK_s] = CD_INPUTS::DOWN;
+	keyBindings[SDLK_d] = CD_INPUTS::RIGHT;
+	keyBindings[SDLK_q] = CD_INPUTS::ROTATEL;
+	keyBindings[SDLK_e] = CD_INPUTS::ROTATER;
+
+	//keyBindings[SDLK_UP] = CD_INPUTS::UP;
+	//keyBindings[SDLK_DOWN] = CD_INPUTS::DOWN;
+	//keyBindings[SDLK_LEFT] = CD_INPUTS::LEFT;
+	//keyBindings[SDLK_RIGHT] = CD_INPUTS::RIGHT;
+	//keyBindings[SDLK_PAGEUP] = CD_INPUTS::ROTATEL;
+	//keyBindings[SDLK_PAGEDOWN] = CD_INPUTS::ROTATER;
+
+	keyBindings[SDLK_SPACE] = CD_INPUTS::FORWARD;
+	keyBindings[SDLK_LSHIFT] = CD_INPUTS::BACKWARD;
+
+	keyBindings[SDLK_z] = CD_INPUTS::INTERACTL;
+	keyBindings[SDLK_x] = CD_INPUTS::INTERACTR;
 }
 
 void Interface::draw(float *pixels) {
-	// clear the renderer
-	SDL_RenderClear(ren);
-	// draw pixels
-	for (int x = 0; x < screen_width; x++) {
-		for (int y = 0; y < screen_height; y++) {
-			SDL_SetRenderDrawColor(ren, 255 * pixels[(x + y * screen_width) * 3],
-										255 * pixels[(x + y * screen_width) * 3 + 1],
-										255 * pixels[(x + y * screen_width) * 3 + 2],
-										255);
-			SDL_RenderDrawPoint(ren, x, y);
-		}
+	// convert pixels to rgb8
+	for (int p = 0; p < screen_width * screen_height; p++) {
+		rgba8_pixels[p * 4]		= 0; // A
+		rgba8_pixels[p * 4 + 1] = 255 * pixels[p * 3 + 2]; // B
+		rgba8_pixels[p * 4 + 2] = 255 * pixels[p * 3 + 1]; // G
+		rgba8_pixels[p * 4 + 3] = 255 * pixels[p * 3]; // R
 	}
-	// update the screen
+
+	// set texture pixels
+	// todo SDL_UpdateTexture
+	void *tex_pixels;
+	int pitch;
+	SDL_LockTexture(tex, NULL, &tex_pixels, &pitch);
+	SDL_memcpy(tex_pixels, rgba8_pixels, sizeof(uint8_t) * screen_width * screen_height * 4);
+	SDL_UnlockTexture(tex);
+
+	// copy texture to screen
+	SDL_RenderClear(ren);
+	SDL_RenderCopy(ren, tex, NULL, NULL);
 	SDL_RenderPresent(ren);
 }
 
@@ -61,7 +89,7 @@ void Interface::processEvents() {
 	SDL_Event e;
 	bool mouse = false;
 	while (SDL_PollEvent(&e)) {
-		if (e.type == SDL_QUIT || e.type == SDL_MOUSEBUTTONDOWN) {
+		if (e.type == SDL_QUIT) {
 			inputs |= CD_INPUTS::QUIT;
 		}
 		if (e.type == SDL_KEYDOWN) {
@@ -83,7 +111,15 @@ void Interface::processEvents() {
 }
 
 void Interface::cleanUp() {
+	delete rgba8_pixels;
+	SDL_DestroyTexture(tex);
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);
 	SDL_Quit();
 }
+
+/*
+notes:
+sld renderer explained: https://stackoverflow.com/questions/21007329/what-is-an-sdl-renderer
+opencl sdl: https://forums.libsdl.org/viewtopic.php?t=11801
+*/
