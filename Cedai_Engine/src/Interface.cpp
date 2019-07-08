@@ -70,7 +70,6 @@ void Interface::draw(float *pixels) {
 	}
 
 	// set texture pixels
-	// todo SDL_UpdateTexture
 	void *tex_pixels;
 	int pitch;
 	SDL_LockTexture(tex, NULL, &tex_pixels, &pitch);
@@ -122,4 +121,5 @@ void Interface::cleanUp() {
 notes:
 sld renderer explained: https://stackoverflow.com/questions/21007329/what-is-an-sdl-renderer
 opencl sdl: https://forums.libsdl.org/viewtopic.php?t=11801
+opengl: https://www.gamedev.net/forums/topic/677152-textures-with-sdl2-opengl/
 */

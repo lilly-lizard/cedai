@@ -113,6 +113,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="src\kernels\opencl_kernel.cl" />
+    <None Include="src\kernels\ray_gen.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -139,12 +139,6 @@ void Cedai::updateView() {
 }
 
 void Cedai::printViewData() {
-	//static const int width = 7;
-	//static const int prec = 2;
-	//std::cout << std::fixed << std::setw(width) << std::showpoint << std::setprecision(prec) << viewerForward.x << std::setw(width) << std::setprecision(prec) << viewerForward.y << std::setw(width) << std::setprecision(prec) << viewerForward.z << " :: "
-	//	<< std::setw(width) << std::setprecision(prec) << viewerCross.x << std::setw(width) << std::setprecision(prec) << viewerCross.y << std::setw(width) << std::setprecision(prec) << viewerCross.z << " :: "
-	//	<< std::setw(width) << std::setprecision(prec) << viewerUp.x << std::setw(width) << std::setprecision(prec) << viewerUp.y << std::setw(width) << std::setprecision(prec) << viewerUp.z << std::endl;
-
 	CD_TRACE("forward:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerForward[0], viewerForward[1], viewerForward[2]);
 	CD_TRACE("cross:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerCross[0], viewerCross[1], viewerCross[2]);
 	CD_TRACE("up:		{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerUp[0], viewerUp[1], viewerUp[2]);

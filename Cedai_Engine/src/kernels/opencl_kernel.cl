@@ -20,22 +20,18 @@ float3 draw_background(float3 ray_d);
 
 // ENTRY POINT
 
-__kernel void render_kernel(__constant Sphere* spheres, const int sphere_count,
-							__constant Sphere* lights, const int light_count,
-							const float16 view,
+__kernel void render_kernel(const float16 view,
 							const int width, const int height,
+							__global float3* rays,
+							__constant Sphere* spheres, const int sphere_count,
+							__constant Sphere* lights, const int light_count,
 							__global float3* output) /* rgb [0 - 1] */
 {
 	const int work_item_id = get_global_id(0);
-	int x_coord = work_item_id % width;
-	int y_coord = height - work_item_id / width;
 	
 	// create a camera ray
 	const float3 ray_o = (float3)(view[12], view[13], view[14]);
-	const float3 uv = (float3)(width, (float)x_coord - (float)width / 2, (float)y_coord - (float)height / 2);
-	const float3 ray_d = normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
-											uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
-											uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
+	const float3 ray_d = rays[work_item_id];
 
 	// check for intersections
 	float3 color = (float3)(0,0,0);

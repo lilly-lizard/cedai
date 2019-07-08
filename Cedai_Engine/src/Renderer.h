@@ -25,29 +25,35 @@ public:
 
 private:
 
+	cl::Program program;
+	cl::Device device;
+	cl::Context context;
+	cl::CommandQueue queue;
+
+	cl::Kernel mainKernel;
+	cl::Kernel rayGenKernel;
+
 	int image_width;
 	int image_height;
 	std::size_t global_work_size;
 	std::size_t local_work_size;
 
-	cl_float4* cpu_output;
+	cl::Buffer cl_spheres;
+	cl::Buffer cl_lights;
+	cl::Buffer cl_rays;
+	cl::Buffer cl_output;
+
 	int sphere_count;
 	Sphere* cpu_spheres;
 	int light_count;
 	Sphere* cpu_lights;
-
-	cl::CommandQueue queue;
-	cl::Kernel kernel;
-	cl::Context context;
-	cl::Program program;
-
-	cl::Buffer cl_output;
-	cl::Buffer cl_spheres;
-	cl::Buffer cl_lights;
+	cl_float4* cpu_output;
 
 	void pickPlatform(cl::Platform& platform, const std::vector<cl::Platform>& platforms);
 
 	void pickDevice(cl::Device& device, const std::vector<cl::Device>& devices);
+
+	void createKernel(const char* filename, cl::Kernel &kernel, const char* entryPoint);
 
 	void createSpheres();
 	void createLights();

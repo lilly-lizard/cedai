@@ -22,5 +22,6 @@
     <None Include="src\kernels\opencl_kernel.cl">
       <Filter>kernels</Filter>
     </None>
+    <None Include="src\kernels\ray_gen.cl" />
   </ItemGroup>
 </Project>

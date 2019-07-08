@@ -6,6 +6,7 @@
 #include <fstream>
 
 #define KERNEL_PATH "src/kernels/opencl_kernel.cl"
+#define RAY_GEN_PATH "src/kernels/ray_gen.cl"
 
 void Renderer::init(int image_width, int image_height) {
 	CD_INFO("Initialising renderer...");
@@ -37,7 +38,6 @@ void Renderer::init(int image_width, int image_height) {
 	}
 
 	// Pick one device
-	cl::Device device;
 	pickDevice(device, devices);
 	std::cout << "~ \n~ Using OpenCL device: \t" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
 	std::cout << "~ \t\t\tMax compute units: " << device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
@@ -47,57 +47,39 @@ void Renderer::init(int image_width, int image_height) {
 	context = cl::Context(device);
 	queue = cl::CommandQueue(context, device);
 
-	// Convert the OpenCL source code to a string
-	std::string source;
-	std::ifstream file(KERNEL_PATH);
-	if (!file) {
-		CD_ERROR("\nNo OpenCL file found!\NExiting...");
-		throw std::runtime_error("error: missing kernel file");
-	}
-	while (!file.eof()) {
-		char line[256];
-		file.getline(line, 255);
-		source += line;
-		source += "\n";
-	}
+	createKernel(RAY_GEN_PATH, rayGenKernel, "ray_gen");
+	createKernel(KERNEL_PATH, mainKernel, "render_kernel");
 
-	const char* kernel_source = source.c_str();
-
-	// Create an OpenCL program by performing runtime source compilation for the chosen device
-	program = cl::Program(context, kernel_source);
-	cl_int result = program.build({ device });
-	if (result) CD_WARN("Error during compilation OpenCL code!\n ({})", result);
-	if (result == CL_BUILD_PROGRAM_FAILURE) printErrorLog(program, device);
-
-	// Create a kernel (entry point in the OpenCL source program)
-	kernel = cl::Kernel(program, "render_kernel");
-
-	// allocate memory on CPU to hold image
-	cpu_output = new cl_float3[image_width * image_height];
-	// Create image buffer on the OpenCL device
-	cl_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_float3));
-
-	// allocate memory on CPU to write game entities from
+	// spheres and lights
 	createSpheres();
 	createLights();
-	// create buffers on the OpenCL device
 	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, sphere_count * sizeof(Sphere));
-	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), cpu_spheres);
 	cl_lights = cl::Buffer(context, CL_MEM_READ_ONLY, light_count * sizeof(Sphere));
+	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), cpu_spheres);
 	queue.enqueueWriteBuffer(cl_lights, CL_TRUE, 0, light_count * sizeof(Sphere), cpu_lights);
 
-	// specify OpenCL kernel arguments
-	kernel.setArg(0, cl_spheres);
-	kernel.setArg(1, sphere_count);
-	kernel.setArg(2, cl_lights);
-	kernel.setArg(3, light_count);
-	//arg 4 = view matrix
-	kernel.setArg(5, image_width);
-	kernel.setArg(6, image_height);
-	kernel.setArg(7, cl_output);
+	// inter-kernel buffers
+	cl_rays = cl::Buffer(context, CL_MEM_READ_WRITE, image_width * image_height * sizeof(cl_float3));
 
-	// every pixel in the image has its own thread or "work item",
-	// so the total amount of work items equals the number of pixels
+	// output image
+	cpu_output = new cl_float3[image_width * image_height];
+	cl_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_float3));
+
+	/* rayGenKernel arg 0 = view matrix */
+	rayGenKernel.setArg(1, image_width);
+	rayGenKernel.setArg(2, image_height);
+	rayGenKernel.setArg(3, cl_rays);
+
+	/* mainKernel arg 0 = view matrix */
+	mainKernel.setArg(1, image_width);
+	mainKernel.setArg(2, image_height);
+	mainKernel.setArg(3, cl_rays);
+	mainKernel.setArg(4, cl_spheres);
+	mainKernel.setArg(5, sphere_count);
+	mainKernel.setArg(6, cl_lights);
+	mainKernel.setArg(7, light_count);
+	mainKernel.setArg(8, cl_output);
+
 	global_work_size = image_width * image_height;
 	local_work_size = 64;
 }
@@ -107,10 +89,14 @@ void Renderer::render(float *pixels, const float view[4][4]) {
 							view[1][0], view[1][1], view[1][2], view[1][3],
 							view[2][0], view[2][1], view[2][2], view[2][3],
 							view[3][0], view[3][1], view[3][2], view[3][3] }};
-	kernel.setArg(4, cl_view);
 
-	// launch the kernel
-	queue.enqueueNDRangeKernel(kernel, NULL, global_work_size, local_work_size);
+	rayGenKernel.setArg(0, cl_view);
+	mainKernel.setArg(0, cl_view);
+
+	// launch the kernels
+	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_size, local_work_size);
+	queue.finish();
+	queue.enqueueNDRangeKernel(mainKernel, NULL, global_work_size, local_work_size);
 	queue.finish();
 
 	// read and copy OpenCL output to CPU
@@ -140,6 +126,33 @@ void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& dev
 		}
 		throw std::runtime_error("error: no suitable device found");
 	}
+}
+
+void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
+	// Convert the OpenCL source code to a string
+	std::string source;
+	std::ifstream file(filename);
+	if (!file) {
+		CD_ERROR("\nNo OpenCL file found!\NExiting...");
+		throw std::runtime_error("error: missing kernel file");
+	}
+	while (!file.eof()) {
+		char line[256];
+		file.getline(line, 255);
+		source += line;
+		source += "\n";
+	}
+
+	const char* kernel_source = source.c_str();
+
+	// Create an OpenCL program by performing runtime source compilation for the chosen device
+	program = cl::Program(context, kernel_source);
+	cl_int result = program.build({ device });
+	if (result) CD_WARN("Error during compilation OpenCL code!\n ({})", result);
+	if (result == CL_BUILD_PROGRAM_FAILURE) printErrorLog(program, device);
+
+	// Create a kernel (entry point in the OpenCL source program)
+	kernel = cl::Kernel(program, entryPoint);
 }
 
 void Renderer::createSpheres() {
