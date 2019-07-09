@@ -28,7 +28,7 @@ private:
 	Interface interface;
 	Renderer renderer;
 
-	float *pixels;
+	uint8_t* pixels;
 	float view[4][4] = { 0 };
 	uint32_t inputs;
 

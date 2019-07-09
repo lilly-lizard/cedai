@@ -13,7 +13,7 @@ public:
 	inline uint32_t getKeyInputs() { return inputs; }
 	inline void getMouseChange(long &mouseX, long &mouseY) { mouseX = this->mouseX; mouseY = this->mouseY; }
 
-	void draw(float *pixels);
+	void draw(uint8_t* pixels);
 
 	void cleanUp();
 
@@ -27,7 +27,6 @@ private:
 	SDL_Window *win;
 	SDL_Renderer *ren;
 	SDL_Texture *tex;
-	uint8_t *rgba8_pixels;
 
 	std::map<SDL_Keycode, CD_INPUTS> keyBindings;
 	uint32_t inputs;

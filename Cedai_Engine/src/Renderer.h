@@ -19,7 +19,7 @@ public:
 
 	void init(int image_width, int image_height);
 
-	void render(float *pixels, const float view[4][4]);
+	void render(uint8_t *pixels, const float view[4][4]);
 
 	void cleanUp();
 
@@ -35,8 +35,10 @@ private:
 
 	int image_width;
 	int image_height;
-	std::size_t global_work_size;
-	std::size_t local_work_size;
+	cl::NDRange global_work_pixels;
+	cl::NDRange local_work_pixels;
+	cl::NDRange global_work_spheres;
+	cl::NDRange local_work_spheres;
 
 	cl::Buffer cl_spheres;
 	cl::Buffer cl_lights;
@@ -47,7 +49,7 @@ private:
 	Sphere* cpu_spheres;
 	int light_count;
 	Sphere* cpu_lights;
-	cl_float4* cpu_output;
+	cl_uchar4* cpu_output;
 
 	void pickPlatform(cl::Platform& platform, const std::vector<cl::Platform>& platforms);
 

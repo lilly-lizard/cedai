@@ -47,8 +47,8 @@ void Renderer::init(int image_width, int image_height) {
 	context = cl::Context(device);
 	queue = cl::CommandQueue(context, device);
 
-	createKernel(RAY_GEN_PATH, rayGenKernel, "ray_gen");
-	createKernel(KERNEL_PATH, mainKernel, "render_kernel");
+	createKernel(RAY_GEN_PATH, rayGenKernel, "entry");
+	createKernel(KERNEL_PATH, mainKernel, "entry");
 
 	// spheres and lights
 	createSpheres();
@@ -62,8 +62,8 @@ void Renderer::init(int image_width, int image_height) {
 	cl_rays = cl::Buffer(context, CL_MEM_READ_WRITE, image_width * image_height * sizeof(cl_float3));
 
 	// output image
-	cpu_output = new cl_float3[image_width * image_height];
-	cl_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_float3));
+	cpu_output = new cl_uchar4[image_width * image_height];
+	cl_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_uchar4));
 
 	/* rayGenKernel arg 0 = view matrix */
 	rayGenKernel.setArg(1, image_width);
@@ -80,11 +80,18 @@ void Renderer::init(int image_width, int image_height) {
 	mainKernel.setArg(7, light_count);
 	mainKernel.setArg(8, cl_output);
 
-	global_work_size = image_width * image_height;
-	local_work_size = 64;
+	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
+	global_work_pixels	= cl::NDRange(image_width, image_height);
+	local_work_pixels	= cl::NDRange(image_width  % 16 == 0 ? 16 : NULL,
+									  image_height % 16 == 0 ? 16 : NULL);
+
+	global_work_spheres = cl::NDRange(image_width, image_height, sphere_count + light_count);
+	local_work_spheres  = cl::NDRange(image_width  % 16 == 0 ? 16 : NULL,
+									  image_height % 16 == 0 ? 16 : NULL,
+									  NULL);
 }
 
-void Renderer::render(float *pixels, const float view[4][4]) {
+void Renderer::render(uint8_t *pixels, const float view[4][4]) {
 	cl_float16 cl_view = {{	view[0][0], view[0][1], view[0][2], view[0][3],
 							view[1][0], view[1][1], view[1][2], view[1][3],
 							view[2][0], view[2][1], view[2][2], view[2][3],
@@ -94,18 +101,19 @@ void Renderer::render(float *pixels, const float view[4][4]) {
 	mainKernel.setArg(0, cl_view);
 
 	// launch the kernels
-	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_size, local_work_size);
+	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels);
 	queue.finish();
-	queue.enqueueNDRangeKernel(mainKernel, NULL, global_work_size, local_work_size);
+	queue.enqueueNDRangeKernel(mainKernel, NULL, global_work_pixels, local_work_pixels);
 	queue.finish();
 
 	// read and copy OpenCL output to CPU
-	queue.enqueueReadBuffer(cl_output, CL_TRUE, 0, image_width * image_height * sizeof(cl_float3), cpu_output);
+	queue.enqueueReadBuffer(cl_output, CL_TRUE, 0, image_width * image_height * sizeof(cl_uchar4), cpu_output);
 
-	for (int i = 0; i < image_width * image_height; i++) {
-		pixels[3 * i]	  = cpu_output[i].s[0];
-		pixels[3 * i + 1] =	cpu_output[i].s[1];
-		pixels[3 * i + 2] =	cpu_output[i].s[2];
+	for (int p = 0; p < image_width * image_height; p++) {
+		// pixels[p * 4] = 0; // A
+		pixels[p * 4 + 1] = cpu_output[p].s[2]; // B
+		pixels[p * 4 + 2] = cpu_output[p].s[1]; // G
+		pixels[p * 4 + 3] = cpu_output[p].s[0]; // R
 	}
 }
 
@@ -201,3 +209,13 @@ void Renderer::cleanUp() {
 	delete cpu_spheres;
 	delete cpu_lights;
 }
+
+/*
+notes:
+cpp reference: https://github.khronos.org/OpenCL-CLHPP/
+work group info: https://stackoverflow.com/questions/3957125/questions-about-global-and-local-work-size
+
+CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS = 3
+CL_DEVICE_MAX_WORK_ITEM_SIZES = {256, 256, 256}
+CL_DEVICE_MAX_WORK_GROUP_SIZE = 256
+*/

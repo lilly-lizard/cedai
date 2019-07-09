@@ -30,7 +30,6 @@ void Interface::init(int screen_width, int screen_height) {
 	}
 
 	tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height);
-	rgba8_pixels = new uint8_t[screen_width * screen_height * 4] { 0 };
 
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 	mapKeys();
@@ -60,20 +59,13 @@ void Interface::mapKeys() {
 	keyBindings[SDLK_x] = CD_INPUTS::INTERACTR;
 }
 
-void Interface::draw(float *pixels) {
-	// convert pixels to rgb8
-	for (int p = 0; p < screen_width * screen_height; p++) {
-		rgba8_pixels[p * 4]		= 0; // A
-		rgba8_pixels[p * 4 + 1] = 255 * pixels[p * 3 + 2]; // B
-		rgba8_pixels[p * 4 + 2] = 255 * pixels[p * 3 + 1]; // G
-		rgba8_pixels[p * 4 + 3] = 255 * pixels[p * 3]; // R
-	}
+void Interface::draw(uint8_t* pixels) {
 
 	// set texture pixels
 	void *tex_pixels;
 	int pitch;
 	SDL_LockTexture(tex, NULL, &tex_pixels, &pitch);
-	SDL_memcpy(tex_pixels, rgba8_pixels, sizeof(uint8_t) * screen_width * screen_height * 4);
+	SDL_memcpy(tex_pixels, pixels, sizeof(uint8_t) * screen_width * screen_height * 4);
 	SDL_UnlockTexture(tex);
 
 	// copy texture to screen
@@ -91,12 +83,20 @@ void Interface::processEvents() {
 		if (e.type == SDL_QUIT) {
 			inputs |= CD_INPUTS::QUIT;
 		}
+
 		if (e.type == SDL_KEYDOWN) {
 			for (auto&[key, input] : keyBindings) {
 				if (e.key.keysym.sym == key)
 					inputs |= input;
 			}
 		}
+		else if (e.type == SDL_KEYUP) {
+			for (auto&[key, input] : keyBindings) {
+				if (e.key.keysym.sym == key)
+					inputs &= !input;
+			}
+		}
+
 		if (e.type == SDL_MOUSEMOTION) {
 			mouseX = e.motion.xrel;
 			mouseY = e.motion.yrel;
@@ -110,7 +110,6 @@ void Interface::processEvents() {
 }
 
 void Interface::cleanUp() {
-	delete rgba8_pixels;
 	SDL_DestroyTexture(tex);
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);

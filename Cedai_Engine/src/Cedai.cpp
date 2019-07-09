@@ -42,7 +42,7 @@ void Cedai::init() {
 	interface.init(screen_width, screen_height);
 	CD_INFO("Interface initialised.");
 
-	pixels = new float[screen_width * screen_height * 3];
+	pixels = new uint8_t[screen_width * screen_height * 4] { 0 };
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
 	CD_INFO("Engine initialised.");
 }

@@ -20,14 +20,14 @@ float3 draw_background(float3 ray_d);
 
 // ENTRY POINT
 
-__kernel void render_kernel(const float16 view,
+__kernel void entry(const float16 view,
 							const int width, const int height,
 							__global float3* rays,
 							__constant Sphere* spheres, const int sphere_count,
 							__constant Sphere* lights, const int light_count,
-							__global float3* output) /* rgb [0 - 1] */
+							__global uchar4* output) /* rgb [0 - 1] */
 {
-	const int work_item_id = get_global_id(0);
+	const uint work_item_id = get_global_id(0) + get_global_id(1) * width;
 	
 	// create a camera ray
 	const float3 ray_o = (float3)(view[12], view[13], view[14]);
@@ -61,11 +61,9 @@ __kernel void render_kernel(const float16 view,
 			color = lights[l].color;
 	}	}
 
-	// TODO output [0 - 256]
-	if (color_found)
-		output[work_item_id] = color;
-	else
-		output[work_item_id] = draw_background(ray_d);
+	if (!color_found)
+		color = draw_background(ray_d);
+	output[work_item_id] = (uchar4)(color.x * 255, color.y * 255, color.z * 255, 0);
 }
 
 // HELPER FUNCTIONS
