@@ -5,8 +5,9 @@
 #include <iostream>
 #include <fstream>
 
-#define KERNEL_PATH "src/kernels/opencl_kernel.cl"
 #define RAY_GEN_PATH "src/kernels/ray_gen.cl"
+#define SPHERE_PATH "src/kernels/sphere_intersect.cl"
+#define DRAW_PATH "src/kernels/draw.cl"
 
 void Renderer::init(int image_width, int image_height) {
 	CD_INFO("Initialising renderer...");
@@ -48,37 +49,39 @@ void Renderer::init(int image_width, int image_height) {
 	queue = cl::CommandQueue(context, device);
 
 	createKernel(RAY_GEN_PATH, rayGenKernel, "entry");
-	createKernel(KERNEL_PATH, mainKernel, "entry");
+	createKernel(SPHERE_PATH, sphereKernel, "entry");
+	createKernel(DRAW_PATH, drawKernel, "entry");
 
 	// spheres and lights
 	createSpheres();
 	createLights();
-	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, sphere_count * sizeof(Sphere));
-	cl_lights = cl::Buffer(context, CL_MEM_READ_ONLY, light_count * sizeof(Sphere));
+	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, (sphere_count + light_count) * sizeof(Sphere));
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), cpu_spheres);
-	queue.enqueueWriteBuffer(cl_lights, CL_TRUE, 0, light_count * sizeof(Sphere), cpu_lights);
+	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(Sphere), light_count * sizeof(Sphere), cpu_lights);
 
 	// inter-kernel buffers
 	cl_rays = cl::Buffer(context, CL_MEM_READ_WRITE, image_width * image_height * sizeof(cl_float3));
+	cl_sphere_t = cl::Buffer(context, CL_MEM_READ_WRITE, image_width * image_height * (sphere_count + light_count) * sizeof(cl_float));
 
 	// output image
 	cpu_output = new cl_uchar4[image_width * image_height];
 	cl_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_uchar4));
+	CD_WARN("{}", sizeof(cl_uchar4));
 
 	/* rayGenKernel arg 0 = view matrix */
-	rayGenKernel.setArg(1, image_width);
-	rayGenKernel.setArg(2, image_height);
-	rayGenKernel.setArg(3, cl_rays);
+	rayGenKernel.setArg(1, cl_rays);
 
-	/* mainKernel arg 0 = view matrix */
-	mainKernel.setArg(1, image_width);
-	mainKernel.setArg(2, image_height);
-	mainKernel.setArg(3, cl_rays);
-	mainKernel.setArg(4, cl_spheres);
-	mainKernel.setArg(5, sphere_count);
-	mainKernel.setArg(6, cl_lights);
-	mainKernel.setArg(7, light_count);
-	mainKernel.setArg(8, cl_output);
+	/* sphereKernel arg 0 = view position */
+	sphereKernel.setArg(1, cl_spheres);
+	sphereKernel.setArg(2, cl_rays);
+	sphereKernel.setArg(3, cl_sphere_t);
+
+	drawKernel.setArg(0, cl_spheres);
+	drawKernel.setArg(1, sphere_count);
+	drawKernel.setArg(2, light_count);
+	drawKernel.setArg(3, cl_rays);
+	drawKernel.setArg(4, cl_sphere_t);
+	drawKernel.setArg(5, cl_output);
 
 	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
 	global_work_pixels	= cl::NDRange(image_width, image_height);
@@ -92,25 +95,28 @@ void Renderer::init(int image_width, int image_height) {
 }
 
 void Renderer::render(uint8_t *pixels, const float view[4][4]) {
-	cl_float16 cl_view = {{	view[0][0], view[0][1], view[0][2], view[0][3],
-							view[1][0], view[1][1], view[1][2], view[1][3],
-							view[2][0], view[2][1], view[2][2], view[2][3],
-							view[3][0], view[3][1], view[3][2], view[3][3] }};
+	cl_view = {{ view[0][0], view[0][1], view[0][2], 0,
+				 view[1][0], view[1][1], view[1][2], 0,
+				 view[2][0], view[2][1], view[2][2], 0,
+				 0, 0, 0, 0 }};
+	cl_pos = {{ view[3][0], view[3][1], view[3][2] }};
 
 	rayGenKernel.setArg(0, cl_view);
-	mainKernel.setArg(0, cl_view);
+	sphereKernel.setArg(0, cl_pos);
 
 	// launch the kernels
 	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels);
 	queue.finish();
-	queue.enqueueNDRangeKernel(mainKernel, NULL, global_work_pixels, local_work_pixels);
+	//queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres);
+	//queue.finish();
+	queue.enqueueNDRangeKernel(drawKernel, NULL, global_work_pixels, local_work_pixels);
 	queue.finish();
 
 	// read and copy OpenCL output to CPU
 	queue.enqueueReadBuffer(cl_output, CL_TRUE, 0, image_width * image_height * sizeof(cl_uchar4), cpu_output);
 
 	for (int p = 0; p < image_width * image_height; p++) {
-		// pixels[p * 4] = 0; // A
+		pixels[p * 4] = 0; // A
 		pixels[p * 4 + 1] = cpu_output[p].s[2]; // B
 		pixels[p * 4 + 2] = cpu_output[p].s[1]; // G
 		pixels[p * 4 + 3] = cpu_output[p].s[0]; // R
@@ -141,7 +147,7 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	std::string source;
 	std::ifstream file(filename);
 	if (!file) {
-		CD_ERROR("\nNo OpenCL file found!\NExiting...");
+		CD_ERROR("{} file not found!\nExiting...", filename);
 		throw std::runtime_error("error: missing kernel file");
 	}
 	while (!file.eof()) {
@@ -156,7 +162,7 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	// Create an OpenCL program by performing runtime source compilation for the chosen device
 	program = cl::Program(context, kernel_source);
 	cl_int result = program.build({ device });
-	if (result) CD_WARN("Error during compilation OpenCL code!\n ({})", result);
+	if (result) CD_ERROR("Error during openCL compilation {} error: ({})", filename, result);
 	if (result == CL_BUILD_PROGRAM_FAILURE) printErrorLog(program, device);
 
 	// Create a kernel (entry point in the OpenCL source program)
@@ -170,15 +176,15 @@ void Renderer::createSpheres() {
 
 	cpu_spheres[0].radius	= 1.0;
 	cpu_spheres[0].position = {{ 10, 3, 0 }};
-	cpu_spheres[0].color	= {{ 0.9, 0.5, 0.5 }};
+	cpu_spheres[0].color	= {{ 230, 128, 128 }};
 
 	cpu_spheres[1].radius	= 0.5;
 	cpu_spheres[1].position = {{ 4, -1, 1 }};
-	cpu_spheres[1].color	= {{ 1.0, 1.0, 0.5 }};
+	cpu_spheres[1].color	= {{ 255, 255, 128 }};
 
 	cpu_spheres[2].radius	= 0.2;
 	cpu_spheres[2].position = {{ 5, -2, -1 }};
-	cpu_spheres[2].color	= {{ 0.5, 0.5, 0.9 }};
+	cpu_spheres[2].color	= {{ 128, 128, 230 }};
 }
 
 void Renderer::createLights() {
@@ -188,11 +194,11 @@ void Renderer::createLights() {
 
 	cpu_lights[0].radius = 0.1;
 	cpu_lights[0].position = { { 5, 1, 2 } };
-	cpu_lights[0].color = { { 1.0, 1.0, 0.8 } };
+	cpu_lights[0].color = { { 255, 255, 205 } };
 
 	cpu_lights[1].radius = 0.1;
 	cpu_lights[1].position = { { 4, -2, -2 } };
-	cpu_lights[1].color = { { 1.0, 1.0, 0.8 } };
+	cpu_lights[1].color = { { 255, 255, 205 } };
 }
 
 void Renderer::printErrorLog(const cl::Program& program, const cl::Device& device) {
@@ -205,9 +211,9 @@ void Renderer::printErrorLog(const cl::Program& program, const cl::Device& devic
 }
 
 void Renderer::cleanUp() {
-	delete cpu_output;
-	delete cpu_spheres;
-	delete cpu_lights;
+	delete[] cpu_output;
+	delete[] cpu_spheres;
+	delete[] cpu_lights;
 }
 
 /*

@@ -15,7 +15,7 @@ void Interface::init(int screen_width, int screen_height) {
 		return;
 	}
 
-	win = SDL_CreateWindow("Cedai", 100, 100, screen_width, screen_height, SDL_WINDOW_SHOWN);
+	win = SDL_CreateWindow("Cedai", 300, 100, screen_width, screen_height, SDL_WINDOW_SHOWN);
 	if (win == nullptr) {
 		std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
 		return;

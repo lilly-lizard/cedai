@@ -35,15 +35,18 @@ void Cedai::Run() {
 }
 
 void Cedai::init() {
+	pixels = new uint8_t[screen_width * screen_height * 4]{ 0 };
+	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
+
 	Log::Init();
 	CD_INFO("Logger initialised");
+
 	renderer.init(screen_width, screen_height);
 	CD_INFO("Renderer initialised.");
+
 	interface.init(screen_width, screen_height);
 	CD_INFO("Interface initialised.");
 
-	pixels = new uint8_t[screen_width * screen_height * 4] { 0 };
-	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
 	CD_INFO("Engine initialised.");
 }
 
@@ -65,14 +68,13 @@ void Cedai::loop() {
 }
 
 void Cedai::cleanUp() {
+	delete[] pixels;
 	renderer.cleanUp();
 	interface.cleanUp();
-	delete pixels;
 }
 
 void Cedai::processInputs() {
 	// get time difference
-	static auto timeStart = high_resolution_clock::now();
 	float timeDif = duration<float, seconds::period>(high_resolution_clock::now() - timePrev).count();
 	timePrev = high_resolution_clock::now();
 

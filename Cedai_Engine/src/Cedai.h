@@ -32,12 +32,12 @@ private:
 	float view[4][4] = { 0 };
 	uint32_t inputs;
 
-	float strafeSpeed = 1.5;
+	float strafeSpeed = 2;
 	float forwardSpeed = 2;
-	float backSpeed = 1;
+	float backSpeed = 2;
 	float radiansPerMousePosHoriz = 0.01f;
 	float radiansPerMousePosVert =	0.01f;
-	float radiansPerSecondFront = (float)M_PI / 4;
+	float radiansPerSecondFront = (float)M_PI / 2;
 
 	glm::vec3 viewerPosition =	glm::vec3(0, 0, 0);				 // your position in the world
 	glm::vec3 viewerForward =	glm::vec3(1, 0, 0);				 // direction you are facing

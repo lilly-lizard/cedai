@@ -11,7 +11,7 @@ struct Sphere {
 	cl_float dummy2;
 	cl_float dummy3;
 	cl_float3 position;
-	cl_float3 color;
+	cl_uchar3 color;
 };
 
 class Renderer {
@@ -31,7 +31,10 @@ private:
 	cl::CommandQueue queue;
 
 	cl::Kernel mainKernel;
+
 	cl::Kernel rayGenKernel;
+	cl::Kernel sphereKernel;
+	cl::Kernel drawKernel;
 
 	int image_width;
 	int image_height;
@@ -41,13 +44,15 @@ private:
 	cl::NDRange local_work_spheres;
 
 	cl::Buffer cl_spheres;
-	cl::Buffer cl_lights;
 	cl::Buffer cl_rays;
+	cl::Buffer cl_sphere_t; // sphere intersection t values
 	cl::Buffer cl_output;
 
+	cl_float16 cl_view;
+	cl_float3 cl_pos;
 	int sphere_count;
-	Sphere* cpu_spheres;
 	int light_count;
+	Sphere* cpu_spheres;
 	Sphere* cpu_lights;
 	cl_uchar4* cpu_output;
 

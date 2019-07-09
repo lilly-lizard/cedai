@@ -32,6 +32,8 @@ draw to screen
 https://stackoverflow.com/questions/20753726/rendering-pixels-from-array-of-rgb-values-in-sdl-1-2
 https://stackoverflow.com/questions/20579658/how-to-draw-pixels-in-sdl-2-0
 
-fps recording: (release, highest stable average)
+-------   fps recording: (release, highest stable average)
+
 vulkan, 640 x 480, single comp - 91
 spheres, lighting, 640 x 480, SDL_LockTexture and memcpy - 129
+ray_gen and general, ", optimisations, commit f5ad2b6 - 153
