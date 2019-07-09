@@ -17,7 +17,7 @@ struct Sphere {
 class Renderer {
 public:
 
-	void init(int image_width, int image_height);
+	void init(int image_width, int image_height, uint8_t *pixels);
 
 	void render(uint8_t *pixels, const float view[4][4]);
 
@@ -25,12 +25,12 @@ public:
 
 private:
 
+	const int foo = 0;
+
 	cl::Program program;
 	cl::Device device;
 	cl::Context context;
 	cl::CommandQueue queue;
-
-	cl::Kernel mainKernel;
 
 	cl::Kernel rayGenKernel;
 	cl::Kernel sphereKernel;

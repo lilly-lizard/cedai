@@ -35,13 +35,14 @@ void Cedai::Run() {
 }
 
 void Cedai::init() {
-	pixels = new uint8_t[screen_width * screen_height * 4]{ 0 };
+	static uint8_t* const pixels_temp = new uint8_t[screen_width * screen_height * 4] { 0 }; // to ensure the address of pixels_temp doesn't get changed by the opencl library
+	pixels = pixels_temp;
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
 
 	Log::Init();
 	CD_INFO("Logger initialised");
 
-	renderer.init(screen_width, screen_height);
+	renderer.init(screen_width, screen_height, pixels);
 	CD_INFO("Renderer initialised.");
 
 	interface.init(screen_width, screen_height);

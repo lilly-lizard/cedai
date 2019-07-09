@@ -9,7 +9,7 @@
 #define SPHERE_PATH "src/kernels/sphere_intersect.cl"
 #define DRAW_PATH "src/kernels/draw.cl"
 
-void Renderer::init(int image_width, int image_height) {
+void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	CD_INFO("Initialising renderer...");
 
 	this->image_width = image_width;
@@ -64,9 +64,16 @@ void Renderer::init(int image_width, int image_height) {
 	cl_sphere_t = cl::Buffer(context, CL_MEM_READ_WRITE, image_width * image_height * (sphere_count + light_count) * sizeof(cl_float));
 
 	// output image
-	cpu_output = new cl_uchar4[image_width * image_height];
 	cl_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_uchar4));
-	CD_WARN("{}", sizeof(cl_uchar4));
+	static cl_uchar4* const cpu_output_temp = new cl_uchar4[image_width * image_height]; // to ensure the address of cpu_output doesn't get changed by the opencl library
+	cpu_output = cpu_output_temp;
+
+	void* ptr1 = (void*)pixels;
+	void* ptr2 = (void*)cpu_output;
+	if (ptr1 == ptr2) {
+		CD_ERROR("ALLOCATION ERROR - Cedai.pixels and Renderer.cpu_output are assigned to same address");
+		throw("init allocation error");
+	}
 
 	/* rayGenKernel arg 0 = view matrix */
 	rayGenKernel.setArg(1, cl_rays);
@@ -76,22 +83,23 @@ void Renderer::init(int image_width, int image_height) {
 	sphereKernel.setArg(2, cl_rays);
 	sphereKernel.setArg(3, cl_sphere_t);
 
-	drawKernel.setArg(0, cl_spheres);
-	drawKernel.setArg(1, sphere_count);
-	drawKernel.setArg(2, light_count);
-	drawKernel.setArg(3, cl_rays);
-	drawKernel.setArg(4, cl_sphere_t);
-	drawKernel.setArg(5, cl_output);
+	/* drawKernel arg 0 = view position */
+	drawKernel.setArg(1, cl_spheres);
+	drawKernel.setArg(2, sphere_count);
+	drawKernel.setArg(3, light_count);
+	drawKernel.setArg(4, cl_rays);
+	drawKernel.setArg(5, cl_sphere_t);
+	drawKernel.setArg(6, cl_output);
 
 	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
 	global_work_pixels	= cl::NDRange(image_width, image_height);
-	local_work_pixels	= cl::NDRange(image_width  % 16 == 0 ? 16 : NULL,
-									  image_height % 16 == 0 ? 16 : NULL);
+	local_work_pixels	= cl::NDRange(image_width  % 16 == 0 ? 16 : 1,
+									  image_height % 16 == 0 ? 16 : 1);
 
 	global_work_spheres = cl::NDRange(image_width, image_height, sphere_count + light_count);
-	local_work_spheres  = cl::NDRange(image_width  % 16 == 0 ? 16 : NULL,
-									  image_height % 16 == 0 ? 16 : NULL,
-									  NULL);
+	local_work_spheres  = cl::NDRange(image_width  % 16 == 0 ? 16 : 1,
+									  image_height % 16 == 0 ? 16 : 1,
+									  1);
 }
 
 void Renderer::render(uint8_t *pixels, const float view[4][4]) {
@@ -103,12 +111,13 @@ void Renderer::render(uint8_t *pixels, const float view[4][4]) {
 
 	rayGenKernel.setArg(0, cl_view);
 	sphereKernel.setArg(0, cl_pos);
+	drawKernel.setArg(0, cl_pos);
 
 	// launch the kernels
 	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels);
 	queue.finish();
-	//queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres);
-	//queue.finish();
+	queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres);
+	queue.finish();
 	queue.enqueueNDRangeKernel(drawKernel, NULL, global_work_pixels, local_work_pixels);
 	queue.finish();
 
