@@ -6,20 +6,23 @@ typedef struct Sphere
 	uchar3 color;
 } Sphere;
 
+const sampler_t sampler = CLK_FILTER_NEAREST | CLK_ADDRESS_CLAMP | CLK_NORMALIZED_COORDS_FALSE;
+
 float intersection(float3 ray_o, float3 ray_d, float3 center, float radius);
 
 // SPHERE INTERSECTION
 
 __kernel void sphere_intersect(const float3 ray_o,
 							   __constant Sphere* spheres,
-							   __global const float3* rays,
+							   __read_only image2d_t rays,
 							   __global float* ts) /* the t value of the intersection between ray[pixel] and sphere[id] */
 {
+	const int2 coord_rays = (int2)(get_global_id(0), get_global_id(1));
 	ts[get_global_id(2) +
 	   get_global_id(0) * get_global_size(2) +
 	   get_global_id(1) * get_global_size(2) * get_global_size(0)]
 	   = intersection(ray_o,
-					  rays[get_global_id(0) + get_global_id(1) * get_global_size(0)],
+					  read_imagef(rays, sampler, coord_rays).xyz,
 					  spheres[get_global_id(2)].pos,
 					  spheres[get_global_id(2)].radius);
 }

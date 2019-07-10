@@ -44,7 +44,7 @@ private:
 	cl::NDRange local_work_spheres = cl::NDRange(16, 16, 1);
 
 	cl::Buffer cl_spheres;
-	cl::Buffer cl_rays;
+	cl::Image2D cl_rays;
 	cl::Buffer cl_sphere_t; // sphere intersection t values
 	cl::Buffer cl_output;
 

@@ -1,6 +1,8 @@
 #pragma once
 // the different player inputs (set by the Interface class)
 
+// TODO replace with (1 << 0) (1 << 1) (1 << 2) ...
+
 enum CD_INPUTS {
 	QUIT		= 0x0001,
 	FORWARD		= 0x0002,

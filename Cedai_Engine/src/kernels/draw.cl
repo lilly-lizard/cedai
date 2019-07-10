@@ -11,6 +11,8 @@ typedef struct Sphere
 #define AMBIENT 0.4f
 #define LIGHT_STEP 0.2f
 
+const sampler_t sampler = CLK_FILTER_NEAREST | CLK_ADDRESS_CLAMP | CLK_NORMALIZED_COORDS_FALSE;
+
 float diffuse(float3 normal, float3 intersection, float3 light);
 float ceiling(float value, float multiple);
 uchar3 draw_background(float3 ray_d);
@@ -20,14 +22,14 @@ uchar3 draw_background(float3 ray_d);
 __kernel void draw(const float3 ray_o,
 				   __constant Sphere* spheres,
 				   const int sphere_count, const int light_count,
-				   __global const float3* rays,
+				   __read_only image2d_t rays,
 				   __global const float* ts,
 				   __global uchar4* output)  /* rgb [0 - 255] */
 {
 	const uint work_item_id = get_global_id(0) + get_global_id(1) * get_global_size(0);
 	const uint ts_work_id = get_global_id(0) * (sphere_count + light_count)
 						  + get_global_id(1) * (sphere_count + light_count) * get_global_size(0);
-	const float3 ray_d = rays[work_item_id];
+	const float3 ray_d = read_imagef(rays, sampler, (int2)(get_global_id(0), get_global_id(1))).xyz;
 
 	// check for intersections
 	uchar3 color = (uchar3)(0, 0, 0);

@@ -64,7 +64,15 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(Sphere), light_count * sizeof(Sphere), cpu_lights);
 
 	// inter-kernel buffers
-	cl_rays = cl::Buffer(context, CL_MEM_READ_WRITE, image_width * image_height * sizeof(cl_float3));
+	cl_int result;
+	cl::ImageFormat ray_format = { CL_RGBA, CL_FLOAT };
+	cl_rays = cl::Image2D(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, ray_format,
+		image_width, image_height, 0, NULL, &result);
+	if (result) CD_ERROR("Error during cl_rays creation result: ({})", result);
+	//cl::ImageFormat sphere_format = { CL_INTENSITY, CL_FLOAT };
+	//cl_sphere_t = cl::Image3D(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, sphere_format,
+	//	image_width, image_height, sphere_count + light_count, 0, NULL, &result);
+	//if (result) CD_ERROR("Error during cl_sphere_t creation result: ({})", result);
 	cl_sphere_t = cl::Buffer(context, CL_MEM_READ_WRITE, image_width * image_height * (sphere_count + light_count) * sizeof(cl_float));
 
 	// output image
@@ -244,4 +252,6 @@ allocate local mem: http://www.openclblog.com/2014/10/allocating-local-memory.ht
 buffer vs image: https://stackoverflow.com/questions/9903855/buffer-object-and-image-buffer-object-in-opencl
 buffer image local: https://community.amd.com/thread/169203
 global to local: https://stackoverflow.com/questions/17724836/how-do-i-make-a-strided-copy-from-global-to-local-memory
+
+intensity write: https://www.khronos.org/registry/OpenCL/sdk/1.0/docs/man/xhtml/write_image.html
 */
