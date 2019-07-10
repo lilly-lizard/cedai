@@ -45,7 +45,7 @@ private:
 
 	cl::Buffer cl_spheres;
 	cl::Image2D cl_rays;
-	cl::Buffer cl_sphere_t; // sphere intersection t values
+	cl::Image2DArray cl_sphere_t; // sphere intersection t values
 	cl::Buffer cl_output;
 
 	cl_float16 cl_view;

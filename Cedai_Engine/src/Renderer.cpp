@@ -68,12 +68,17 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	cl::ImageFormat ray_format = { CL_RGBA, CL_FLOAT };
 	cl_rays = cl::Image2D(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, ray_format,
 		image_width, image_height, 0, NULL, &result);
-	if (result) CD_ERROR("Error during cl_rays creation result: ({})", result);
-	//cl::ImageFormat sphere_format = { CL_INTENSITY, CL_FLOAT };
-	//cl_sphere_t = cl::Image3D(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, sphere_format,
-	//	image_width, image_height, sphere_count + light_count, 0, NULL, &result);
-	//if (result) CD_ERROR("Error during cl_sphere_t creation result: ({})", result);
-	cl_sphere_t = cl::Buffer(context, CL_MEM_READ_WRITE, image_width * image_height * (sphere_count + light_count) * sizeof(cl_float));
+	if (result) {
+		CD_ERROR("Error during cl_rays creation result: ({})", result);
+		throw std::runtime_error("failed image buffer creation");
+	}
+	cl::ImageFormat sphere_format = { CL_LUMINANCE, CL_FLOAT };
+	cl_sphere_t = cl::Image2DArray(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, sphere_format,
+		sphere_count + light_count, image_width, image_height, 0, 0, NULL, &result);
+	if (result) {
+		CD_ERROR("Error during cl_sphere_t creation result: ({})", result);
+		throw std::runtime_error("failed image buffer creation");
+	}
 
 	// output image
 	cl_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_uchar4));

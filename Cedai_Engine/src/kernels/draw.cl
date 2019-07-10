@@ -23,13 +23,11 @@ __kernel void draw(const float3 ray_o,
 				   __constant Sphere* spheres,
 				   const int sphere_count, const int light_count,
 				   __read_only image2d_t rays,
-				   __global const float* ts,
+				   __read_only image2d_array_t ts,
 				   __global uchar4* output)  /* rgb [0 - 255] */
 {
-	const uint work_item_id = get_global_id(0) + get_global_id(1) * get_global_size(0);
-	const uint ts_work_id = get_global_id(0) * (sphere_count + light_count)
-						  + get_global_id(1) * (sphere_count + light_count) * get_global_size(0);
 	const float3 ray_d = read_imagef(rays, sampler, (int2)(get_global_id(0), get_global_id(1))).xyz;
+	int4 coord_ts = (int4)(get_global_id(0), get_global_id(1), 0, 0);
 
 	// check for intersections
 	uchar3 color = (uchar3)(0, 0, 0);
@@ -39,7 +37,8 @@ __kernel void draw(const float3 ray_o,
 
 	// spheres
 	for (int s = 0; s < sphere_count; s++) {
-		t = ts[s + ts_work_id];
+		coord_ts.z = s;
+		t = read_imagef(ts, sampler, coord_ts).x;
 		if (0 < t && t < min_t) {
 			color_found = true;
 			min_t = t;
@@ -54,7 +53,8 @@ __kernel void draw(const float3 ray_o,
 
 	// lights
 	for (int l = sphere_count; l < sphere_count + light_count; l++) {
-		t = ts[l + ts_work_id];
+		coord_ts.z = l;
+		t = read_imagef(ts, sampler, coord_ts).x;
 		if (0 < t && t < min_t) {
 			color_found = true;
 			min_t = t;
@@ -63,7 +63,7 @@ __kernel void draw(const float3 ray_o,
 
 	if (!color_found)
 		color = draw_background(ray_d);
-	output[work_item_id] = (uchar4)(color, 0);
+	output[get_global_id(0) + get_global_id(1) * get_global_size(0)] = (uchar4)(color, 0);
 }
 
 // HELPER FUNCTIONS

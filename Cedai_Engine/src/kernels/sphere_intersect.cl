@@ -15,16 +15,16 @@ float intersection(float3 ray_o, float3 ray_d, float3 center, float radius);
 __kernel void sphere_intersect(const float3 ray_o,
 							   __constant Sphere* spheres,
 							   __read_only image2d_t rays,
-							   __global float* ts) /* the t value of the intersection between ray[pixel] and sphere[id] */
+							   __write_only image2d_array_t ts) /* the t value of the intersection between ray[pixel] and sphere[id] */
 {
+	const int4 coord_ts = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
 	const int2 coord_rays = (int2)(get_global_id(0), get_global_id(1));
-	ts[get_global_id(2) +
-	   get_global_id(0) * get_global_size(2) +
-	   get_global_id(1) * get_global_size(2) * get_global_size(0)]
-	   = intersection(ray_o,
-					  read_imagef(rays, sampler, coord_rays).xyz,
-					  spheres[get_global_id(2)].pos,
-					  spheres[get_global_id(2)].radius);
+
+	const float t = intersection(ray_o,
+								 read_imagef(rays, sampler, coord_rays).xyz,
+								 spheres[get_global_id(2)].pos,
+								 spheres[get_global_id(2)].radius);
+	write_imagef(ts, coord_ts, t);
 }
 
 float intersection(float3 ray_o, float3 ray_d, float3 center, float radius) {
