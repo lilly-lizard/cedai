@@ -1,4 +1,4 @@
-// TODO copy rays buffer data to local memory for work groups of multiple spheres
+// TODO copy spheres data to draw local memory
 // TODO work with half data type in kernels
 // TODO convert intermediate buffers to images
 
@@ -102,11 +102,12 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 
 	/* drawKernel arg 0 = view position */
 	drawKernel.setArg(1, cl_spheres);
-	drawKernel.setArg(2, sphere_count);
-	drawKernel.setArg(3, light_count);
-	drawKernel.setArg(4, cl_rays);
-	drawKernel.setArg(5, cl_sphere_t);
-	drawKernel.setArg(6, cl_output);
+	drawKernel.setArg(2, (sphere_count + light_count) * sizeof(Sphere), NULL);
+	drawKernel.setArg(3, sphere_count);
+	drawKernel.setArg(4, light_count);
+	drawKernel.setArg(5, cl_rays);
+	drawKernel.setArg(6, cl_sphere_t);
+	drawKernel.setArg(7, cl_output);
 
 	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
 	int x = 16;
@@ -259,4 +260,5 @@ buffer image local: https://community.amd.com/thread/169203
 global to local: https://stackoverflow.com/questions/17724836/how-do-i-make-a-strided-copy-from-global-to-local-memory
 
 intensity write: https://www.khronos.org/registry/OpenCL/sdk/1.0/docs/man/xhtml/write_image.html
+async_work_group_copy struct: https://stackoverflow.com/questions/37981455/using-async-work-group-copy-with-a-custom-data-type
 */

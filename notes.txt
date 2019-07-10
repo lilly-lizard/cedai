@@ -41,4 +41,6 @@ packet queue depth: https://software.intel.com/en-us/vtune-amplifier-help-window
 vulkan, 640 x 480, single comp - 91
 spheres, lighting, 640 x 480, SDL_LockTexture and memcpy - 129
 ray_gen and general, ", optimisations, commit f5ad2b6 - 153
-ray_gen sphere and draw, more optimisations,  0c2579c - 70
+ray_gen sphere and draw, more optimisations, 0c2579c - 70
+converted rays and ts to images, 09423e8 - 97
+copy spheres data from global to constant in draw - 99

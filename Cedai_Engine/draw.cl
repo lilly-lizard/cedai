@@ -20,17 +20,12 @@ uchar3 draw_background(float3 ray_d);
 // DRAW
 
 __kernel void draw(const float3 ray_o,
-				   __global Sphere* spheres,
-				   __local Sphere* spheres_local,
+				   __constant Sphere* spheres,
 				   const int sphere_count, const int light_count,
 				   __read_only image2d_t rays,
 				   __read_only image2d_array_t ts,
 				   __global uchar4* output)  /* rgb [0 - 255] */
 {
-	const size_t size_spheres = (sphere_count + light_count) * sizeof(Sphere);
-	event_t copy_event = async_work_group_copy((__local char *)spheres_local, (__global char *)spheres, size_spheres, 0);
-	wait_group_events(1, &copy_event);
-
 	const float3 ray_d = read_imagef(rays, sampler, (int2)(get_global_id(0), get_global_id(1))).xyz;
 	int4 coord_ts = (int4)(get_global_id(0), get_global_id(1), 0, 0);
 
@@ -51,9 +46,9 @@ __kernel void draw(const float3 ray_o,
 			float light = 0;
 			float3 intersection = ray_o + t * ray_d;
 			for (int l = sphere_count; l < sphere_count + light_count; l++)
-				light += diffuse(intersection - spheres_local[s].pos, intersection, spheres_local[l].pos);
+				light += diffuse(intersection - spheres[s].pos, intersection, spheres[l].pos);
 			light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
-			color = convert_uchar3(convert_float3(spheres_local[s].color) * light);
+			color = convert_uchar3(convert_float3(spheres[s].color) * light);
 	}	}
 
 	// lights
@@ -63,7 +58,7 @@ __kernel void draw(const float3 ray_o,
 		if (0 < t && t < min_t) {
 			color_found = true;
 			min_t = t;
-			color = spheres_local[l].color;
+			color = spheres[l].color;
 	}	}
 
 	if (!color_found)
