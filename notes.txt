@@ -32,6 +32,10 @@ draw to screen
 https://stackoverflow.com/questions/20753726/rendering-pixels-from-array-of-rgb-values-in-sdl-1-2
 https://stackoverflow.com/questions/20579658/how-to-draw-pixels-in-sdl-2-0
 
+-------   vtune
+
+packet queue depth: https://software.intel.com/en-us/vtune-amplifier-help-window-summary-gpu-compute-media-hotspots
+
 -------   fps recording: (release, highest stable average)
 
 vulkan, 640 x 480, single comp - 91

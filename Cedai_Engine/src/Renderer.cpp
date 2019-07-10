@@ -1,3 +1,6 @@
+// TODO copy rays buffer data to local memory for work groups of multiple spheres
+// TODO work with half data type in kernels
+// TODO convert intermediate buffers to images
 
 #include "Renderer.h"
 #include "tools/Log.h"
@@ -8,6 +11,10 @@
 #define RAY_GEN_PATH "src/kernels/ray_gen.cl"
 #define SPHERE_PATH "src/kernels/sphere_intersect.cl"
 #define DRAW_PATH "src/kernels/draw.cl"
+
+#define RAY_GEN_KERNEL "ray_gen"
+#define SPHERE_KERNEL "sphere_intersect"
+#define DRAW_KERNEL "draw"
 
 void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	CD_INFO("Initialising renderer...");
@@ -23,7 +30,6 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 		std::cout << "~ \t" << i + 1 << ": " << platforms[i].getInfo<CL_PLATFORM_NAME>() << std::endl;
 
 	// Pick one platform
-	cl::Platform platform;
 	pickPlatform(platform, platforms);
 	std::cout << "~ \n~ Using OpenCL platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
 
@@ -31,7 +37,7 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	std::vector<cl::Device> devices;
 	platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
 
-	std::cout << "~ Available OpenCL devices on this platform: " << "\n~ \n";
+	std::cout << "~ \n~ Available OpenCL devices on this platform: " << "\n~ \n";
 	for (int i = 0; i < devices.size(); i++) {
 		std::cout << "~ \t" << i + 1 << ": " << devices[i].getInfo<CL_DEVICE_NAME>() << std::endl;
 		std::cout << "~ \t\tMax compute units: " << devices[i].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
@@ -41,16 +47,14 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	// Pick one device
 	pickDevice(device, devices);
 	std::cout << "~ \n~ Using OpenCL device: \t" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
-	std::cout << "~ \t\t\tMax compute units: " << device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
-	std::cout << "~ \t\t\tMax work group size: " << device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << std::endl;
 
 	// Create an OpenCL context and command queue on that device.
 	context = cl::Context(device);
-	queue = cl::CommandQueue(context, device);
+	queue = cl::CommandQueue(context, device, 0);
 
-	createKernel(RAY_GEN_PATH, rayGenKernel, "entry");
-	createKernel(SPHERE_PATH, sphereKernel, "entry");
-	createKernel(DRAW_PATH, drawKernel, "entry");
+	createKernel(RAY_GEN_PATH, rayGenKernel, RAY_GEN_KERNEL);
+	createKernel(SPHERE_PATH, sphereKernel, SPHERE_KERNEL);
+	createKernel(DRAW_PATH, drawKernel, DRAW_KERNEL);
 
 	// spheres and lights
 	createSpheres();
@@ -92,14 +96,15 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	drawKernel.setArg(6, cl_output);
 
 	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
-	global_work_pixels	= cl::NDRange(image_width, image_height);
-	local_work_pixels	= cl::NDRange(image_width  % 16 == 0 ? 16 : 1,
-									  image_height % 16 == 0 ? 16 : 1);
+	int x = 16;
+	int y = 16;
+	int z = 1;
 
+	global_work_pixels	= cl::NDRange(image_width, image_height);
+	//local_work_pixels	= cl::NDRange(x, y);
+	
 	global_work_spheres = cl::NDRange(image_width, image_height, sphere_count + light_count);
-	local_work_spheres  = cl::NDRange(image_width  % 16 == 0 ? 16 : 1,
-									  image_height % 16 == 0 ? 16 : 1,
-									  1);
+	//local_work_spheres  = cl::NDRange(x, y, z);
 }
 
 void Renderer::render(uint8_t *pixels, const float view[4][4]) {
@@ -115,14 +120,12 @@ void Renderer::render(uint8_t *pixels, const float view[4][4]) {
 
 	// launch the kernels
 	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels);
-	queue.finish();
 	queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres);
-	queue.finish();
 	queue.enqueueNDRangeKernel(drawKernel, NULL, global_work_pixels, local_work_pixels);
-	queue.finish();
 
 	// read and copy OpenCL output to CPU
 	queue.enqueueReadBuffer(cl_output, CL_TRUE, 0, image_width * image_height * sizeof(cl_uchar4), cpu_output);
+	queue.finish();
 
 	for (int p = 0; p < image_width * image_height; p++) {
 		pixels[p * 4] = 0; // A
@@ -143,6 +146,8 @@ void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& dev
 	else {
 		for (cl::Device dev : devices) {
 			if (dev.getInfo< CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU) {
+				// CL_DEVICE_TYPE_GPU 16 x 16 x 1 = 256
+				// CL_DEVICE_TYPE_CPU 128 x 60 x 1 < 8192
 				device = dev;
 				return;
 			}
@@ -169,7 +174,7 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	const char* kernel_source = source.c_str();
 
 	// Create an OpenCL program by performing runtime source compilation for the chosen device
-	program = cl::Program(context, kernel_source);
+	cl::Program program = cl::Program(context, kernel_source);
 	cl_int result = program.build({ device });
 	if (result) CD_ERROR("Error during openCL compilation {} error: ({})", filename, result);
 	if (result == CL_BUILD_PROGRAM_FAILURE) printErrorLog(program, device);
@@ -228,9 +233,15 @@ void Renderer::cleanUp() {
 /*
 notes:
 cpp reference: https://github.khronos.org/OpenCL-CLHPP/
+vector data types: http://www.informit.com/articles/article.aspx?p=1732873&seqNum=3
 work group info: https://stackoverflow.com/questions/3957125/questions-about-global-and-local-work-size
 
 CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS = 3
 CL_DEVICE_MAX_WORK_ITEM_SIZES = {256, 256, 256}
-CL_DEVICE_MAX_WORK_GROUP_SIZE = 256
+CL_DEVICE_MAX_WORK_GROUP_SIZE = 256 (>= product of work item sizes)
+
+allocate local mem: http://www.openclblog.com/2014/10/allocating-local-memory.html
+buffer vs image: https://stackoverflow.com/questions/9903855/buffer-object-and-image-buffer-object-in-opencl
+buffer image local: https://community.amd.com/thread/169203
+global to local: https://stackoverflow.com/questions/17724836/how-do-i-make-a-strided-copy-from-global-to-local-memory
 */

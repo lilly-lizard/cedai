@@ -17,12 +17,12 @@ uchar3 draw_background(float3 ray_d);
 
 // DRAW
 
-__kernel void entry(const float3 ray_o,
-					__constant Sphere* spheres,
-					const int sphere_count, const int light_count,
-					__global float3* rays,
-					__global float* ts,
-					__global uchar4* output)  /* rgb [0 - 255] */
+__kernel void draw(const float3 ray_o,
+				   __constant Sphere* spheres,
+				   const int sphere_count, const int light_count,
+				   __global const float3* rays,
+				   __global const float* ts,
+				   __global uchar4* output)  /* rgb [0 - 255] */
 {
 	const uint work_item_id = get_global_id(0) + get_global_id(1) * get_global_size(0);
 	const uint ts_work_id = get_global_id(0) * (sphere_count + light_count)
@@ -47,7 +47,7 @@ __kernel void entry(const float3 ray_o,
 			for (int l = sphere_count; l < sphere_count + light_count; l++)
 				light += diffuse(intersection - spheres[s].pos, intersection, spheres[l].pos);
 			light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
-			color = (uchar3)(spheres[s].color.x * light, spheres[s].color.y * light, spheres[s].color.z * light);
+			color = convert_uchar3(convert_float3(spheres[s].color) * light);
 	}	}
 
 	// lights
@@ -62,9 +62,6 @@ __kernel void entry(const float3 ray_o,
 	if (!color_found)
 		color = draw_background(ray_d);
 	output[work_item_id] = (uchar4)(color, 0);
-
-	//const uint work_item_id = get_global_id(0) + get_global_id(1) * get_global_size(0);
-	//output[work_item_id] = (uchar4)(draw_background(rays[work_item_id]), 0);
 }
 
 // HELPER FUNCTIONS
@@ -85,5 +82,5 @@ uchar3 draw_background(float3 ray_d)
 	float offset = 0.3f;
 	float mult = 0.4f;
 	float3 color = fabs(ray_d) * mult + offset;
-	return (uchar3)(color.x * 255, color.y * 255, color.z * 255);
+	return convert_uchar3(color * 255);
 }

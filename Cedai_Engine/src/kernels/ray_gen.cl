@@ -1,8 +1,8 @@
 
 // RAY GEN
 
-__kernel void entry(const float16 view,
-					__global float3* rays)
+__kernel void ray_gen(const float16 view,
+					  __global float3* rays)
 {
 	const uint x_coord = get_global_id(0);
 	const uint y_coord = get_global_id(1);

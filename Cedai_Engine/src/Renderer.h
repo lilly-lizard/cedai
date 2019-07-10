@@ -27,7 +27,7 @@ private:
 
 	const int foo = 0;
 
-	cl::Program program;
+	cl::Platform platform;
 	cl::Device device;
 	cl::Context context;
 	cl::CommandQueue queue;
@@ -39,9 +39,9 @@ private:
 	int image_width;
 	int image_height;
 	cl::NDRange global_work_pixels;
-	cl::NDRange local_work_pixels;
+	cl::NDRange local_work_pixels = cl::NDRange(16, 16);
 	cl::NDRange global_work_spheres;
-	cl::NDRange local_work_spheres;
+	cl::NDRange local_work_spheres = cl::NDRange(16, 16, 1);
 
 	cl::Buffer cl_spheres;
 	cl::Buffer cl_rays;

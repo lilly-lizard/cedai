@@ -21,6 +21,7 @@ int main() {
 		App.Run();
 	} catch (const std::exception& e) {
 		std::cerr << e.what() << std::endl;
+		system("PAUSE");
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -37,7 +38,6 @@ void Cedai::Run() {
 void Cedai::init() {
 	static uint8_t* const pixels_temp = new uint8_t[screen_width * screen_height * 4] { 0 }; // to ensure the address of pixels_temp doesn't get changed by the opencl library
 	pixels = pixels_temp;
-	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
 
 	Log::Init();
 	CD_INFO("Logger initialised");
@@ -48,6 +48,8 @@ void Cedai::init() {
 	interface.init(screen_width, screen_height);
 	CD_INFO("Interface initialised.");
 
+	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
+	timePrev = high_resolution_clock::now();
 	CD_INFO("Engine initialised.");
 }
 
@@ -76,7 +78,7 @@ void Cedai::cleanUp() {
 
 void Cedai::processInputs() {
 	// get time difference
-	float timeDif = duration<float, seconds::period>(high_resolution_clock::now() - timePrev).count();
+	double timeDif = duration<double, seconds::period>(high_resolution_clock::now() - timePrev).count();
 	timePrev = high_resolution_clock::now();
 
 	// get inputs from window interface
