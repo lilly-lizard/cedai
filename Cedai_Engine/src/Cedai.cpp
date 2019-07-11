@@ -63,7 +63,7 @@ void Cedai::loop() {
 		processInputs();
 
 		// render and draw
-		//renderer.render(view);
+		renderer.render(view);
 		interface.draw();
 		printFPS();
 	}
