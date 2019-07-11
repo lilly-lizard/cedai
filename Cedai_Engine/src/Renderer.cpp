@@ -311,4 +311,5 @@ intel opencl reading material: https://software.intel.com/en-us/iocl-opg
 
 context creation: http://sa10.idav.ucdavis.edu/docs/sa10-dg-opencl-gl-interop.pdf
 TODO: use opengl event: https://software.intel.com/en-us/articles/sharing-surfaces-between-opencl-and-opengl-43-on-intel-processor-graphics-using-implicit
+cl_unorm_8: https://stackoverflow.com/questions/31718492/meaning-of-cl-unorm-int8-for-cl-image-format-image-channel-data-type-and-its-di
 */

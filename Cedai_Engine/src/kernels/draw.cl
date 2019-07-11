@@ -69,7 +69,7 @@ __kernel void draw(const float3 ray_o,
 
 	if (!color_found)
 		color = draw_background(ray_d);
-	write_imageui(output, (int2)(get_global_id(0), get_global_id(1)), (uint4)(convert_uint3(color), 0));
+	write_imageui(output, (int2)(get_global_id(0), get_global_id(1)), (uint4)(255, 255, 0, 0));
 }
 
 // HELPER FUNCTIONS

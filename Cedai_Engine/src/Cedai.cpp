@@ -43,8 +43,8 @@ void Cedai::init() {
 	interface.init(screen_width, screen_height);
 	CD_INFO("Interface initialised.");
 
-	//renderer.init(screen_width, screen_height, &interface);
-	//CD_INFO("Renderer initialised.");
+	renderer.init(screen_width, screen_height, &interface);
+	CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
 	timePrev = high_resolution_clock::now();
@@ -70,7 +70,7 @@ void Cedai::loop() {
 }
 
 void Cedai::cleanUp() {
-	//renderer.cleanUp();
+	renderer.cleanUp();
 	interface.cleanUp();
 }
 

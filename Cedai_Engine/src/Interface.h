@@ -4,6 +4,7 @@
 
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
+
 #include <map>
 #include <string>
 
@@ -47,4 +48,5 @@ private:
 	void createRenderProgram();
 
 	void checkErrors(std::string desc);
+	std::string readFile(const std::string& filename);
 };

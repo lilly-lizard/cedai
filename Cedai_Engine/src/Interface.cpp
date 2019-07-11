@@ -4,6 +4,10 @@
 #include "tools/Log.h"
 
 #include <iostream>
+#include <fstream>
+
+#define FRAG_PATH "src/shaders/shader.frag"
+#define VERT_PATH "src/shaders/shader.vert"
 
 // PUBLIC FUNCTIONS
 
@@ -119,10 +123,10 @@ void Interface::createTexture() {
 	//glActiveTexture(GL_TEXTURE0);
 	texTarget = GL_TEXTURE_2D;
 	glBindTexture(texTarget, texHandle);
-	//glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	//glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	
 	pixels = new uint8_t[screen_width * screen_height * 4];
 	for (int x = 0; x < screen_width; x++) {
@@ -133,10 +137,10 @@ void Interface::createTexture() {
 			pixels[x * 4 + y * 4 * 640 + 3] = 0;
 		}
 	}
-	glTexImage2D(texTarget, 0, GL_RGBA8, screen_width, screen_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glTexImage2D(texTarget, 0, GL_RGBA8UI, screen_width, screen_height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, pixels);
 
 	// TODO: is this needed?
-	//glBindImageTexture(0, texHandle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+	//glBindImageTexture(0, texHandle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA_INTEGER);
 	checkErrors("texture gen");
 }
 
@@ -145,28 +149,14 @@ void Interface::createRenderProgram() {
 	GLuint vp = glCreateShader(GL_VERTEX_SHADER);
 	GLuint fp = glCreateShader(GL_FRAGMENT_SHADER);
 
-	const char* vpSrc[] = {
-		"#version 430\n",
-		"in vec2 pos;\
-		 out vec2 texCoord;\
-		 void main() {\
-			 texCoord = pos*0.5f + 0.5f;\
-			 gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);\
-		 }"
-	};
+	std::string vpSrc = readFile(VERT_PATH);
+	std::string fpSrc = readFile(FRAG_PATH);
 
-	const char* fpSrc[] = {
-		"#version 430\n",
-		"uniform usampler2D srcTex;\
-		 in vec2 texCoord;\
-		 out uvec4 color;\
-		 void main() {\
-			 color = texture(srcTex, texCoord);\
-		 }"
-	};
+	GLchar const* vpString[] = { vpSrc.c_str() };
+	GLchar const* fpString[] = { fpSrc.c_str() };
 
-	glShaderSource(vp, 2, vpSrc, NULL);
-	glShaderSource(fp, 2, fpSrc, NULL);
+	glShaderSource(vp, 1, vpString, NULL);
+	glShaderSource(fp, 1, fpString, NULL);
 
 	glCompileShader(vp);
 	int rvalue;
@@ -227,7 +217,28 @@ void Interface::checkErrors(std::string desc) {
 		e = glGetError();
 	}
 	if (error_found)
-		throw std::runtime_error("opengl setup error");
+		throw std::runtime_error("opengl error");
+}
+
+std::string Interface::readFile(const std::string& filename) {
+	// open file
+	std::ifstream file(filename, std::ios::ate | std::ios::binary); // ate: read from the end of the file; binary: file type
+	if (!file.is_open()) {
+		CD_ERROR("Unable to open file: " + filename);
+		throw std::runtime_error("~ failed to open file!");
+	}
+
+	// allocate a buffer
+	size_t fileSize = (size_t)file.tellg(); // read position = file size
+	std::string buffer(fileSize, ' ');
+
+	// go back to beginning and read all bytes at once
+	file.seekg(0);
+	file.read(buffer.data(), fileSize);
+
+	// close and return bytes
+	file.close();
+	return buffer;
 }
 
 /*
@@ -237,4 +248,6 @@ opencl with opengl: https://software.intel.com/en-us/articles/opencl-and-opengl-
 which core profile loader? https://www.reddit.com/r/opengl/comments/3m28x1/glew_vs_glad/
 gl3w setup: https://stackoverflow.com/questions/22436937/opengl-with-gl3w
 gl3w reddit: https://www.reddit.com/r/opengl/comments/3m28x1/glew_vs_glad/
+
+glTexImage2D integer format: https://stackoverflow.com/questions/11278928/opengl-2-texture-internal-formats-gl-rgb8i-gl-rgb32ui-etc
 */
