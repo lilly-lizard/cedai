@@ -1,3 +1,4 @@
+#pragma OPENCL EXTENSION cl_khr_gl_sharing : enable
 
 // RAY GEN
 

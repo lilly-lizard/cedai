@@ -36,17 +36,15 @@ void Cedai::Run() {
 }
 
 void Cedai::init() {
-	static uint8_t* const pixels_temp = new uint8_t[screen_width * screen_height * 4] { 0 }; // to ensure the address of pixels_temp doesn't get changed by the opencl library
-	pixels = pixels_temp;
 
 	Log::Init();
 	CD_INFO("Logger initialised");
 
-	renderer.init(screen_width, screen_height, pixels);
-	CD_INFO("Renderer initialised.");
-
 	interface.init(screen_width, screen_height);
 	CD_INFO("Interface initialised.");
+
+	//renderer.init(screen_width, screen_height, &interface);
+	//CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
 	timePrev = high_resolution_clock::now();
@@ -56,23 +54,23 @@ void Cedai::init() {
 void Cedai::loop() {
 	bool quit = false;
 
-	while (!quit) {
+	while (!quit && !interface.WindowCloseCheck()) {
 
 		// input handling
-		interface.processEvents();
+		interface.PollEvents();
+		inputs = interface.GetKeyInputs();
+		quit = inputs & CD_INPUTS::ESC;
 		processInputs();
-		quit = (inputs & CD_INPUTS::QUIT) || (inputs & CD_INPUTS::ESC);
 
 		// render and draw
-		renderer.render(pixels, view);
-		interface.draw(pixels);
+		//renderer.render(view);
+		interface.draw();
 		printFPS();
 	}
 }
 
 void Cedai::cleanUp() {
-	delete[] pixels;
-	renderer.cleanUp();
+	//renderer.cleanUp();
 	interface.cleanUp();
 }
 
@@ -81,10 +79,9 @@ void Cedai::processInputs() {
 	double timeDif = duration<double, seconds::period>(high_resolution_clock::now() - timePrev).count();
 	timePrev = high_resolution_clock::now();
 
-	// get inputs from window interface
-	inputs = interface.getKeyInputs();
-	long mouseMovement[2];
-	interface.getMouseChange(mouseMovement[0], mouseMovement[1]);
+	// get mouse inputs from window interface
+	double mouseMovement[2];
+	interface.GetMouseChange(mouseMovement[0], mouseMovement[1]);
 
 	// LOOK
 

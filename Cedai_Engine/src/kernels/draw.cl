@@ -1,3 +1,4 @@
+#pragma OPENCL EXTENSION cl_khr_gl_sharing : enable
 
 typedef struct Sphere
 {
@@ -25,10 +26,10 @@ __kernel void draw(const float3 ray_o,
 				   const int sphere_count, const int light_count,
 				   __read_only image2d_t rays,
 				   __read_only image2d_array_t ts,
-				   __global uchar4* output)  /* rgb [0 - 255] */
+				   __write_only image2d_t output)  /* rgb [0 - 255] */
 {
-	const size_t size_spheres = (sphere_count + light_count) * sizeof(Sphere);
-	event_t copy_event = async_work_group_copy((__local char *)spheres_local, (__global char *)spheres, size_spheres, 0);
+	event_t copy_event = async_work_group_copy((__local char *)spheres_local, (__global char *)spheres,
+		(sphere_count + light_count) * sizeof(Sphere), 0);
 	wait_group_events(1, &copy_event);
 
 	const float3 ray_d = read_imagef(rays, sampler, (int2)(get_global_id(0), get_global_id(1))).xyz;
@@ -68,7 +69,7 @@ __kernel void draw(const float3 ray_o,
 
 	if (!color_found)
 		color = draw_background(ray_d);
-	output[get_global_id(0) + get_global_id(1) * get_global_size(0)] = (uchar4)(color, 0);
+	write_imageui(output, (int2)(get_global_id(0), get_global_id(1)), (uint4)(convert_uint3(color), 0));
 }
 
 // HELPER FUNCTIONS

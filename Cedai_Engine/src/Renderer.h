@@ -1,8 +1,9 @@
 #pragma once
 
-#include <vector>
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
-#include <CL\cl.hpp>
+#include <CL/cl.hpp>
+#include <vector>
+#include <string>
 
 // the total size of a struct must be a multiple of float4 (cl_float3 is the size of float4)
 struct Sphere {
@@ -14,12 +15,14 @@ struct Sphere {
 	cl_uchar3 color;
 };
 
+class Interface;
+
 class Renderer {
 public:
 
-	void init(int image_width, int image_height, uint8_t *pixels);
+	void init(int image_width, int image_height, Interface* interface);
 
-	void render(uint8_t *pixels, const float view[4][4]);
+	void render(const float view[4][4]);
 
 	void cleanUp();
 
@@ -46,26 +49,32 @@ private:
 	cl::Buffer cl_spheres;
 	cl::Image2D cl_rays;
 	cl::Image2DArray cl_sphere_t; // sphere intersection t values
-	cl::Buffer cl_output;
+	cl::ImageGL cl_output;
 
-	cl_float16 cl_view;
-	cl_float3 cl_pos;
 	int sphere_count;
 	int light_count;
 	Sphere* cpu_spheres;
 	Sphere* cpu_lights;
-	cl_uchar4* cpu_output;
+
+	cl_float16 cl_view;
+	cl_float3 cl_pos;
+
+	void createPlatform();
+	void createDevive();
 
 	void pickPlatform(cl::Platform& platform, const std::vector<cl::Platform>& platforms);
-
 	void pickDevice(cl::Device& device, const std::vector<cl::Device>& devices);
 
-	void createKernel(const char* filename, cl::Kernel &kernel, const char* entryPoint);
+	void createContext(Interface* interface);
 
+	void createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture);
 	void createSpheres();
 	void createLights();
 
-	void printErrorLog(const cl::Program& program, const cl::Device& device);
+	void createKernels();
+	void createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint);
+	void setWorkGroups();
 
-	inline float clamp(float x) { return x < 0.0f ? 0.0f : x > 1.0f ? 1.0f : x; }
+	void checkCLError(cl_int err, std::string message);
+	void printErrorLog(const cl::Program& program, const cl::Device& device);
 };

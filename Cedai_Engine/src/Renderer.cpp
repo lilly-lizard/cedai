@@ -1,12 +1,17 @@
-// TODO copy spheres data to draw local memory
 // TODO work with half data type in kernels
 // TODO convert intermediate buffers to images
 
 #include "Renderer.h"
+#include "Interface.h"
 #include "tools/Log.h"
+
+// TODO only for windows
+#define GLFW_EXPOSE_NATIVE_WGL
+#include "GLFW/glfw3native.h"
 
 #include <iostream>
 #include <fstream>
+#include <CL/cl_gl.h>
 
 #define RAY_GEN_PATH "src/kernels/ray_gen.cl"
 #define SPHERE_PATH "src/kernels/sphere_intersect.cl"
@@ -16,11 +21,63 @@
 #define SPHERE_KERNEL "sphere_intersect"
 #define DRAW_KERNEL "draw"
 
-void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
+// PUBLIC FUNCTIONS
+
+void Renderer::init(int image_width, int image_height, Interface* interface) {
 	CD_INFO("Initialising renderer...");
 
 	this->image_width = image_width;
 	this->image_height = image_height;
+
+	createPlatform();
+	createDevive();
+
+	createContext(interface);
+	cl_int res;
+	queue = cl::CommandQueue(context, device, 0, &res);
+	checkCLError(res, "Failed openCL queue creation");
+
+	createBuffers(interface->getTexTarget(), interface->getTexHandle());
+	createKernels();
+	setWorkGroups();
+}
+
+void Renderer::render(const float view[4][4]) {
+	cl_view = {{ view[0][0], view[0][1], view[0][2], 0,
+				 view[1][0], view[1][1], view[1][2], 0,
+				 view[2][0], view[2][1], view[2][2], 0,
+				 0, 0, 0, 0 }};
+	cl_pos = {{ view[3][0], view[3][1], view[3][2] }};
+
+	rayGenKernel.setArg(0, cl_view);
+	sphereKernel.setArg(0, cl_pos);
+	drawKernel.setArg(0, cl_pos);
+
+	// launch the kernels
+	cl_int res;
+	std::vector<cl::Memory> gl_objects { cl_output };
+	res = queue.enqueueAcquireGLObjects(&gl_objects);
+	checkCLError(res, "1");
+	drawKernel.setArg(7, cl_output);
+
+	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels);
+	queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres);
+	res = queue.enqueueNDRangeKernel(drawKernel, NULL, global_work_pixels, local_work_pixels);
+	checkCLError(res, "2");
+
+	res = queue.enqueueReleaseGLObjects(&gl_objects);
+	checkCLError(res, "3");
+	queue.finish();
+}
+
+void Renderer::cleanUp() {
+	delete[] cpu_spheres;
+	delete[] cpu_lights;
+}
+
+// INIT FUNCTIONS
+
+void Renderer::createPlatform() {
 
 	// Get all available OpenCL platforms (e.g. AMD OpenCL, Nvidia CUDA, Intel OpenCL)
 	std::vector<cl::Platform> platforms;
@@ -32,6 +89,9 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	// Pick one platform
 	pickPlatform(platform, platforms);
 	std::cout << "~ \n~ Using OpenCL platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
+}
+
+void Renderer::createDevive() {
 
 	// Get available OpenCL devices on platform
 	std::vector<cl::Device> devices;
@@ -47,14 +107,45 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	// Pick one device
 	pickDevice(device, devices);
 	std::cout << "~ \n~ Using OpenCL device: \t" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+}
 
-	// Create an OpenCL context and command queue on that device.
-	context = cl::Context(device);
-	queue = cl::CommandQueue(context, device, 0);
+void Renderer::pickPlatform(cl::Platform& platform, const std::vector<cl::Platform>& platforms) {
+	platform = platforms[0];
+	return;
+}
 
-	createKernel(RAY_GEN_PATH, rayGenKernel, RAY_GEN_KERNEL);
-	createKernel(SPHERE_PATH, sphereKernel, SPHERE_KERNEL);
-	createKernel(DRAW_PATH, drawKernel, DRAW_KERNEL);
+void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& devices) {
+
+	if (devices.size() == 1) device = devices[0];
+	else {
+		for (cl::Device dev : devices) {
+			std::string extensions = dev.getInfo<CL_DEVICE_EXTENSIONS>();
+			if (dev.getInfo< CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU &&
+					extensions.find("cl_khr_gl_sharing") != std::string::npos) {
+				// CL_DEVICE_TYPE_GPU 16 x 16 x 1 = 256
+				// CL_DEVICE_TYPE_CPU 128 x 60 x 1 < 8192
+				device = dev;
+				return;
+			}
+		}
+		throw std::runtime_error("error: no suitable device found");
+	}
+}
+
+void Renderer::createContext(Interface* interface) {
+	// TODO: wgl - windows; glx - mac
+	cl_context_properties contextProps[] = {
+		CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
+		CL_GL_CONTEXT_KHR,   (cl_context_properties)glfwGetWGLContext(interface->getWindow()),	// WGL Context
+		CL_WGL_HDC_KHR,      (cl_context_properties)glfwGetWGLDC(interface->getWindow()),		// WGL HDC
+		0 };
+
+	cl_int result;
+	context = cl::Context(device, contextProps, NULL, NULL, &result);
+	checkCLError(result, "Error during context creation");
+}
+
+void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture) {
 
 	// spheres and lights
 	createSpheres();
@@ -68,29 +159,57 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	cl::ImageFormat ray_format = { CL_RGBA, CL_FLOAT };
 	cl_rays = cl::Image2D(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, ray_format,
 		image_width, image_height, 0, NULL, &result);
-	if (result) {
-		CD_ERROR("Error during cl_rays creation result: ({})", result);
-		throw std::runtime_error("failed image buffer creation");
-	}
+	checkCLError(result, "Error during cl_rays creation");
+
 	cl::ImageFormat sphere_format = { CL_LUMINANCE, CL_FLOAT };
 	cl_sphere_t = cl::Image2DArray(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, sphere_format,
 		sphere_count + light_count, image_width, image_height, 0, 0, NULL, &result);
-	if (result) {
-		CD_ERROR("Error during cl_sphere_t creation result: ({})", result);
-		throw std::runtime_error("failed image buffer creation");
-	}
+	checkCLError(result, "Error during cl_sphere_t creation");
 
 	// output image
-	cl_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, image_width * image_height * sizeof(cl_uchar4));
-	static cl_uchar4* const cpu_output_temp = new cl_uchar4[image_width * image_height]; // to ensure the address of cpu_output doesn't get changed by the opencl library
-	cpu_output = cpu_output_temp;
+	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
+	checkCLError(result, "Error during cl_output creation");
+}
 
-	void* ptr1 = (void*)pixels;
-	void* ptr2 = (void*)cpu_output;
-	if (ptr1 == ptr2) {
-		CD_ERROR("ALLOCATION ERROR - Cedai.pixels and Renderer.cpu_output are assigned to same address");
-		throw("init allocation error");
-	}
+void Renderer::createSpheres() {
+
+	sphere_count = 3;
+	cpu_spheres = new Sphere[sphere_count];
+
+	cpu_spheres[0].radius = 1.0;
+	cpu_spheres[0].position = { { 10, 3, 0 } };
+	cpu_spheres[0].color = { { 230, 128, 128 } };
+
+	cpu_spheres[1].radius = 0.5;
+	cpu_spheres[1].position = { { 4, -1, 1 } };
+	cpu_spheres[1].color = { { 255, 255, 128 } };
+
+	cpu_spheres[2].radius = 0.2;
+	cpu_spheres[2].position = { { 5, -2, -1 } };
+	cpu_spheres[2].color = { { 128, 128, 230 } };
+}
+
+void Renderer::createLights() {
+
+	light_count = 2;
+	cpu_lights = new Sphere[light_count];
+
+	cpu_lights[0].radius = 0.1;
+	cpu_lights[0].position = { { 5, 1, 2 } };
+	cpu_lights[0].color = { { 255, 255, 205 } };
+
+	cpu_lights[1].radius = 0.1;
+	cpu_lights[1].position = { { 4, -2, -2 } };
+	cpu_lights[1].color = { { 255, 255, 205 } };
+}
+
+void Renderer::createKernels() {
+
+	// TODO query opencl extension support
+
+	createKernel(RAY_GEN_PATH, rayGenKernel, RAY_GEN_KERNEL);
+	createKernel(SPHERE_PATH, sphereKernel, SPHERE_KERNEL);
+	createKernel(DRAW_PATH, drawKernel, DRAW_KERNEL);
 
 	/* rayGenKernel arg 0 = view matrix */
 	rayGenKernel.setArg(1, cl_rays);
@@ -107,70 +226,12 @@ void Renderer::init(int image_width, int image_height, uint8_t *pixels) {
 	drawKernel.setArg(4, light_count);
 	drawKernel.setArg(5, cl_rays);
 	drawKernel.setArg(6, cl_sphere_t);
-	drawKernel.setArg(7, cl_output);
-
-	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
-	int x = 16;
-	int y = 16;
-	int z = 1;
-
-	global_work_pixels	= cl::NDRange(image_width, image_height);
-	//local_work_pixels	= cl::NDRange(x, y);
-	
-	global_work_spheres = cl::NDRange(image_width, image_height, sphere_count + light_count);
-	//local_work_spheres  = cl::NDRange(x, y, z);
-}
-
-void Renderer::render(uint8_t *pixels, const float view[4][4]) {
-	cl_view = {{ view[0][0], view[0][1], view[0][2], 0,
-				 view[1][0], view[1][1], view[1][2], 0,
-				 view[2][0], view[2][1], view[2][2], 0,
-				 0, 0, 0, 0 }};
-	cl_pos = {{ view[3][0], view[3][1], view[3][2] }};
-
-	rayGenKernel.setArg(0, cl_view);
-	sphereKernel.setArg(0, cl_pos);
-	drawKernel.setArg(0, cl_pos);
-
-	// launch the kernels
-	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels);
-	queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres);
-	queue.enqueueNDRangeKernel(drawKernel, NULL, global_work_pixels, local_work_pixels);
-
-	// read and copy OpenCL output to CPU
-	queue.enqueueReadBuffer(cl_output, CL_TRUE, 0, image_width * image_height * sizeof(cl_uchar4), cpu_output);
-	queue.finish();
-
-	for (int p = 0; p < image_width * image_height; p++) {
-		pixels[p * 4] = 0; // A
-		pixels[p * 4 + 1] = cpu_output[p].s[2]; // B
-		pixels[p * 4 + 2] = cpu_output[p].s[1]; // G
-		pixels[p * 4 + 3] = cpu_output[p].s[0]; // R
-	}
-}
-
-void Renderer::pickPlatform(cl::Platform& platform, const std::vector<cl::Platform>& platforms) {
-	platform = platforms[0];
-	return;
-}
-
-void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& devices) {
-
-	if (devices.size() == 1) device = devices[0];
-	else {
-		for (cl::Device dev : devices) {
-			if (dev.getInfo< CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU) {
-				// CL_DEVICE_TYPE_GPU 16 x 16 x 1 = 256
-				// CL_DEVICE_TYPE_CPU 128 x 60 x 1 < 8192
-				device = dev;
-				return;
-			}
-		}
-		throw std::runtime_error("error: no suitable device found");
-	}
+	cl_int res = drawKernel.setArg(7, cl_output);
+	checkCLError(res, "0");
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
+
 	// Convert the OpenCL source code to a string
 	std::string source;
 	std::ifstream file(filename);
@@ -197,36 +258,24 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	kernel = cl::Kernel(program, entryPoint);
 }
 
-void Renderer::createSpheres() {
+void Renderer::setWorkGroups() {
 
-	sphere_count = 3;
-	cpu_spheres = new Sphere[sphere_count];
+	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
+	// int x = 16;
+	// int y = 16;
+	// int z = 1;
 
-	cpu_spheres[0].radius	= 1.0;
-	cpu_spheres[0].position = {{ 10, 3, 0 }};
-	cpu_spheres[0].color	= {{ 230, 128, 128 }};
-
-	cpu_spheres[1].radius	= 0.5;
-	cpu_spheres[1].position = {{ 4, -1, 1 }};
-	cpu_spheres[1].color	= {{ 255, 255, 128 }};
-
-	cpu_spheres[2].radius	= 0.2;
-	cpu_spheres[2].position = {{ 5, -2, -1 }};
-	cpu_spheres[2].color	= {{ 128, 128, 230 }};
+	global_work_pixels = cl::NDRange(image_width, image_height);
+	//local_work_pixels	= cl::NDRange(x, y);
+	global_work_spheres = cl::NDRange(image_width, image_height, sphere_count + light_count);
+	//local_work_spheres  = cl::NDRange(x, y, z);
 }
 
-void Renderer::createLights() {
-
-	light_count = 2;
-	cpu_lights = new Sphere[light_count];
-
-	cpu_lights[0].radius = 0.1;
-	cpu_lights[0].position = { { 5, 1, 2 } };
-	cpu_lights[0].color = { { 255, 255, 205 } };
-
-	cpu_lights[1].radius = 0.1;
-	cpu_lights[1].position = { { 4, -2, -2 } };
-	cpu_lights[1].color = { { 255, 255, 205 } };
+void Renderer::checkCLError(cl_int err, std::string message) {
+	if (err) {
+		CD_ERROR("{}. error code = ({})", message, err);
+		throw std::runtime_error("renderer error");
+	}
 }
 
 void Renderer::printErrorLog(const cl::Program& program, const cl::Device& device) {
@@ -236,12 +285,6 @@ void Renderer::printErrorLog(const cl::Program& program, const cl::Device& devic
 	CD_ERROR("Build log:\n" + buildlog);
 
 	throw std::runtime_error("opencl compilation error");
-}
-
-void Renderer::cleanUp() {
-	delete[] cpu_output;
-	delete[] cpu_spheres;
-	delete[] cpu_lights;
 }
 
 /*
@@ -261,4 +304,11 @@ global to local: https://stackoverflow.com/questions/17724836/how-do-i-make-a-st
 
 intensity write: https://www.khronos.org/registry/OpenCL/sdk/1.0/docs/man/xhtml/write_image.html
 async_work_group_copy struct: https://stackoverflow.com/questions/37981455/using-async-work-group-copy-with-a-custom-data-type
+
+TODO comment thank you in below page
+opencl with opengl: https://software.intel.com/en-us/articles/opencl-and-opengl-interoperability-tutorial
+intel opencl reading material: https://software.intel.com/en-us/iocl-opg
+
+context creation: http://sa10.idav.ucdavis.edu/docs/sa10-dg-opencl-gl-interop.pdf
+TODO: use opengl event: https://software.intel.com/en-us/articles/sharing-surfaces-between-opencl-and-opengl-43-on-intel-processor-graphics-using-implicit
 */

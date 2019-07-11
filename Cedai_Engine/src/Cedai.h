@@ -10,6 +10,7 @@ Coordinate system: x - forwards, y - right, z - up
 
 #include <glm/glm.hpp> // vector/matrix linear algebra
 #include <chrono>
+#define M_PI   3.14159265358979323846264338327950288
 
 class Cedai {
 public:
@@ -20,15 +21,9 @@ private:
 	void loop();
 	void cleanUp();
 
-	void processInputs();
-	void updateView();
-	void printViewData();
-	void printFPS();
-
 	Interface interface;
 	Renderer renderer;
 
-	uint8_t* pixels;
 	float view[4][4] = { 0 };
 	uint32_t inputs;
 
@@ -44,4 +39,9 @@ private:
 	glm::vec3 viewerUp =		glm::vec3(0, 0, 1);				 // viewer up direction
 	glm::vec3 viewerCross = glm::cross(viewerUp, viewerForward); // cross product up x forward
 	std::chrono::time_point<std::chrono::high_resolution_clock> timePrev; // time value from the previous render
+
+	void processInputs();
+	void updateView();
+	void printViewData();
+	void printFPS();
 };

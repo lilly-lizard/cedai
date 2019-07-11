@@ -19,9 +19,11 @@ project "Cedai_Engine" -- game engine
 
 	files
 	{
-		"Cedai_Engine/src/**.h",	-- all headers
-		"Cedai_Engine/src/**.cpp",	-- all source files
-		"Cedai_Engine/src/**.cl"	-- all opencl files
+		"Cedai_Engine/src/**.h",		-- all headers
+		"Cedai_Engine/src/**.cpp",		-- all source files
+		"Cedai_Engine/src/**.cl",		-- all opencl files
+		"vendor/gl3w/include/**.c",		-- gl3w.c
+		"vendor/gl3w/include/GL/**.h"	-- gl3w.h and glcorearb.h
 	}
 
 	includedirs
@@ -29,27 +31,23 @@ project "Cedai_Engine" -- game engine
 		"Cedai_Engine/src",
 		"$(INTELOCLSDKROOT)/include",	-- opencl
 		"vendor/glm",					-- glm
-		"vendor/SDL2/include",			-- SDL2
+		"vendor/glfw/include",			-- glfw
+		"vendor/gl3w/include",			-- gl3w
 		"vendor/spdlog/include"			-- spdlog
 	}
 
 	libdirs
 	{
 		"$(INTELOCLSDKROOT)/lib/x64",	-- opencl
-		"vendor/SDL2/lib/x64"			-- SDL2
+		"vendor/glfw/lib-vc2017"		-- glfw
 	}
 
 	links
 	{
 		"OpenCL.lib",
-		"SDL2.lib"
+		"glfw3.lib"
 	}
 
-	postbuildcommands
-	{
-		'{COPY} %{wks.location}/vendor/SDL2/lib/x64/SDL2.dll %{cfg.buildtarget.directory}'
-	}
-	
 	filter "system:windows"
 		cppdialect "C++17" -- note we may need specific compile flag for other systems
 		systemversion "latest"
@@ -60,6 +58,7 @@ project "Cedai_Engine" -- game engine
 		}
 
 	filter "configurations:Debug"
+		-- TODO: https://stackoverflow.com/questions/4604283/automatic-defines-according-to-debug-release-config-in-visual-studio
 		defines "CD_DEBUG"
 		symbols "On"
 
