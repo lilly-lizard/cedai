@@ -29,10 +29,6 @@ private:
 	cl::Context context;
 	cl::CommandQueue queue;
 
-	//cl::Kernel rayGenKernel;
-	//cl::Kernel sphereKernel;
-	//cl::Kernel drawKernel;
-
 	cl::Kernel kernel;
 
 	cl::Event textureDone;

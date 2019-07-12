@@ -1,4 +1,4 @@
-intel opencl header path:
+﻿intel opencl header path:
 $(INTELOCLSDKROOT)/include
 
 preprocessor macros to use 2.0 depreciated functions
@@ -46,3 +46,18 @@ converted rays and ts to images, 09423e8 - 97 (49)
 copy spheres data from global to constant in draw, 92143ab - 99
 opengl glfw, draw kernel writes to gl_texture, 0e3fed6 - 167
 same as above but single kernel - 840
+
+single-kernel vs tri-stage architecture comparisons (using avg fps a 30 run)
+
+single:		tri:		description:
+───────────────┼───────────────┼────────────────────
+
+
+
+
+
+
+
+
+
+
