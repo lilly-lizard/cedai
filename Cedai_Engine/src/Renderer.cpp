@@ -175,13 +175,20 @@ void Renderer::createKernels() {
 
 	/* arg 0 = viewer position */
 	/* arg 1 = view matrix */
+
 	kernel.setArg(2, sphere_count);
 	kernel.setArg(3, light_count);
 	kernel.setArg(4, polygon_count);
+
 	kernel.setArg(5, cl_spheres);
 	kernel.setArg(6, cl_vertices);
 	kernel.setArg(7, cl_polygons);
-	kernel.setArg(8, cl_output);
+
+	kernel.setArg(8, (sphere_count + light_count) * sizeof(cd::Sphere), NULL);
+	kernel.setArg(9, vertex_count * sizeof(cl_float3), NULL);
+	kernel.setArg(10, polygon_count * sizeof(cd::Polygon), NULL);
+
+	kernel.setArg(11, cl_output);
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
