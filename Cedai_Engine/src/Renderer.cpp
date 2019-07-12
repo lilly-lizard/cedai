@@ -184,11 +184,7 @@ void Renderer::createKernels() {
 	kernel.setArg(6, cl_vertices);
 	kernel.setArg(7, cl_polygons);
 
-	kernel.setArg(8, (sphere_count + light_count) * sizeof(cd::Sphere), NULL);
-	kernel.setArg(9, vertex_count * sizeof(cl_float3), NULL);
-	kernel.setArg(10, polygon_count * sizeof(cd::Polygon), NULL);
-
-	kernel.setArg(11, cl_output);
+	kernel.setArg(8, cl_output);
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
@@ -275,4 +271,8 @@ intel opencl reading material: https://software.intel.com/en-us/iocl-opg
 context creation: http://sa10.idav.ucdavis.edu/docs/sa10-dg-opencl-gl-interop.pdf
 use opengl event: https://software.intel.com/en-us/articles/sharing-surfaces-between-opencl-and-opengl-43-on-intel-processor-graphics-using-implicit
 cl_unorm_8: https://stackoverflow.com/questions/31718492/meaning-of-cl-unorm-int8-for-cl-image-format-image-channel-data-type-and-its-di
+
+opencl raytracer: https://www.reddit.com/r/raytracing/comments/55wqu7/my_realtime_opencl_ray_tracer_uses_bvh/
+
+one kernel or multiple? register pressure https://stackoverflow.com/questions/9504828/write-multiple-kernels-or-a-single-kernel
 */

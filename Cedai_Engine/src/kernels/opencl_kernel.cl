@@ -37,16 +37,9 @@ uchar3 draw_background(float3 ray_d);
 
 __kernel void render_kernel(const float16 view, const float3 ray_o,
 							const int sphere_count, const int light_count, const int polygon_count,
-							__global Sphere* spheres_g, __global float3* vertices_g, __global Polygon* polygons_g,
-							__local Sphere* spheres, __local float3* vertices, __local Polygon* polygons,
+							__constant Sphere* spheres, __constant float3* vertices, __constant Polygon* polygons,
 							__write_only image2d_t output)
 {
-	const int sphere_total = sphere_count + light_count;
-	const int vertex_count = 4;
-	event_t event_spheres = async_work_group_copy((__local char *)spheres, (__global char *)spheres_g, sphere_total * sizeof(Sphere), 0);
-	event_t event_vertices = async_work_group_copy((__local char *)vertices, (__global char *)vertices_g, vertex_count * sizeof(float3), 0);
-	event_t event_polygons = async_work_group_copy((__local char *)polygons, (__global char *)polygons_g, polygon_count * sizeof(Polygon), 0);
-
 	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
 	
@@ -60,9 +53,9 @@ __kernel void render_kernel(const float16 view, const float3 ray_o,
 	bool color_found = false;
 	float min_t = 100; // drop off distance
 	float t;
+	const int sphere_total = sphere_count + light_count;
 
 	// spheres
-	wait_group_events(1, &event_spheres);
 	for (int s = 0; s < sphere_count; s++) {
 		t = sphere_intersect(ray_o, ray_d, spheres[s].pos, spheres[s].radius);
 		if (0 < t && t < min_t) {
@@ -86,8 +79,6 @@ __kernel void render_kernel(const float16 view, const float3 ray_o,
 	}	}
 
 	// polygons
-	wait_group_events(1, &event_vertices);
-	wait_group_events(1, &event_polygons);
 	for (int p = 0; p < polygon_count; p++) {
 		uint3 indices = polygons[p].indices;
 		t = triangle_intersect(ray_o, ray_d, vertices[indices.x], vertices[indices.y], vertices[indices.z]);
