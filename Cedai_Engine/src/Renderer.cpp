@@ -1,5 +1,3 @@
-// TODO work with half data type in kernels
-
 #include "Renderer.h"
 #include "Interface.h"
 #include "tools/Log.h"
