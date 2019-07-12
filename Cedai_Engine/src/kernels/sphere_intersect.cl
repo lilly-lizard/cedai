@@ -1,4 +1,3 @@
-#pragma OPENCL EXTENSION cl_khr_gl_sharing : enable
 
 typedef struct Sphere
 {

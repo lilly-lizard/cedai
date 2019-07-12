@@ -14,7 +14,6 @@ using namespace std::chrono;
 const int screen_width = 640;
 const int screen_height = 480;
 
-#undef main // sdl2 defines main for some reason
 int main() {
 	Cedai App;
 	try {
@@ -43,7 +42,8 @@ void Cedai::init() {
 	interface.init(screen_width, screen_height);
 	CD_INFO("Interface initialised.");
 
-	renderer.init(screen_width, screen_height, &interface);
+	createEntities();
+	renderer.init(screen_width, screen_height, &interface, spheres, lights);
 	CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
@@ -55,23 +55,55 @@ void Cedai::loop() {
 	bool quit = false;
 
 	while (!quit && !interface.WindowCloseCheck()) {
+		// queue a render operation
+		renderer.queueRender(view);
 
 		// input handling
 		interface.PollEvents();
 		inputs = interface.GetKeyInputs();
 		quit = inputs & CD_INPUTS::ESC;
 		processInputs();
-
-		// render and draw
-		renderer.render(view);
-		interface.draw();
 		printFPS();
+
+		// draw to the window
+		renderer.queueFinish();
+		interface.draw();
 	}
 }
 
 void Cedai::cleanUp() {
+	CD_INFO("Cleaning up...");
+	CD_INFO("Average fps = {}", fpsSum / fpsCount);
 	renderer.cleanUp();
 	interface.cleanUp();
+	CD_INFO("Finished cleaning.");
+}
+
+void Cedai::createEntities() {
+
+	spheres.resize(3);
+
+	spheres[0].radius = 1.0;
+	spheres[0].position = { { 10, 3, 0 } };
+	spheres[0].color = { { 230, 128, 128 } };
+
+	spheres[1].radius = 0.5;
+	spheres[1].position = { { 4, -1, 1 } };
+	spheres[1].color = { { 255, 255, 128 } };
+
+	spheres[2].radius = 0.2;
+	spheres[2].position = { { 5, -2, -1 } };
+	spheres[2].color = { { 128, 128, 230 } };
+
+	lights.resize(2);
+
+	lights[0].radius = 0.1;
+	lights[0].position = { { 5, 1, 2 } };
+	lights[0].color = { { 255, 255, 205 } };
+
+	lights[1].radius = 0.1;
+	lights[1].position = { { 4, -2, -2 } };
+	lights[1].color = { { 255, 255, 205 } };
 }
 
 void Cedai::processInputs() {
@@ -155,6 +187,8 @@ void Cedai::printFPS() {
 	elapsedTime = system_clock::now() - prevTime;
 	if (elapsedTime.count() > 1) {
 		CD_TRACE("fps = {}", fps);
+		fpsSum += fps;
+		fpsCount++;
 		prevTime = system_clock::now();
 		fps = 0;
 	}

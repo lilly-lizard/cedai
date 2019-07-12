@@ -1,5 +1,4 @@
 // TODO work with half data type in kernels
-// TODO convert intermediate buffers to images
 
 #include "Renderer.h"
 #include "Interface.h"
@@ -21,9 +20,13 @@
 #define SPHERE_KERNEL "sphere_intersect"
 #define DRAW_KERNEL "draw"
 
+#define SINGLE_PATH "src/kernels/opencl_kernel.cl"
+#define SINGLE_KERNEL "render_kernel"
+
 // PUBLIC FUNCTIONS
 
-void Renderer::init(int image_width, int image_height, Interface* interface) {
+void Renderer::init(int image_width, int image_height, Interface* interface,
+		std::vector<Sphere>& spheres, std::vector<Sphere>& lights) {
 	CD_INFO("Initialising renderer...");
 
 	this->image_width = image_width;
@@ -33,46 +36,48 @@ void Renderer::init(int image_width, int image_height, Interface* interface) {
 	createDevive();
 
 	createContext(interface);
-	cl_int res;
-	queue = cl::CommandQueue(context, device, 0, &res);
-	checkCLError(res, "Failed openCL queue creation");
+	createQueue();
 
-	createBuffers(interface->getTexTarget(), interface->getTexHandle());
+	createBuffers(interface->getTexTarget(), interface->getTexHandle(), spheres, lights);
 	createKernels();
 	setWorkGroups();
 }
 
-void Renderer::render(const float view[4][4]) {
+void Renderer::queueRender(const float view[4][4]) {
 	cl_view = {{ view[0][0], view[0][1], view[0][2], 0,
 				 view[1][0], view[1][1], view[1][2], 0,
 				 view[2][0], view[2][1], view[2][2], 0,
 				 0, 0, 0, 0 }};
 	cl_pos = {{ view[3][0], view[3][1], view[3][2] }};
 
-	rayGenKernel.setArg(0, cl_view);
-	sphereKernel.setArg(0, cl_pos);
-	drawKernel.setArg(0, cl_pos);
+	//rayGenKernel.setArg(0, cl_view);
+	//sphereKernel.setArg(0, cl_pos);
+	//drawKernel.setArg(0, cl_pos);
+	//
+	//// launch the kernels
+	//queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels, NULL, &rayGenDone);
+	//sphereWaits[0] = rayGenDone;
+	//queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres, &sphereWaits, &sphereDone);
+	//queue.enqueueAcquireGLObjects(&gl_objects, NULL, &textureDone);
+	//drawWaits[0] = textureDone; drawWaits[1] = sphereDone;
+	//queue.enqueueNDRangeKernel(drawKernel, NULL, global_work_pixels, local_work_pixels, &drawWaits, &drawDone);
+	//textureWaits[0] = drawDone;
+	//queue.enqueueReleaseGLObjects(&gl_objects, &textureWaits);
 
-	// launch the kernels
-	cl_int res;
-	std::vector<cl::Memory> gl_objects { cl_output };
-	res = queue.enqueueAcquireGLObjects(&gl_objects);
-	checkCLError(res, "1");
-	drawKernel.setArg(7, cl_output);
+	kernel.setArg(0, cl_view);
+	kernel.setArg(1, cl_pos);
 
-	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels);
-	queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres);
-	res = queue.enqueueNDRangeKernel(drawKernel, NULL, global_work_pixels, local_work_pixels);
-	checkCLError(res, "2");
+	queue.enqueueAcquireGLObjects(&gl_objects, NULL, &textureDone);
+	queue.enqueueNDRangeKernel(kernel, NULL, global_work_pixels, local_work_pixels);
+	queue.enqueueReleaseGLObjects(&gl_objects, &textureWaits);
+}
 
-	res = queue.enqueueReleaseGLObjects(&gl_objects);
-	checkCLError(res, "3");
+void Renderer::queueFinish() {
 	queue.finish();
 }
 
 void Renderer::cleanUp() {
-	delete[] cpu_spheres;
-	delete[] cpu_lights;
+	// TODO cleaning?
 }
 
 // INIT FUNCTIONS
@@ -145,14 +150,21 @@ void Renderer::createContext(Interface* interface) {
 	checkCLError(result, "Error during context creation");
 }
 
-void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture) {
+void Renderer::createQueue() {
+	cl_int res;
+	queue = cl::CommandQueue(context, device, 0, &res); // CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+	checkCLError(res, "Failed openCL queue creation");
+}
+
+void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
+		std::vector<Sphere>& spheres, std::vector<Sphere>& lights) {
+	sphere_count = spheres.size();
+	light_count = lights.size();
 
 	// spheres and lights
-	createSpheres();
-	createLights();
 	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, (sphere_count + light_count) * sizeof(Sphere));
-	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), cpu_spheres);
-	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(Sphere), light_count * sizeof(Sphere), cpu_lights);
+	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), spheres.data());
+	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(Sphere), light_count * sizeof(Sphere), lights.data());
 
 	// inter-kernel buffers
 	cl_int result;
@@ -169,65 +181,37 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture) 
 	// output image
 	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
-}
-
-void Renderer::createSpheres() {
-
-	sphere_count = 3;
-	cpu_spheres = new Sphere[sphere_count];
-
-	cpu_spheres[0].radius = 1.0;
-	cpu_spheres[0].position = { { 10, 3, 0 } };
-	cpu_spheres[0].color = { { 230, 128, 128 } };
-
-	cpu_spheres[1].radius = 0.5;
-	cpu_spheres[1].position = { { 4, -1, 1 } };
-	cpu_spheres[1].color = { { 255, 255, 128 } };
-
-	cpu_spheres[2].radius = 0.2;
-	cpu_spheres[2].position = { { 5, -2, -1 } };
-	cpu_spheres[2].color = { { 128, 128, 230 } };
-}
-
-void Renderer::createLights() {
-
-	light_count = 2;
-	cpu_lights = new Sphere[light_count];
-
-	cpu_lights[0].radius = 0.1;
-	cpu_lights[0].position = { { 5, 1, 2 } };
-	cpu_lights[0].color = { { 255, 255, 205 } };
-
-	cpu_lights[1].radius = 0.1;
-	cpu_lights[1].position = { { 4, -2, -2 } };
-	cpu_lights[1].color = { { 255, 255, 205 } };
+	gl_objects[0] = cl_output;
 }
 
 void Renderer::createKernels() {
 
-	// TODO query opencl extension support
+	//createKernel(RAY_GEN_PATH, rayGenKernel, RAY_GEN_KERNEL);
+	//createKernel(SPHERE_PATH, sphereKernel, SPHERE_KERNEL);
+	//createKernel(DRAW_PATH, drawKernel, DRAW_KERNEL);
+	//
+	///* rayGenKernel arg 0 = view matrix */
+	//rayGenKernel.setArg(1, cl_rays);
+	//
+	///* sphereKernel arg 0 = view position */
+	//sphereKernel.setArg(1, cl_spheres);
+	//sphereKernel.setArg(2, cl_rays);
+	//sphereKernel.setArg(3, cl_sphere_t);
+	//
+	///* drawKernel arg 0 = view position */
+	//drawKernel.setArg(1, cl_spheres);
+	//drawKernel.setArg(2, (sphere_count + light_count) * sizeof(Sphere), NULL);
+	//drawKernel.setArg(3, sphere_count);
+	//drawKernel.setArg(4, light_count);
+	//drawKernel.setArg(5, cl_rays);
+	//drawKernel.setArg(6, cl_sphere_t);
+	//drawKernel.setArg(7, cl_output);
 
-	createKernel(RAY_GEN_PATH, rayGenKernel, RAY_GEN_KERNEL);
-	createKernel(SPHERE_PATH, sphereKernel, SPHERE_KERNEL);
-	createKernel(DRAW_PATH, drawKernel, DRAW_KERNEL);
-
-	/* rayGenKernel arg 0 = view matrix */
-	rayGenKernel.setArg(1, cl_rays);
-
-	/* sphereKernel arg 0 = view position */
-	sphereKernel.setArg(1, cl_spheres);
-	sphereKernel.setArg(2, cl_rays);
-	sphereKernel.setArg(3, cl_sphere_t);
-
-	/* drawKernel arg 0 = view position */
-	drawKernel.setArg(1, cl_spheres);
-	drawKernel.setArg(2, (sphere_count + light_count) * sizeof(Sphere), NULL);
-	drawKernel.setArg(3, sphere_count);
-	drawKernel.setArg(4, light_count);
-	drawKernel.setArg(5, cl_rays);
-	drawKernel.setArg(6, cl_sphere_t);
-	cl_int res = drawKernel.setArg(7, cl_output);
-	checkCLError(res, "0");
+	createKernel(SINGLE_PATH, kernel, SINGLE_KERNEL);
+	kernel.setArg(2, cl_spheres);
+	kernel.setArg(3, sphere_count);
+	kernel.setArg(4, light_count);
+	kernel.setArg(5, cl_output);
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
@@ -271,6 +255,8 @@ void Renderer::setWorkGroups() {
 	//local_work_spheres  = cl::NDRange(x, y, z);
 }
 
+// HELPER FUNCTIONS
+
 void Renderer::checkCLError(cl_int err, std::string message) {
 	if (err) {
 		CD_ERROR("{}. error code = ({})", message, err);
@@ -290,6 +276,7 @@ void Renderer::printErrorLog(const cl::Program& program, const cl::Device& devic
 /*
 notes:
 cpp reference: https://github.khronos.org/OpenCL-CLHPP/
+html spec: https://www.khronos.org/registry/OpenCL/specs/2.2/html/OpenCL_API.html
 vector data types: http://www.informit.com/articles/article.aspx?p=1732873&seqNum=3
 work group info: https://stackoverflow.com/questions/3957125/questions-about-global-and-local-work-size
 
@@ -305,11 +292,10 @@ global to local: https://stackoverflow.com/questions/17724836/how-do-i-make-a-st
 intensity write: https://www.khronos.org/registry/OpenCL/sdk/1.0/docs/man/xhtml/write_image.html
 async_work_group_copy struct: https://stackoverflow.com/questions/37981455/using-async-work-group-copy-with-a-custom-data-type
 
-TODO comment thank you in below page
 opencl with opengl: https://software.intel.com/en-us/articles/opencl-and-opengl-interoperability-tutorial
 intel opencl reading material: https://software.intel.com/en-us/iocl-opg
 
 context creation: http://sa10.idav.ucdavis.edu/docs/sa10-dg-opencl-gl-interop.pdf
-TODO: use opengl event: https://software.intel.com/en-us/articles/sharing-surfaces-between-opencl-and-opengl-43-on-intel-processor-graphics-using-implicit
+use opengl event: https://software.intel.com/en-us/articles/sharing-surfaces-between-opencl-and-opengl-43-on-intel-processor-graphics-using-implicit
 cl_unorm_8: https://stackoverflow.com/questions/31718492/meaning-of-cl-unorm-int8-for-cl-image-format-image-channel-data-type-and-its-di
 */

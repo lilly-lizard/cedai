@@ -40,15 +40,13 @@ void Interface::init(int screen_width, int screen_height) {
 	createTexture();
 	createRenderProgram();
 
-	CD_WARN("GL renderer: {}", glGetString(GL_RENDERER));
+	CD_INFO("OpenGL version: {}", glGetString(GL_RENDERER));
 
 	// set key bindings
 	mapKeys();
 }
 
 void Interface::draw() {
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texHandle);
 	glUseProgram(renderHandle);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glfwSwapBuffers(window);
@@ -85,7 +83,6 @@ void Interface::GetMouseChange(double& mouseX, double& mouseY) {
 }
 
 void Interface::cleanUp() {
-	delete[] pixels;
 	glDeleteTextures(1, &texHandle);
 	glfwDestroyWindow(window);
 	glfwTerminate();
@@ -120,27 +117,15 @@ void Interface::mapKeys() {
 void Interface::createTexture() {
 	// create output texture for opencl to write to
 	glGenTextures(1, &texHandle);
-	//glActiveTexture(GL_TEXTURE0);
 	texTarget = GL_TEXTURE_2D;
 	glBindTexture(texTarget, texHandle);
+
 	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	
-	pixels = new uint8_t[screen_width * screen_height * 4];
-	for (int x = 0; x < screen_width; x++) {
-		for (int y = 0; y < screen_height; y++) {
-			pixels[x * 4 + y * 4 * 640]		= 255 * x / screen_width;
-			pixels[x * 4 + y * 4 * 640 + 1] = 255 * y / screen_height;
-			pixels[x * 4 + y * 4 * 640 + 2] = 255;
-			pixels[x * 4 + y * 4 * 640 + 3] = 0;
-		}
-	}
-	glTexImage2D(texTarget, 0, GL_RGBA8UI, screen_width, screen_height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, pixels);
-
-	// TODO: is this needed?
-	//glBindImageTexture(0, texHandle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA_INTEGER);
+	glTexImage2D(texTarget, 0, GL_RGBA8UI, screen_width, screen_height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
 	checkErrors("texture gen");
 }
 

@@ -37,8 +37,6 @@ private:
 	GLenum texTarget;
 	GLuint renderHandle;
 
-	uint8_t* pixels;
-
 	std::map<int, CD_INPUTS> keyBindings;
 	double mousePosPrev[2];
 
