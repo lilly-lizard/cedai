@@ -81,19 +81,27 @@ void Cedai::cleanUp() {
 
 void Cedai::createEntities() {
 
-	spheres.resize(3);
+	spheres.resize(103);
 
-	spheres[0].radius = 1.0;
-	spheres[0].position = { { 10, 3, 0 } };
-	spheres[0].color = { { 230, 128, 128 } };
+	for (int i = 0; i < 10; i++) {
+		for (int j = 0; j < 10; j++) {
+			spheres[i * 10 + j].radius = 0.5;
+			spheres[i * 10 + j].position = { { 20, (float)i * 1.5f - 10, (float)j * 1.5f - 5 } };
+			spheres[i * 10 + j].color = { { 128, 255, 230 } };
+		}
+	}
 
-	spheres[1].radius = 0.5;
-	spheres[1].position = { { 4, -1, 1 } };
-	spheres[1].color = { { 255, 255, 128 } };
+	spheres[100].radius = 1.0;
+	spheres[100].position = { { 10, -3, 0 } };
+	spheres[100].color = { { 230, 128, 128 } };
 
-	spheres[2].radius = 0.2;
-	spheres[2].position = { { 5, -2, -1 } };
-	spheres[2].color = { { 128, 128, 230 } };
+	spheres[101].radius = 0.5;
+	spheres[101].position = { { 4, 1, 1 } };
+	spheres[101].color = { { 255, 255, 128 } };
+
+	spheres[102].radius = 0.2;
+	spheres[102].position = { { 5, 2, -1 } };
+	spheres[102].color = { { 128, 128, 230 } };
 
 	lights.resize(2);
 

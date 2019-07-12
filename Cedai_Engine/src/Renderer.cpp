@@ -104,7 +104,8 @@ void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& dev
 		for (cl::Device dev : devices) {
 			std::string extensions = dev.getInfo<CL_DEVICE_EXTENSIONS>();
 			if (dev.getInfo< CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU &&
-					extensions.find("cl_khr_gl_sharing") != std::string::npos) {
+					extensions.find("cl_khr_gl_sharing") != std::string::npos &&
+					extensions.find("cl_khr_fp16") != std::string::npos) {
 				// CL_DEVICE_TYPE_GPU 16 x 16 x 1 = 256
 				// CL_DEVICE_TYPE_CPU 128 x 60 x 1 < 8192
 				device = dev;
@@ -190,9 +191,12 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 
 	const char* kernel_source = source.c_str();
 
+	// compiler options
+	std::string options = ""; //-cl-fast-relaxed-math -cl-std=CL1.2
+
 	// Create an OpenCL program by performing runtime source compilation for the chosen device
 	cl::Program program = cl::Program(context, kernel_source);
-	cl_int result = program.build({ device });
+	cl_int result = program.build({ device }, options.c_str());
 	if (result) CD_ERROR("Error during openCL compilation {} error: ({})", filename, result);
 	if (result == CL_BUILD_PROGRAM_FAILURE) printErrorLog(program, device);
 

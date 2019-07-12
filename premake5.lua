@@ -58,10 +58,9 @@ project "Cedai_Engine" -- game engine
 		}
 
 	filter "configurations:Debug"
-		-- TODO: https://stackoverflow.com/questions/4604283/automatic-defines-according-to-debug-release-config-in-visual-studio
-		defines "CD_DEBUG"
+		defines "DEBUG"
 		symbols "On"
 
 	filter "configurations:Release"
-		defines "CD_RELEASE"
+		defines "NDEBUG"
 		optimize "On"
