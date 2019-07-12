@@ -1,9 +1,8 @@
 /* https://stackoverflow.com/questions/4911400/shader-optimization-is-a-ternary-operator-equivalent-to-branching */
-// TODO use half instead of float (half_rsqrt, fast_normalize etc)
-// TODO fast_normalize
+
+// TODO use mad https://www.khronos.org/registry/OpenCL/sdk/1.2/docs/man/xhtml/clBuildProgram.html
 
 #pragma OPENCL EXTENSION cl_khr_gl_sharing : enable
-#pragma OPENCL EXTENSION cl_khr_fp16 : enable
 
 typedef struct Sphere
 {
@@ -12,64 +11,86 @@ typedef struct Sphere
 	uchar3 color;
 } Sphere;
 
+typedef struct Polygon
+{
+	uint3 indices;
+	uchar3 color;
+} Polygon;
+
 // DECLARATIONS AND CONSTANTS
 
-#define AMBIENT 0.4h
-#define LIGHT_STEP 0.2h
+#define AMBIENT 0.4f
+#define LIGHT_STEP 0.2f
 
 const sampler_t sampler = CLK_FILTER_NEAREST | CLK_ADDRESS_CLAMP | CLK_NORMALIZED_COORDS_FALSE;
 
-half sphere_intersect(half3 ray_o, half3 ray_d, half3 center, half radius);
-half diffuse(half3 normal, half3 intersection, half3 light);
-half ceiling(half value, half multiple);
-uchar3 draw_background(half3 ray_d);
+float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius);
+float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2);
+
+float3 triangle_normal(float3 V0, float3 V1, float3 V2);
+float diffuse(float3 normal, float3 intersection, float3 light);
+float ceiling(float value, float multiple);
+
+uchar3 draw_background(float3 ray_d);
 
 // ENTRY POINT
 
-__kernel void render_kernel(const float16 viewf, const float3 ray_of,
-							__global Sphere* spheres,
-							const int sphere_count, const int light_count,
+__kernel void render_kernel(const float16 view, const float3 ray_o,
+							const int sphere_count, const int light_count, const int polygon_count,
+							__constant Sphere* spheres, __constant float3* vertices, __constant Polygon* polygons,
 							__write_only image2d_t output)
 {
 	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
 	
 	// create a camera ray
-	const half3 ray_o = convert_half3(ray_of);
-	const half16 view = convert_half16(viewf);
-	const half3 uv = (half3)(dim.x, (half)coord.x - (half)dim.x / 2, (half)(dim.y - coord.y) - (half)dim.y / 2);
-	const half3 ray_d = normalize((half3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
-										  uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
-										  uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
+	const float3 uv = (float3)(dim.x, (float)coord.x - (float)dim.x / 2, (float)(dim.y - coord.y) - (float)dim.y / 2);
+	const float3 ray_d = fast_normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
+												 uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
+												 uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
 	// check for intersections
 	uchar3 color = (uchar3)(0, 0, 0);
 	bool color_found = false;
-	half min_t = 100; // drop off distance
-	half t;
+	float min_t = 100; // drop off distance
+	float t;
+	const int sphere_total = sphere_count + light_count;
 
 	// spheres
 	for (int s = 0; s < sphere_count; s++) {
-		half3 pos = convert_half3(spheres[s].pos);
-		t = sphere_intersect(ray_o, ray_d, pos, (half)spheres[s].radius);
+		t = sphere_intersect(ray_o, ray_d, spheres[s].pos, spheres[s].radius);
 		if (0 < t && t < min_t) {
 			color_found = true;
 			min_t = t;
-			// calculate light
-			half light = 0;
-			half3 intersection = ray_o + t * ray_d;
-			for (int l = sphere_count; l < sphere_count + light_count; l++)
-				light += diffuse(intersection - pos, intersection, convert_half3(spheres[l].pos));
-			light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0h);
-			color = convert_uchar3(convert_half3(spheres[s].color) * light);
+			float light = 0;
+			float3 intersection = mad(t, ray_d, ray_o);
+			for (int l = sphere_count; l < sphere_total; l++)
+				light += diffuse(intersection - spheres[s].pos, intersection, spheres[l].pos);
+			light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
+			color = convert_uchar3(convert_float3(spheres[s].color) * light);
 	}	}
 
 	// lights
-	for (int l = sphere_count; l < sphere_count + light_count; l++) {
-		t = sphere_intersect(ray_o, ray_d, convert_half3(spheres[l].pos), spheres[l].radius);
+	for (int l = sphere_count; l < sphere_total; l++) {
+		t = sphere_intersect(ray_o, ray_d, spheres[l].pos, spheres[l].radius);
 		if (0 < t && t < min_t) {
 			color_found = true;
 			min_t = t;
 			color = spheres[l].color;
+	}	}
+
+	// polygons
+	for (int p = 0; p < polygon_count; p++) {
+		uint3 indices = polygons[p].indices;
+		t = triangle_intersect(ray_o, ray_d, vertices[indices.x], vertices[indices.y], vertices[indices.z]);
+		if (0 < t && t < min_t) {
+			color_found = true;
+			min_t = t;
+			float light = 0;
+			for (int l = sphere_count; l < sphere_total; l++)
+				light += diffuse(triangle_normal(vertices[indices.x], vertices[indices.y], vertices[indices.z]),
+					mad(t, ray_d, ray_o), spheres[l].pos);
+			light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
+			color = convert_uchar3(convert_float3(polygons[p].color) * light);
 	}	}
 
 	if (!color_found)
@@ -79,17 +100,17 @@ __kernel void render_kernel(const float16 viewf, const float3 ray_of,
 
 // HELPER FUNCTIONS
 
-half sphere_intersect(half3 ray_o, half3 ray_d, half3 center, half radius)
+float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 { 
 	// a = P1 . P1 = 1 (assuming ray_d is normalized)
-	half3 d = center - ray_o;
-	half b = dot(d, ray_d);
-	half c = dot(d, d) - radius * radius;
+	float3 d = center - ray_o;
+	float b = dot(d, ray_d);
+	float c = dot(d, d) - radius * radius;
 
-	half discriminant = b * b - c;
+	float discriminant = b * b - c;
 	if (discriminant < 0) return -1;
 
-	half t = b - half_sqrt(discriminant);
+	float t = b - half_sqrt(discriminant);
 	if (t < 0) {
 		// the following 2 lines allows you to see inside the sphere
 		//t = b - t + b; // b + sqrt(discriminant)
@@ -99,21 +120,50 @@ half sphere_intersect(half3 ray_o, half3 ray_d, half3 center, half radius)
 	return t;
 }
 
-half diffuse(half3 normal, half3 intersection, half3 light)
+float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
 {
-	return clamp(dot(normalize(normal), normalize(light - intersection)), 0.0h, 1.0h);
+	// Möller-Trumbore algorithm. we use Cramer's rule to find [t,u,v] 
+	// https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
+	// returns -1 for no intersection, otherwise returns t (where intersection = O + tD)
+	
+	float3 E1 = V1 - V0;
+	float3 E2 = V2 - V0;
+	float3 P = cross(D, E2);
+	float det0 = dot(P, E1);
+
+	float inv_det0 = 1/det0;
+	float3 T = O - V0;
+
+	float u = dot(T, P) * inv_det0;
+	if (u < 0 || 1 < u) return -1;
+
+	float3 Q = cross(T, E1);
+	float v = dot(Q, D) * inv_det0;
+
+	return v < 0 || 1 < u + v ? -1 : dot(Q, E2) * inv_det0;
+}
+
+float3 triangle_normal(float3 V0, float3 V1, float3 V2)
+{
+	// assume clockwise vertices (0, 1, 2)
+	return cross(V1 - V0, V2 - V0);
+}
+
+float diffuse(float3 normal, float3 intersection, float3 light)
+{
+	return clamp(dot(fast_normalize(normal), fast_normalize(light - intersection)), 0.0f, 1.0f);
 }
 
 // rounds up to the nearest multiple of multiple
-half ceiling(half value, half multiple)
+float ceiling(float value, float multiple)
 {
 	return ceil(value/multiple) * multiple;
 }
 
-uchar3 draw_background(half3 ray_d)
+uchar3 draw_background(float3 ray_d)
 {
-	half offset = 0.3f;
-	half mult = 0.4f;
-	half3 color = fabs(ray_d) * mult + offset;
+	float offset = 0.3f;
+	float mult = 0.4f;
+	float3 color = fabs(ray_d) * mult + offset;
 	return convert_uchar3(color * 255);
 }

@@ -8,6 +8,7 @@ Coordinate system: x - forwards, y - right, z - up
 #include "Interface.h"
 #include "Renderer.h"
 #include "tools/Sphere.h"
+#include "tools/Polygon.h"
 
 #include <glm/glm.hpp> // vector/matrix linear algebra
 #include <chrono>
@@ -26,8 +27,10 @@ private:
 	Interface interface;
 	Renderer renderer;
 
-	std::vector<Sphere> spheres;
-	std::vector<Sphere> lights;
+	std::vector<cd::Sphere> spheres;
+	std::vector<cd::Sphere> lights;
+	std::vector<cd::Polygon> polygons;
+	std::vector<cl_float3> vertices;
 
 	float view[4][4] = { 0 };
 	uint32_t inputs;

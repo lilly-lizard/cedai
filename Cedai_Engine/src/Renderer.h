@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tools/Sphere.h"
+#include "tools/Polygon.h"
 
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <CL/cl.hpp>
@@ -13,7 +14,8 @@ class Renderer {
 public:
 
 	void init(int image_width, int image_height, Interface* interface,
-		std::vector<Sphere>& spheres, std::vector<Sphere>& lights);
+		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
+		std::vector<cl_float3>& vertices, std::vector<cd::Polygon>& polygons);
 
 	void queueRender(const float view[4][4]);
 	void queueFinish();
@@ -42,22 +44,19 @@ private:
 
 	int image_width;
 	int image_height;
-	cl::NDRange global_work_pixels;
-	cl::NDRange local_work_pixels = cl::NDRange(16, 16);
-	cl::NDRange global_work_spheres;
-	cl::NDRange local_work_spheres = cl::NDRange(16, 16, 1);
+	cl::NDRange global_work;
+	cl::NDRange local_work;
 
 	cl::Buffer cl_spheres;
-	cl::Image2D cl_rays;
-	cl::Image2DArray cl_sphere_t; // sphere intersection t values
+	cl::Buffer cl_vertices;
+	cl::Buffer cl_polygons;
 	cl::ImageGL cl_output;
 	std::vector<cl::Memory> gl_objects{ cl_output };
 
 	int sphere_count = 0;
 	int light_count = 0;
-
-	cl_float16 cl_view;
-	cl_float3 cl_pos;
+	int vertex_count = 0;
+	int polygon_count = 0;
 
 	void createPlatform();
 	void createDevive();
@@ -69,7 +68,8 @@ private:
 	void createQueue();
 
 	void createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
-			std::vector<Sphere>& spheres, std::vector<Sphere>& lights);
+			std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
+			std::vector<cl_float3>& vertices, std::vector<cd::Polygon>& polygons);
 
 	void createKernels();
 	void createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint);

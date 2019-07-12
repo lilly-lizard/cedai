@@ -43,7 +43,7 @@ void Cedai::init() {
 	CD_INFO("Interface initialised.");
 
 	createEntities();
-	renderer.init(screen_width, screen_height, &interface, spheres, lights);
+	renderer.init(screen_width, screen_height, &interface, spheres, lights, vertices, polygons);
 	CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
@@ -112,6 +112,25 @@ void Cedai::createEntities() {
 	lights[1].radius = 0.1;
 	lights[1].position = { { 4, -2, -2 } };
 	lights[1].color = { { 255, 255, 205 } };
+
+	vertices.resize(4);
+
+	vertices[0] = { { 5, 0, 0 } };
+	vertices[1] = { { 5.7, 0.1, 1 } };
+	vertices[2] = { { 6.1, 0.6, 0.05 } };
+	vertices[3] = { { 6.2, -0.5, 0 } };
+
+	polygons.resize(4);
+
+	polygons[0].indices = { { 0, 1, 2 } };
+	polygons[1].indices = { { 0, 2, 3 } };
+	polygons[2].indices = { { 0, 3, 1 } };
+	polygons[3].indices = { { 1, 3, 2 } };
+
+	polygons[0].color = { { 128, 255, 180 } };
+	polygons[1].color = { { 180, 128, 255 } };
+	polygons[2].color = { { 255, 180, 128 } };
+	polygons[3].color = { { 180, 255, 128 } };
 }
 
 void Cedai::processInputs() {

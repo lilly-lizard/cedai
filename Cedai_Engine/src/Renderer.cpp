@@ -18,7 +18,8 @@
 // PUBLIC FUNCTIONS
 
 void Renderer::init(int image_width, int image_height, Interface* interface,
-		std::vector<Sphere>& spheres, std::vector<Sphere>& lights) {
+		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
+		std::vector<cl_float3>& vertices, std::vector<cd::Polygon>& polygons) {
 	CD_INFO("Initialising renderer...");
 
 	this->image_width = image_width;
@@ -30,12 +31,17 @@ void Renderer::init(int image_width, int image_height, Interface* interface,
 	createContext(interface);
 	createQueue();
 
-	createBuffers(interface->getTexTarget(), interface->getTexHandle(), spheres, lights);
+	createBuffers(interface->getTexTarget(), interface->getTexHandle(), spheres, lights, vertices, polygons);
 	createKernels();
 	setWorkGroups();
+
+	queue.finish();
 }
 
 void Renderer::queueRender(const float view[4][4]) {
+	static cl_float16 cl_view;
+	static cl_float3 cl_pos;
+
 	cl_view = {{ view[0][0], view[0][1], view[0][2], 0,
 				 view[1][0], view[1][1], view[1][2], 0,
 				 view[2][0], view[2][1], view[2][2], 0,
@@ -46,7 +52,7 @@ void Renderer::queueRender(const float view[4][4]) {
 	kernel.setArg(1, cl_pos);
 
 	queue.enqueueAcquireGLObjects(&gl_objects, NULL, &textureDone);
-	queue.enqueueNDRangeKernel(kernel, NULL, global_work_pixels, local_work_pixels);
+	queue.enqueueNDRangeKernel(kernel, NULL, global_work, local_work);
 	queue.enqueueReleaseGLObjects(&gl_objects, &textureWaits);
 }
 
@@ -136,28 +142,28 @@ void Renderer::createQueue() {
 }
 
 void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
-		std::vector<Sphere>& spheres, std::vector<Sphere>& lights) {
+		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
+		std::vector<cl_float3>& vertices, std::vector<cd::Polygon>& polygons) {
 	sphere_count = spheres.size();
 	light_count = lights.size();
+	vertex_count = vertices.size();
+	polygon_count = polygons.size();
 
 	// spheres and lights
-	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, (sphere_count + light_count) * sizeof(Sphere));
-	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), spheres.data());
-	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(Sphere), light_count * sizeof(Sphere), lights.data());
+	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, (sphere_count + light_count) * sizeof(cd::Sphere));
+	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(cd::Sphere), spheres.data());
+	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(cd::Sphere), light_count * sizeof(cd::Sphere), lights.data());
 
-	// inter-kernel buffers
-	cl_int result;
-	cl::ImageFormat ray_format = { CL_RGBA, CL_FLOAT };
-	cl_rays = cl::Image2D(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, ray_format,
-		image_width, image_height, 0, NULL, &result);
-	checkCLError(result, "Error during cl_rays creation");
+	// vertices
+	cl_vertices = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_count * sizeof(cl_float3));
+	queue.enqueueWriteBuffer(cl_vertices, CL_TRUE, 0, vertex_count * sizeof(cl_float3), vertices.data());
 
-	cl::ImageFormat sphere_format = { CL_LUMINANCE, CL_FLOAT };
-	cl_sphere_t = cl::Image2DArray(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, sphere_format,
-		sphere_count + light_count, image_width, image_height, 0, 0, NULL, &result);
-	checkCLError(result, "Error during cl_sphere_t creation");
+	// polygons
+	cl_polygons = cl::Buffer(context, CL_MEM_READ_ONLY, polygon_count * sizeof(cd::Polygon));
+	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, vertex_count * sizeof(cd::Polygon), polygons.data());
 
 	// output image
+	cl_int result;
 	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
 	gl_objects[0] = cl_output;
@@ -167,10 +173,15 @@ void Renderer::createKernels() {
 
 	createKernel(KERNEL_PATH, kernel, KERNEL_ENTRY);
 
-	kernel.setArg(2, cl_spheres);
-	kernel.setArg(3, sphere_count);
-	kernel.setArg(4, light_count);
-	kernel.setArg(5, cl_output);
+	/* arg 0 = viewer position */
+	/* arg 1 = view matrix */
+	kernel.setArg(2, sphere_count);
+	kernel.setArg(3, light_count);
+	kernel.setArg(4, polygon_count);
+	kernel.setArg(5, cl_spheres);
+	kernel.setArg(6, cl_vertices);
+	kernel.setArg(7, cl_polygons);
+	kernel.setArg(8, cl_output);
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
@@ -192,7 +203,7 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	const char* kernel_source = source.c_str();
 
 	// compiler options
-	std::string options = ""; //-cl-fast-relaxed-math -cl-std=CL1.2
+	std::string options = "-cl-fast-relaxed-math -cl-std=CL1.2";
 
 	// Create an OpenCL program by performing runtime source compilation for the chosen device
 	cl::Program program = cl::Program(context, kernel_source);
@@ -207,14 +218,11 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 void Renderer::setWorkGroups() {
 
 	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
-	// int x = 16;
-	// int y = 16;
-	// int z = 1;
+	int x = 16;
+	int y = 16;
 
-	global_work_pixels = cl::NDRange(image_width, image_height);
-	//local_work_pixels	= cl::NDRange(x, y);
-	global_work_spheres = cl::NDRange(image_width, image_height, sphere_count + light_count);
-	//local_work_spheres  = cl::NDRange(x, y, z);
+	global_work = cl::NDRange(image_width, image_height);
+	local_work = cl::NDRange(x, y);
 }
 
 // HELPER FUNCTIONS
