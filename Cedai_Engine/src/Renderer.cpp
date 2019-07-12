@@ -20,9 +20,6 @@
 #define SPHERE_KERNEL "sphere_intersect"
 #define DRAW_KERNEL "draw"
 
-#define SINGLE_PATH "src/kernels/opencl_kernel.cl"
-#define SINGLE_KERNEL "render_kernel"
-
 // PUBLIC FUNCTIONS
 
 void Renderer::init(int image_width, int image_height, Interface* interface,
@@ -50,25 +47,18 @@ void Renderer::queueRender(const float view[4][4]) {
 				 0, 0, 0, 0 }};
 	cl_pos = {{ view[3][0], view[3][1], view[3][2] }};
 
-	//rayGenKernel.setArg(0, cl_view);
-	//sphereKernel.setArg(0, cl_pos);
-	//drawKernel.setArg(0, cl_pos);
-	//
-	//// launch the kernels
-	//queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels, NULL, &rayGenDone);
-	//sphereWaits[0] = rayGenDone;
-	//queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres, &sphereWaits, &sphereDone);
-	//queue.enqueueAcquireGLObjects(&gl_objects, NULL, &textureDone);
-	//drawWaits[0] = textureDone; drawWaits[1] = sphereDone;
-	//queue.enqueueNDRangeKernel(drawKernel, NULL, global_work_pixels, local_work_pixels, &drawWaits, &drawDone);
-	//textureWaits[0] = drawDone;
-	//queue.enqueueReleaseGLObjects(&gl_objects, &textureWaits);
-
-	kernel.setArg(0, cl_view);
-	kernel.setArg(1, cl_pos);
-
+	rayGenKernel.setArg(0, cl_view);
+	sphereKernel.setArg(0, cl_pos);
+	drawKernel.setArg(0, cl_pos);
+	
+	// launch the kernels
+	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels, NULL, &rayGenDone);
+	sphereWaits[0] = rayGenDone;
+	queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres, &sphereWaits, &sphereDone);
 	queue.enqueueAcquireGLObjects(&gl_objects, NULL, &textureDone);
-	queue.enqueueNDRangeKernel(kernel, NULL, global_work_pixels, local_work_pixels);
+	drawWaits[0] = textureDone; drawWaits[1] = sphereDone;
+	queue.enqueueNDRangeKernel(drawKernel, NULL, global_work_pixels, local_work_pixels, &drawWaits, &drawDone);
+	textureWaits[0] = drawDone;
 	queue.enqueueReleaseGLObjects(&gl_objects, &textureWaits);
 }
 
@@ -186,32 +176,26 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 
 void Renderer::createKernels() {
 
-	//createKernel(RAY_GEN_PATH, rayGenKernel, RAY_GEN_KERNEL);
-	//createKernel(SPHERE_PATH, sphereKernel, SPHERE_KERNEL);
-	//createKernel(DRAW_PATH, drawKernel, DRAW_KERNEL);
-	//
-	///* rayGenKernel arg 0 = view matrix */
-	//rayGenKernel.setArg(1, cl_rays);
-	//
-	///* sphereKernel arg 0 = view position */
-	//sphereKernel.setArg(1, cl_spheres);
-	//sphereKernel.setArg(2, cl_rays);
-	//sphereKernel.setArg(3, cl_sphere_t);
-	//
-	///* drawKernel arg 0 = view position */
-	//drawKernel.setArg(1, cl_spheres);
-	//drawKernel.setArg(2, (sphere_count + light_count) * sizeof(Sphere), NULL);
-	//drawKernel.setArg(3, sphere_count);
-	//drawKernel.setArg(4, light_count);
-	//drawKernel.setArg(5, cl_rays);
-	//drawKernel.setArg(6, cl_sphere_t);
-	//drawKernel.setArg(7, cl_output);
-
-	createKernel(SINGLE_PATH, kernel, SINGLE_KERNEL);
-	kernel.setArg(2, cl_spheres);
-	kernel.setArg(3, sphere_count);
-	kernel.setArg(4, light_count);
-	kernel.setArg(5, cl_output);
+	createKernel(RAY_GEN_PATH, rayGenKernel, RAY_GEN_KERNEL);
+	createKernel(SPHERE_PATH, sphereKernel, SPHERE_KERNEL);
+	createKernel(DRAW_PATH, drawKernel, DRAW_KERNEL);
+	
+	/* rayGenKernel arg 0 = view matrix */
+	rayGenKernel.setArg(1, cl_rays);
+	
+	/* sphereKernel arg 0 = view position */
+	sphereKernel.setArg(1, cl_spheres);
+	sphereKernel.setArg(2, cl_rays);
+	sphereKernel.setArg(3, cl_sphere_t);
+	
+	/* drawKernel arg 0 = view position */
+	drawKernel.setArg(1, cl_spheres);
+	drawKernel.setArg(2, (sphere_count + light_count) * sizeof(Sphere), NULL);
+	drawKernel.setArg(3, sphere_count);
+	drawKernel.setArg(4, light_count);
+	drawKernel.setArg(5, cl_rays);
+	drawKernel.setArg(6, cl_sphere_t);
+	drawKernel.setArg(7, cl_output);
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
