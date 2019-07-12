@@ -29,16 +29,13 @@ private:
 	cl::Context context;
 	cl::CommandQueue queue;
 
-	cl::Kernel rayGenKernel;
 	cl::Kernel sphereKernel;
 	cl::Kernel drawKernel;
 
 	cl::Event textureDone;
-	cl::Event rayGenDone;
 	cl::Event sphereDone;
 	cl::Event drawDone;
 
-	std::vector<cl::Event> sphereWaits{ rayGenDone };
 	std::vector<cl::Event> drawWaits{ textureDone, sphereDone };
 	std::vector<cl::Event> textureWaits{ drawDone };
 
@@ -50,16 +47,12 @@ private:
 	cl::NDRange local_work_spheres = cl::NDRange(16, 16, 1);
 
 	cl::Buffer cl_spheres;
-	cl::Image2D cl_rays;
 	cl::Image2DArray cl_sphere_t; // sphere intersection t values
 	cl::ImageGL cl_output;
 	std::vector<cl::Memory> gl_objects{ cl_output };
 
 	int sphere_count = 0;
 	int light_count = 0;
-
-	cl_float16 cl_view;
-	cl_float3 cl_pos;
 
 	void createPlatform();
 	void createDevive();

@@ -12,11 +12,9 @@
 #include <fstream>
 #include <CL/cl_gl.h>
 
-#define RAY_GEN_PATH "src/kernels/ray_gen.cl"
 #define SPHERE_PATH "src/kernels/sphere_intersect.cl"
 #define DRAW_PATH "src/kernels/draw.cl"
 
-#define RAY_GEN_KERNEL "ray_gen"
 #define SPHERE_KERNEL "sphere_intersect"
 #define DRAW_KERNEL "draw"
 
@@ -41,20 +39,22 @@ void Renderer::init(int image_width, int image_height, Interface* interface,
 }
 
 void Renderer::queueRender(const float view[4][4]) {
+	static cl_float16 cl_view;
+	static cl_float3 cl_pos;
+
 	cl_view = {{ view[0][0], view[0][1], view[0][2], 0,
 				 view[1][0], view[1][1], view[1][2], 0,
 				 view[2][0], view[2][1], view[2][2], 0,
 				 0, 0, 0, 0 }};
 	cl_pos = {{ view[3][0], view[3][1], view[3][2] }};
 
-	rayGenKernel.setArg(0, cl_view);
-	sphereKernel.setArg(0, cl_pos);
-	drawKernel.setArg(0, cl_pos);
+	sphereKernel.setArg(0, cl_view);
+	sphereKernel.setArg(1, cl_pos);
+	drawKernel.setArg(0, cl_view);
+	drawKernel.setArg(1, cl_pos);
 	
 	// launch the kernels
-	queue.enqueueNDRangeKernel(rayGenKernel, NULL, global_work_pixels, local_work_pixels, NULL, &rayGenDone);
-	sphereWaits[0] = rayGenDone;
-	queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres, &sphereWaits, &sphereDone);
+	queue.enqueueNDRangeKernel(sphereKernel, NULL, global_work_spheres, local_work_spheres, NULL, &sphereDone);
 	queue.enqueueAcquireGLObjects(&gl_objects, NULL, &textureDone);
 	drawWaits[0] = textureDone; drawWaits[1] = sphereDone;
 	queue.enqueueNDRangeKernel(drawKernel, NULL, global_work_pixels, local_work_pixels, &drawWaits, &drawDone);
@@ -158,11 +158,6 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 
 	// inter-kernel buffers
 	cl_int result;
-	cl::ImageFormat ray_format = { CL_RGBA, CL_FLOAT };
-	cl_rays = cl::Image2D(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, ray_format,
-		image_width, image_height, 0, NULL, &result);
-	checkCLError(result, "Error during cl_rays creation");
-
 	cl::ImageFormat sphere_format = { CL_LUMINANCE, CL_FLOAT };
 	cl_sphere_t = cl::Image2DArray(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, sphere_format,
 		sphere_count + light_count, image_width, image_height, 0, 0, NULL, &result);
@@ -176,24 +171,20 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 
 void Renderer::createKernels() {
 
-	createKernel(RAY_GEN_PATH, rayGenKernel, RAY_GEN_KERNEL);
 	createKernel(SPHERE_PATH, sphereKernel, SPHERE_KERNEL);
 	createKernel(DRAW_PATH, drawKernel, DRAW_KERNEL);
 	
-	/* rayGenKernel arg 0 = view matrix */
-	rayGenKernel.setArg(1, cl_rays);
-	
-	/* sphereKernel arg 0 = view position */
-	sphereKernel.setArg(1, cl_spheres);
-	sphereKernel.setArg(2, cl_rays);
+	/* sphereKernel arg 0 = view matrix */
+	/* drawKernel arg 1 = view position */
+	sphereKernel.setArg(2, cl_spheres);
 	sphereKernel.setArg(3, cl_sphere_t);
-	
-	/* drawKernel arg 0 = view position */
-	drawKernel.setArg(1, cl_spheres);
-	drawKernel.setArg(2, (sphere_count + light_count) * sizeof(Sphere), NULL);
-	drawKernel.setArg(3, sphere_count);
-	drawKernel.setArg(4, light_count);
-	drawKernel.setArg(5, cl_rays);
+
+	/* rayGenKernel arg 0 = view matrix */
+	/* drawKernel arg 1 = view position */
+	drawKernel.setArg(2, cl_spheres);
+	drawKernel.setArg(3, (sphere_count + light_count) * sizeof(Sphere), NULL);
+	drawKernel.setArg(4, sphere_count);
+	drawKernel.setArg(5, light_count);
 	drawKernel.setArg(6, cl_sphere_t);
 	drawKernel.setArg(7, cl_output);
 }

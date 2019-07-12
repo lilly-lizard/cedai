@@ -12,18 +12,21 @@ float intersection(float3 ray_o, float3 ray_d, float3 center, float radius);
 
 // SPHERE INTERSECTION
 
-__kernel void sphere_intersect(const float3 ray_o,
+__kernel void sphere_intersect(const float16 view, const float3 ray_o,
 							   __constant Sphere* spheres,
-							   __read_only image2d_t rays,
 							   __write_only image2d_array_t ts) /* the t value of the intersection between ray[pixel] and sphere[id] */
 {
-	const int4 coord_ts = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
-	const int2 coord_rays = (int2)(get_global_id(0), get_global_id(1));
+	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
+	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
+	const int4 coord_ts = (int4)(coord, get_global_id(2), 0);
 
-	const float t = intersection(ray_o,
-								 read_imagef(rays, sampler, coord_rays).xyz,
-								 spheres[get_global_id(2)].pos,
-								 spheres[get_global_id(2)].radius);
+	// create a camera ray
+	const float3 uv = (float3)(dim.x, (float)coord.x - (float)dim.x / 2, (float)(dim.y - coord.y) - (float)dim.y / 2);
+	const float3 ray_d = normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
+										    uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
+										    uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
+
+	const float t = intersection(ray_o, ray_d, spheres[get_global_id(2)].pos, spheres[get_global_id(2)].radius);
 	write_imagef(ts, coord_ts, t);
 }
 

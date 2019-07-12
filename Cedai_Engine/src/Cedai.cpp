@@ -47,12 +47,12 @@ void Cedai::init() {
 	CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
-	timePrev = high_resolution_clock::now();
 	CD_INFO("Engine initialised.");
 }
 
 void Cedai::loop() {
 	bool quit = false;
+	timePrev = high_resolution_clock::now();
 
 	while (!quit && !interface.WindowCloseCheck()) {
 		// queue a render operation

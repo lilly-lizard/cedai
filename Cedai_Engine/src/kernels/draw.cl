@@ -20,28 +20,34 @@ uchar3 draw_background(float3 ray_d);
 
 // DRAW
 
-__kernel void draw(const float3 ray_o,
+__kernel void draw(const float16 view, const float3 ray_o,
 				   __global Sphere* spheres,
 				   __local Sphere* spheres_local,
 				   const int sphere_count, const int light_count,
-				   __read_only image2d_t rays,
 				   __read_only image2d_array_t ts,
 				   __write_only image2d_t output)  /* rgb [0 - 255] */
 {
 	event_t copy_event = async_work_group_copy((__local char *)spheres_local, (__global char *)spheres,
 		(sphere_count + light_count) * sizeof(Sphere), 0);
-	wait_group_events(1, &copy_event);
 
-	const float3 ray_d = read_imagef(rays, sampler, (int2)(get_global_id(0), get_global_id(1))).xyz;
-	int4 coord_ts = (int4)(get_global_id(0), get_global_id(1), 0, 0);
+	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
+	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
+
+	// create a camera ray
+	const float3 uv = (float3)(dim.x, (float)coord.x - (float)dim.x / 2, (float)(dim.y - coord.y) - (float)dim.y / 2);
+	const float3 ray_d = normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
+										    uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
+										    uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
 
 	// check for intersections
 	uchar3 color = (uchar3)(0, 0, 0);
 	bool color_found = false;
 	float min_t = 100; // drop off distance
 	float t;
+	int4 coord_ts = (int4)(coord, 0, 0);
 
 	// spheres
+	wait_group_events(1, &copy_event);
 	for (int s = 0; s < sphere_count; s++) {
 		coord_ts.z = s;
 		t = read_imagef(ts, sampler, coord_ts).x;
@@ -69,7 +75,7 @@ __kernel void draw(const float3 ray_o,
 
 	if (!color_found)
 		color = draw_background(ray_d);
-	write_imageui(output, (int2)(get_global_id(0), get_global_id(1)), (uint4)(color.x, color.y, color.z, 0));
+	write_imageui(output, coord, (uint4)(color.x, color.y, color.z, 0));
 }
 
 // HELPER FUNCTIONS
