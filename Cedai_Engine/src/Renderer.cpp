@@ -19,7 +19,7 @@
 
 void Renderer::init(int image_width, int image_height, Interface* interface,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-		std::vector<cl_float3>& vertices, std::vector<cd::Polygon>& polygons) {
+		std::vector<cl_float3>& vertices, std::vector<cl_uchar3>& polygons) {
 	CD_INFO("Initialising renderer...");
 
 	this->image_width = image_width;
@@ -36,9 +36,6 @@ void Renderer::init(int image_width, int image_height, Interface* interface,
 	setWorkGroups();
 
 	queue.finish();
-
-	CD_WARN("vertex sizeof = {}", sizeof(cl_float3));
-	CD_WARN("polygon sizeof = {}", sizeof(cd::Polygon));
 }
 
 void Renderer::queueRender(const float view[4][4]) {
@@ -149,7 +146,7 @@ void Renderer::createQueue() {
 
 void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-		std::vector<cl_float3>& vertices, std::vector<cd::Polygon>& polygons) {
+		std::vector<cl_float3>& vertices, std::vector<cl_uchar3>& polygons) {
 	sphere_count = spheres.size();
 	light_count = lights.size();
 	vertex_count = vertices.size();
@@ -158,22 +155,22 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 
 	// spheres and lights
 	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, (sphere_count + light_count) * sizeof(cd::Sphere), NULL, &result);
-	CD_WARN("sphere bytes = {}", (sphere_count + light_count) * sizeof(cd::Sphere));
+	CD_INFO("sphere bytes = {}", (sphere_count + light_count) * sizeof(cd::Sphere));
 	checkCLError(result, "sphere buffer create");
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(cd::Sphere), spheres.data());
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(cd::Sphere), light_count * sizeof(cd::Sphere), lights.data());
 
 	// vertices
 	cl_vertices = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_count * sizeof(cl_float3), NULL, &result);
-	CD_WARN("vertex bytes = {}", vertex_count * sizeof(cl_float3));
+	CD_INFO("vertex bytes = {}", vertex_count * sizeof(cl_float3));
 	checkCLError(result, "vertex buffer create");
 	queue.enqueueWriteBuffer(cl_vertices, CL_TRUE, 0, vertex_count * sizeof(cl_float3), vertices.data());
 
 	// polygons
-	cl_polygons = cl::Buffer(context, CL_MEM_READ_ONLY, polygon_count * sizeof(cd::Polygon), NULL, &result);
-	CD_WARN("polygon bytes = {}", polygon_count * sizeof(cd::Polygon));
+	cl_polygons = cl::Buffer(context, CL_MEM_READ_ONLY, polygon_count * sizeof(cl_uchar3), NULL, &result);
+	CD_INFO("polygon bytes = {}", polygon_count * sizeof(cl_uchar3));
 	checkCLError(result, "polygon buffer create");
-	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, polygon_count * sizeof(cd::Polygon), polygons.data());
+	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, polygon_count * sizeof(cl_uchar3), polygons.data());
 
 	// output image
 	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
@@ -218,7 +215,7 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	const char* kernel_source = source.c_str();
 
 	// compiler options
-	std::string options = "-cl-fast-relaxed-math -cl-std=CL1.2";
+	std::string options = "-cl-fast-relaxed-math"; //  -cl-std=CL1.2
 
 	// Create an OpenCL program by performing runtime source compilation for the chosen device
 	cl::Program program = cl::Program(context, kernel_source);

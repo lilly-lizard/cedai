@@ -3,7 +3,6 @@
 #include "tools/Sphere.h"
 #include "tools/Polygon.h"
 
-#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <CL/cl.hpp>
 #include <vector>
 #include <string>
@@ -15,7 +14,7 @@ public:
 
 	void init(int image_width, int image_height, Interface* interface,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-		std::vector<cl_float3>& vertices, std::vector<cd::Polygon>& polygons);
+		std::vector<cl_float3>& vertices, std::vector<cl_uchar3>& polygon_colors);
 
 	void queueRender(const float view[4][4]);
 	void queueFinish();
@@ -69,7 +68,7 @@ private:
 
 	void createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 			std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-			std::vector<cl_float3>& vertices, std::vector<cd::Polygon>& polygons);
+			std::vector<cl_float3>& vertices, std::vector<cl_uchar3>& polygon_colors);
 
 	void createKernels();
 	void createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint);

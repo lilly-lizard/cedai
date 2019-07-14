@@ -29,15 +29,15 @@ private:
 
 	std::vector<cd::Sphere> spheres;
 	std::vector<cd::Sphere> lights;
-	std::vector<cd::Polygon> polygons;
+	std::vector<cl_uchar3> polygon_colors;
 	std::vector<cl_float3> vertices;
 
 	float view[4][4] = { 0 };
 	uint32_t inputs;
 
-	float strafeSpeed = 2;
-	float forwardSpeed = 2;
-	float backSpeed = 2;
+	float strafeSpeed  = 4;
+	float forwardSpeed = 4;
+	float backSpeed	   = 4;
 	float radiansPerMousePosHoriz = 0.002f;
 	float radiansPerMousePosVert =	0.002f;
 	float radiansPerSecondFront = CD_PI / 4;
