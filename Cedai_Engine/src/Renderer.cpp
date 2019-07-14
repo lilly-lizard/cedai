@@ -1,8 +1,7 @@
-// TODO work with half data type in kernels
-
 #include "Renderer.h"
 #include "Interface.h"
 #include "tools/Log.h"
+#include "tools/config.h"
 
 // TODO only for windows
 #define GLFW_EXPOSE_NATIVE_WGL
@@ -173,7 +172,7 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, polygon_count * sizeof(cl_uchar3), polygons.data());
 
 	// output image
-	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
+	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_NO_ACCESS, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
 	gl_objects[0] = cl_output;
 }
@@ -233,7 +232,7 @@ void Renderer::setWorkGroups() {
 	int x = 16;
 	int y = 16;
 
-	global_work = cl::NDRange(image_width, image_height);
+	global_work = cl::NDRange(image_width / RESOLUTION, image_height / RESOLUTION);
 	local_work = cl::NDRange(x, y);
 }
 

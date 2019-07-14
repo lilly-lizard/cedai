@@ -11,8 +11,14 @@ typedef struct Sphere
 
 // DECLARATIONS AND CONSTANTS
 
-#define AMBIENT 0.4f
+// to change resolution, change the output writing code as well
+#define RESOLUTION 2
+
+#define AMBIENT 0.2f
 #define LIGHT_STEP 0.2f
+
+#define BACKGROUND_OFFSET 0.3f
+#define BACKGROUND_MULTIPLIER 0.4f
 
 const sampler_t sampler = CLK_FILTER_NEAREST | CLK_ADDRESS_CLAMP | CLK_NORMALIZED_COORDS_FALSE;
 
@@ -28,9 +34,9 @@ uchar3 draw_background(float3 ray_d);
 // ENTRY POINT
 
 __kernel void render(const float16 view, const float3 ray_o,
-							const int sphere_count, const int light_count, const int polygon_count,
-							__constant Sphere* spheres, __constant float3* vertices, __constant uchar3* polygon_colors,
-							__write_only image2d_t output)
+					 const int sphere_count, const int light_count, const int polygon_count,
+					 __constant Sphere* spheres, __constant float3* vertices, __constant uchar3* polygon_colors,
+					 __write_only image2d_t output)
 {
 	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
@@ -51,25 +57,27 @@ __kernel void render(const float16 view, const float3 ray_o,
 
 	// spheres
 	for (int s = 0; s < sphere_count; s++) {
-		float t = sphere_intersect(ray_o, ray_d, spheres[s].pos, spheres[s].radius);
+		Sphere sphere = spheres[s];
+		float t = sphere_intersect(ray_o, ray_d, sphere.pos, sphere.radius);
 		if (0 < t && t < min_t) {
-			sphere_found = true;
-			light_found = false;
+			sphere_found  = true;
+			light_found   = false;
 			polygon_found = false;
 			min_t = t;
-			color = spheres[s].color;
+			color = sphere.color;
 			index = s;
 	}	}
 
 	// lights
 	for (int l = sphere_count; l < sphere_total; l++) {
-		float t = sphere_intersect(ray_o, ray_d, spheres[l].pos, spheres[l].radius);
+		Sphere light = spheres[l];
+		float t = sphere_intersect(ray_o, ray_d, light.pos, light.radius);
 		if (0 < t && t < min_t) {
-			sphere_found = false;
-			light_found = true;
+			sphere_found  = false;
+			light_found   = true;
 			polygon_found = false;
 			min_t = t;
-			color = spheres[l].color;
+			color = light.color;
 			index = l;
 	}	}
 
@@ -77,8 +85,8 @@ __kernel void render(const float16 view, const float3 ray_o,
 	for (int p = 0; p < polygon_count; p++) {
 		float t = triangle_intersect(ray_o, ray_d, vertices[p * 3], vertices[p * 3 + 1], vertices[p * 3 + 2]);
 		if (0 < t && t < min_t) {
-			sphere_found = false;
-			light_found = false;
+			sphere_found  = false;
+			light_found   = false;
 			polygon_found = true;
 			min_t = t;
 			color = polygon_colors[p];
@@ -105,12 +113,25 @@ __kernel void render(const float16 view, const float3 ray_o,
 		color = convert_uchar3(convert_float3(color) * light);
 	}
 
-	// background
-	if (!(sphere_found || light_found || polygon_found))
+	// dither effect and background draw
+	int dither = (color.x + color.y + color.z) / 3 / 64;
+	if (!(sphere_found || light_found || polygon_found)) {
 		color = draw_background(ray_d);
-
+		dither = 2;
+	}
+	
 	// write
-	write_imageui(output, coord, (uint4)(color.x, color.y, color.z, 0));
+	uint4 color_out = (uint4)(color.x, color.y, color.z, 0);
+	write_imageui(output, (int2)(coord.x * RESOLUTION, coord.y * RESOLUTION), color_out);
+	
+	if (dither > 0) write_imageui(output, (int2)(coord.x * RESOLUTION + 1, coord.y * RESOLUTION + 1), color_out);
+	else write_imageui(output, (int2)(coord.x * RESOLUTION + 1, coord.y * RESOLUTION + 1), (uint4)(0,0,0,0));
+	
+	if (dither > 1) write_imageui(output, (int2)(coord.x * RESOLUTION + 1, coord.y * RESOLUTION), color_out);
+	else write_imageui(output, (int2)(coord.x * RESOLUTION + 1, coord.y * RESOLUTION), (uint4)(0,0,0,0));
+	
+	if (dither > 2) write_imageui(output, (int2)(coord.x * RESOLUTION, coord.y * RESOLUTION + 1), color_out);
+	else write_imageui(output, (int2)(coord.x * RESOLUTION, coord.y * RESOLUTION + 1), (uint4)(0,0,0,0));
 }
 
 // HELPER FUNCTIONS
@@ -160,7 +181,8 @@ float diffuse_polygon(float3 normal, float3 intersection, float3 light, float3 r
 {
 	float3 light_to_int = intersection - light;
 	return sign(dot(normal, light_to_int)) == sign(dot(normal, ray_d)) ?
-		clamp(dot(fast_normalize(normal), fast_normalize(light_to_int)), 0.0f, 1.0f) : 0;
+		clamp(dot(fast_normalize(normal), fast_normalize(light_to_int)), 0.0f, 1.0f) :
+		0;
 }
 
 // rounds up to the nearest multiple of multiple
@@ -171,8 +193,6 @@ float ceiling(float value, float multiple)
 
 uchar3 draw_background(float3 ray_d)
 {
-	float offset = 0.3f;
-	float mult = 0.4f;
-	float3 color = fabs(ray_d) * mult + offset;
+	float3 color = fabs(ray_d) * BACKGROUND_MULTIPLIER + BACKGROUND_OFFSET;
 	return convert_uchar3(color * 255);
 }

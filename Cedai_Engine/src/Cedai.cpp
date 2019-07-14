@@ -17,7 +17,7 @@ using namespace std::chrono;
 const int screen_width = 960;
 const int screen_height = 640;
 // 640 x 480
-// 960 x 800
+// 960 x 640
 
 int main() {
 	Cedai App;
