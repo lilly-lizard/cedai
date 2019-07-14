@@ -145,12 +145,12 @@ void Renderer::createQueue() {
 }
 
 void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
-		std::vector<Sphere>& spheres, std::vector<Sphere>& lights) {
+	std::vector<Sphere>& spheres, std::vector<Sphere>& lights) {
 	sphere_count = spheres.size();
 	light_count = lights.size();
 
 	// spheres and lights
-	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, (sphere_count + light_count) * sizeof(Sphere));
+	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY, (sphere_count + light_count) * sizeof(Sphere));
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), spheres.data());
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(Sphere), light_count * sizeof(Sphere), lights.data());
 
@@ -162,7 +162,7 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 	checkCLError(result, "Error during cl_sphere_t creation");
 
 	// output image
-	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
+	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_NO_ACCESS, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
 	gl_objects[0] = cl_output;
 }

@@ -43,6 +43,7 @@ void Cedai::init() {
 	CD_INFO("Interface initialised.");
 
 	createEntities();
+	CD_WARN("sphere bytes: {}", spheres.size() * sizeof(Sphere));
 	renderer.init(screen_width, screen_height, &interface, spheres, lights);
 	CD_INFO("Renderer initialised.");
 
@@ -81,29 +82,33 @@ void Cedai::cleanUp() {
 
 void Cedai::createEntities() {
 
-	spheres.resize(3);
+	spheres.push_back(Sphere{ 1.0, 0, 0, 0,
+		cl_float3{{ 10, -3, 0 }},
+		cl_uchar3{{ 230, 128, 128 }} });
 
-	spheres[0].radius = 1.0;
-	spheres[0].position = { { 10, 3, 0 } };
-	spheres[0].color = { { 230, 128, 128 } };
+	spheres.push_back(Sphere{ 0.5, 0, 0, 0,
+		cl_float3{{ 4, 3, 1 }},
+		cl_uchar3{{ 255, 255, 128 }} });
 
-	spheres[1].radius = 0.5;
-	spheres[1].position = { { 4, -1, 1 } };
-	spheres[1].color = { { 255, 255, 128 } };
+	spheres.push_back(Sphere{ 0.2, 0, 0, 0,
+		cl_float3{{ 5, 2, -1 }},
+		cl_uchar3{{ 128, 128, 230 }} });
 
-	spheres[2].radius = 0.2;
-	spheres[2].position = { { 5, -2, -1 } };
-	spheres[2].color = { { 128, 128, 230 } };
+	for (int i = 0; i < 10; i++) {
+		for (int j = 0; j < 10; j++) {
+			spheres.push_back(Sphere{ 0.5, 0, 0, 0,
+				cl_float3{{ 10, (float)i * 1.5f - 5, (float)j * 1.5f - 5 }},
+				cl_uchar3{{ 128, 255, 255 }} });
+		}
+	}
 
-	lights.resize(2);
+	lights.push_back(Sphere{ 0.1, 0, 0, 0,
+		cl_float3{{ 5, 4, 4 }},
+		cl_uchar3{{ 255, 255, 205 }} });
 
-	lights[0].radius = 0.1;
-	lights[0].position = { { 5, 1, 2 } };
-	lights[0].color = { { 255, 255, 205 } };
-
-	lights[1].radius = 0.1;
-	lights[1].position = { { 4, -2, -2 } };
-	lights[1].color = { { 255, 255, 205 } };
+	lights.push_back(Sphere{ 0.1, 0, 0, 0,
+		cl_float3{{  -1, -6, -4 }},
+		cl_uchar3{{ 255, 255, 205 }} });
 }
 
 void Cedai::processInputs() {

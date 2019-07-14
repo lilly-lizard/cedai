@@ -30,16 +30,35 @@ __kernel void draw(const float16 view, const float3 ray_o,
 	event_t copy_event = async_work_group_copy((__local char *)spheres_local, (__global char *)spheres,
 		(sphere_count + light_count) * sizeof(Sphere), 0);
 
-	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
-	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
-
+	//// copy data to local
+	//const uint local_size = get_local_size(0) * get_local_size(1);
+	//const uint local_id = get_local_id(0) + get_local_size(0) * get_local_id(1);
+	//
+	//const uint total_spheres = sphere_count + light_count;
+	//const size_t spheres_bytes = total_spheres * sizeof(Sphere);
+	//
+	//const uint copy_bytes = spheres_bytes / local_size;
+	//const uint copy_bytes_rem = spheres_bytes % local_size;
+	//const uint pointer_offset = local_id < copy_bytes_rem ?
+	//	local_id * (copy_bytes + 1) :
+	//	copy_bytes_rem * (copy_bytes + 1) + (local_id - copy_bytes_rem) * copy_bytes;
+	//
+	//event_t copy_event = async_work_group_copy(
+	//	(__local char*)spheres_local + pointer_offset,
+	//	(__global char*)spheres + pointer_offset,
+	//	local_id < copy_bytes_rem ? copy_bytes + 1 : copy_bytes, 0);
+	
 	// create a camera ray
+	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
+	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
+
 	const float3 uv = (float3)(dim.x, (float)coord.x - (float)dim.x / 2, (float)(dim.y - coord.y) - (float)dim.y / 2);
 	const float3 ray_d = normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
 										    uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
 										    uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
 
 	// check for intersections
+	const uint total_spheres = sphere_count + light_count;
 	uchar3 color = (uchar3)(0, 0, 0);
 	bool color_found = false;
 	float min_t = 100; // drop off distance
@@ -57,14 +76,14 @@ __kernel void draw(const float16 view, const float3 ray_o,
 			// calculate light
 			float light = 0;
 			float3 intersection = ray_o + t * ray_d;
-			for (int l = sphere_count; l < sphere_count + light_count; l++)
+			for (int l = sphere_count; l < total_spheres; l++)
 				light += diffuse(intersection - spheres_local[s].pos, intersection, spheres_local[l].pos);
 			light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
 			color = convert_uchar3(convert_float3(spheres_local[s].color) * light);
 	}	}
 
 	// lights
-	for (int l = sphere_count; l < sphere_count + light_count; l++) {
+	for (int l = sphere_count; l < total_spheres; l++) {
 		coord_ts.z = l;
 		t = read_imagef(ts, sampler, coord_ts).x;
 		if (0 < t && t < min_t) {
