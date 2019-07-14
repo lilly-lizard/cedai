@@ -12,8 +12,8 @@
 #include <fstream>
 #include <CL/cl_gl.h>
 
-#define KERNEL_PATH "src/kernels/opencl_kernel.cl"
-#define KERNEL_ENTRY "render_kernel"
+#define KERNEL_PATH "src/kernels/kernel.cl"
+#define KERNEL_ENTRY "render"
 
 // PUBLIC FUNCTIONS
 
@@ -36,6 +36,9 @@ void Renderer::init(int image_width, int image_height, Interface* interface,
 	setWorkGroups();
 
 	queue.finish();
+
+	CD_WARN("vertex sizeof = {}", sizeof(cl_float3));
+	CD_WARN("polygon sizeof = {}", sizeof(cd::Polygon));
 }
 
 void Renderer::queueRender(const float view[4][4]) {
@@ -77,7 +80,7 @@ void Renderer::createPlatform() {
 
 	// Pick one platform
 	pickPlatform(platform, platforms);
-	std::cout << "~ \n~ Using OpenCL platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
+	std::cout << "~ \n~ OpenCL using platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
 }
 
 void Renderer::createDevive() {
@@ -90,12 +93,15 @@ void Renderer::createDevive() {
 	for (int i = 0; i < devices.size(); i++) {
 		std::cout << "~ \t" << i + 1 << ": " << devices[i].getInfo<CL_DEVICE_NAME>() << std::endl;
 		std::cout << "~ \t\tMax compute units: " << devices[i].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
+		std::cout << "~ \t\tMax constant buffer size: " << devices[i].getInfo<CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE>() << std::endl;
+		std::cout << "~ \t\tMax constant args: " << devices[i].getInfo<CL_DEVICE_MAX_CONSTANT_ARGS>() << std::endl;
+		std::cout << "~ \t\tMax mem alloc: " << devices[i].getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>() << std::endl;
 		std::cout << "~ \t\tMax work group size: " << devices[i].getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << "\n~ \n";
 	}
 
 	// Pick one device
 	pickDevice(device, devices);
-	std::cout << "~ \n~ Using OpenCL device: \t" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+	std::cout << "~ \n~ OpenCL using device: \t" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
 }
 
 void Renderer::pickPlatform(cl::Platform& platform, const std::vector<cl::Platform>& platforms) {
@@ -148,22 +154,28 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 	light_count = lights.size();
 	vertex_count = vertices.size();
 	polygon_count = polygons.size();
+	cl_int result;
 
 	// spheres and lights
-	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, (sphere_count + light_count) * sizeof(cd::Sphere));
+	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY, (sphere_count + light_count) * sizeof(cd::Sphere), NULL, &result);
+	CD_WARN("sphere bytes = {}", (sphere_count + light_count) * sizeof(cd::Sphere));
+	checkCLError(result, "sphere buffer create");
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(cd::Sphere), spheres.data());
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(cd::Sphere), light_count * sizeof(cd::Sphere), lights.data());
 
 	// vertices
-	cl_vertices = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_count * sizeof(cl_float3));
+	cl_vertices = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_count * sizeof(cl_float3), NULL, &result);
+	CD_WARN("vertex bytes = {}", vertex_count * sizeof(cl_float3));
+	checkCLError(result, "vertex buffer create");
 	queue.enqueueWriteBuffer(cl_vertices, CL_TRUE, 0, vertex_count * sizeof(cl_float3), vertices.data());
 
 	// polygons
-	cl_polygons = cl::Buffer(context, CL_MEM_READ_ONLY, polygon_count * sizeof(cd::Polygon));
-	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, vertex_count * sizeof(cd::Polygon), polygons.data());
+	cl_polygons = cl::Buffer(context, CL_MEM_READ_ONLY, polygon_count * sizeof(cd::Polygon), NULL, &result);
+	CD_WARN("polygon bytes = {}", polygon_count * sizeof(cd::Polygon));
+	checkCLError(result, "polygon buffer create");
+	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, polygon_count * sizeof(cd::Polygon), polygons.data());
 
 	// output image
-	cl_int result;
 	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
 	gl_objects[0] = cl_output;

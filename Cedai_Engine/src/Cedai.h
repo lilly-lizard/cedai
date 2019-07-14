@@ -13,7 +13,7 @@ Coordinate system: x - forwards, y - right, z - up
 #include <glm/glm.hpp> // vector/matrix linear algebra
 #include <chrono>
 #include <vector>
-#define M_PI   3.14159265358979323846264338327950288
+#define CD_PI 3.14159
 
 class Cedai {
 public:
@@ -40,7 +40,7 @@ private:
 	float backSpeed = 2;
 	float radiansPerMousePosHoriz = 0.002f;
 	float radiansPerMousePosVert =	0.002f;
-	float radiansPerSecondFront = M_PI / 4;
+	float radiansPerSecondFront = CD_PI / 4;
 
 	glm::vec3 viewerPosition =	glm::vec3(0, 0, 0);				 // your position in the world
 	glm::vec3 viewerForward =	glm::vec3(1, 0, 0);				 // direction you are facing

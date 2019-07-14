@@ -40,7 +40,8 @@ void Interface::init(int screen_width, int screen_height) {
 	createTexture();
 	createRenderProgram();
 
-	CD_INFO("OpenGL version: {}", glGetString(GL_RENDERER));
+	CD_INFO("OpenGL version: {}", glGetString(GL_VERSION));
+	CD_INFO("OpenGL rendering device: {}", glGetString(GL_RENDERER));
 
 	// set key bindings
 	mapKeys();

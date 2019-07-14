@@ -1,13 +1,16 @@
 #include "Cedai.h"
 #include "Interface.h"
-#include "tools/Log.h"
+#include "tools/Model_Loader.h"
 #include "tools/Inputs.h"
+#include "tools/Log.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
 #include <iomanip>
+
+#define MAIZE_FILE "../assets/maize.bin"
 
 using namespace std::chrono;
 
@@ -41,7 +44,8 @@ void Cedai::init() {
 
 	interface.init(screen_width, screen_height);
 	CD_INFO("Interface initialised.");
-
+	
+	CD_WARN("p size = {}", sizeof(cd::Polygon));
 	createEntities();
 	renderer.init(screen_width, screen_height, &interface, spheres, lights, vertices, polygons);
 	CD_INFO("Renderer initialised.");
@@ -81,27 +85,19 @@ void Cedai::cleanUp() {
 
 void Cedai::createEntities() {
 
-	spheres.resize(103);
+	spheres.resize(3);
 
-	for (int i = 0; i < 10; i++) {
-		for (int j = 0; j < 10; j++) {
-			spheres[i * 10 + j].radius = 0.5;
-			spheres[i * 10 + j].position = { { 20, (float)i * 1.5f - 10, (float)j * 1.5f - 5 } };
-			spheres[i * 10 + j].color = { { 128, 255, 230 } };
-		}
-	}
+	spheres[0].radius = 1.0;
+	spheres[0].position = { { 10, -3, 0 } };
+	spheres[0].color = { { 230, 128, 128 } };
 
-	spheres[100].radius = 1.0;
-	spheres[100].position = { { 10, -3, 0 } };
-	spheres[100].color = { { 230, 128, 128 } };
+	spheres[1].radius = 0.5;
+	spheres[1].position = { { 4, 1, 1 } };
+	spheres[1].color = { { 255, 255, 128 } };
 
-	spheres[101].radius = 0.5;
-	spheres[101].position = { { 4, 1, 1 } };
-	spheres[101].color = { { 255, 255, 128 } };
-
-	spheres[102].radius = 0.2;
-	spheres[102].position = { { 5, 2, -1 } };
-	spheres[102].color = { { 128, 128, 230 } };
+	spheres[2].radius = 0.2;
+	spheres[2].position = { { 5, 2, -1 } };
+	spheres[2].color = { { 128, 128, 230 } };
 
 	lights.resize(2);
 
@@ -113,24 +109,69 @@ void Cedai::createEntities() {
 	lights[1].position = { { 4, -2, -2 } };
 	lights[1].color = { { 255, 255, 205 } };
 
-	vertices.resize(4);
+	std::vector<glm::vec4> verticesLoad;
+	std::vector<glm::uvec4> polygonsLoad;
+	
+	CD_INFO("loading models...");
+	cd::LoadModel(MAIZE_FILE, verticesLoad, polygonsLoad);
+	
+	vertices.clear();
+	for (int v = 0; v < verticesLoad.size(); v++)
+		vertices.push_back(cl_float3{{ verticesLoad[v].x, verticesLoad[v].y, verticesLoad[v].z }});
+	
+	polygons.clear();
+	for (int p = 0; p < polygonsLoad.size(); p++)
+		polygons.push_back(cd::Polygon{
+			cl_uint3{{ polygonsLoad[p].x, polygonsLoad[p].y, polygonsLoad[p].z }},
+			cl_uchar3{{ 128, 128, 128 }}
+			});
+	CD_INFO("models loaded.");
+	
+	uint32_t n = vertices.size();
+	vertices.push_back(cl_float3{ { 5, 0, 2 } });
+	vertices.push_back(cl_float3{ { 5.7, 0.1, 3 } });
+	vertices.push_back(cl_float3{ { 6.1, 0.6, 2.05 } });
+	vertices.push_back(cl_float3{ { 6.2, -0.5, 2 } });
+	vertices.push_back(cl_float3{ { 6.2, -0.5, 2 } });
 
-	vertices[0] = { { 5, 0, 0 } };
-	vertices[1] = { { 5.7, 0.1, 1 } };
-	vertices[2] = { { 6.1, 0.6, 0.05 } };
-	vertices[3] = { { 6.2, -0.5, 0 } };
+	polygons.push_back(cd::Polygon{
+		cl_uint3{{ 0 + n, 1 + n, 2 + n }},
+		cl_uchar3{{ 128, 255, 180 }}
+		});
+	polygons.push_back(cd::Polygon{
+		cl_uint3{{ 0 + n, 2 + n, 3 + n }},
+		cl_uchar3{{ 180, 128, 255 }}
+		});
+	polygons.push_back(cd::Polygon{
+		cl_uint3{{ 0 + n, 3 + n, 1 + n }},
+		cl_uchar3{{ 255, 180, 128 }}
+		});
+	polygons.push_back(cd::Polygon{
+		cl_uint3{{ 1 + n, 3 + n, 2 + n }},
+		cl_uchar3{{ 180, 255, 128 }}
+		});
 
-	polygons.resize(4);
+	//vertices.resize(4);
+	//
+	//vertices[0] = { { 5, 0, 0 } };
+	//vertices[1] = { { 5.7, 0.1, 1 } };
+	//vertices[2] = { { 6.1, 0.6, 0.05 } };
+	//vertices[3] = { { 6.2, -0.5, 0 } };
+	//
+	//polygons.resize(4);
+	//
+	//polygons[0].indices = { { 0, 1, 2 } };
+	//polygons[1].indices = { { 0, 2, 3 } };
+	//polygons[2].indices = { { 0, 3, 1 } };
+	//polygons[3].indices = { { 1, 3, 2 } };
+	//
+	//polygons[0].color = { { 128, 255, 180 } };
+	//polygons[1].color = { { 180, 128, 255 } };
+	//polygons[2].color = { { 255, 180, 128 } };
+	//polygons[3].color = { { 180, 255, 128 } };
 
-	polygons[0].indices = { { 0, 1, 2 } };
-	polygons[1].indices = { { 0, 2, 3 } };
-	polygons[2].indices = { { 0, 3, 1 } };
-	polygons[3].indices = { { 1, 3, 2 } };
-
-	polygons[0].color = { { 128, 255, 180 } };
-	polygons[1].color = { { 180, 128, 255 } };
-	polygons[2].color = { { 255, 180, 128 } };
-	polygons[3].color = { { 180, 255, 128 } };
+	CD_WARN("num vertices = {}", vertices.size());
+	CD_WARN("num polygons = {}", polygons.size());
 }
 
 void Cedai::processInputs() {

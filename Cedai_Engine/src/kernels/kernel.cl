@@ -35,7 +35,7 @@ uchar3 draw_background(float3 ray_d);
 
 // ENTRY POINT
 
-__kernel void render_kernel(const float16 view, const float3 ray_o,
+__kernel void render(const float16 view, const float3 ray_o,
 							const int sphere_count, const int light_count, const int polygon_count,
 							__constant Sphere* spheres, __constant float3* vertices, __constant Polygon* polygons,
 							__write_only image2d_t output)
@@ -111,13 +111,15 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 	if (discriminant < 0) return -1;
 
 	float t = b - half_sqrt(discriminant);
-	if (t < 0) {
-		// the following 2 lines allows you to see inside the sphere
-		//t = b - t + b; // b + sqrt(discriminant)
-		//if (t < 0)
-		return -1;
-	}
-	return t;
+	return 0 < t ? t : -1;
+
+	//if (t < 0) {
+	//	// the following 2 lines allows you to see inside the sphere
+	//	t = b - t + b; // b + sqrt(discriminant)
+	//	if (t < 0)
+	//		return -1;
+	//}
+	//return t;
 }
 
 float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
@@ -129,9 +131,8 @@ float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
 	float3 E1 = V1 - V0;
 	float3 E2 = V2 - V0;
 	float3 P = cross(D, E2);
-	float det0 = dot(P, E1);
 
-	float inv_det0 = 1/det0;
+	float inv_det0 = 1 / dot(P, E1);
 	float3 T = O - V0;
 
 	float u = dot(T, P) * inv_det0;
