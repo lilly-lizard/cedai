@@ -47,7 +47,7 @@ private:
 	cl::NDRange local_work_spheres = cl::NDRange(16, 16, 1);
 
 	cl::Buffer cl_spheres;
-	cl::Image2DArray cl_sphere_t; // sphere intersection t values
+	cl::Buffer cl_sphere_t; // sphere intersection t values
 	cl::ImageGL cl_output;
 	std::vector<cl::Memory> gl_objects{ cl_output };
 

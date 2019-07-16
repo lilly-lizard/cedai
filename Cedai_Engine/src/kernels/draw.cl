@@ -24,33 +24,15 @@ __kernel void draw(const float16 view, const float3 ray_o,
 				   __global Sphere* spheres,
 				   __local Sphere* spheres_local,
 				   const int sphere_count, const int light_count,
-				   __read_only image2d_array_t ts,
+				   __global const float* ts,
 				   __write_only image2d_t output)  /* rgb [0 - 255] */
 {
 	event_t copy_event = async_work_group_copy((__local char *)spheres_local, (__global char *)spheres,
 		(sphere_count + light_count) * sizeof(Sphere), 0);
-
-	//// copy data to local
-	//const uint local_size = get_local_size(0) * get_local_size(1);
-	//const uint local_id = get_local_id(0) + get_local_size(0) * get_local_id(1);
-	//
-	//const uint total_spheres = sphere_count + light_count;
-	//const size_t spheres_bytes = total_spheres * sizeof(Sphere);
-	//
-	//const uint copy_bytes = spheres_bytes / local_size;
-	//const uint copy_bytes_rem = spheres_bytes % local_size;
-	//const uint pointer_offset = local_id < copy_bytes_rem ?
-	//	local_id * (copy_bytes + 1) :
-	//	copy_bytes_rem * (copy_bytes + 1) + (local_id - copy_bytes_rem) * copy_bytes;
-	//
-	//event_t copy_event = async_work_group_copy(
-	//	(__local char*)spheres_local + pointer_offset,
-	//	(__global char*)spheres + pointer_offset,
-	//	local_id < copy_bytes_rem ? copy_bytes + 1 : copy_bytes, 0);
 	
 	// create a camera ray
-	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
 	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
+	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
 
 	const float3 uv = (float3)(dim.x, (float)coord.x - (float)dim.x / 2, (float)(dim.y - coord.y) - (float)dim.y / 2);
 	const float3 ray_d = normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
@@ -62,14 +44,14 @@ __kernel void draw(const float16 view, const float3 ray_o,
 	uchar3 color = (uchar3)(0, 0, 0);
 	bool color_found = false;
 	float min_t = 100; // drop off distance
-	float t;
-	int4 coord_ts = (int4)(coord, 0, 0);
+
+	const uint ts_work_id = coord.x + coord.y * dim.x;
+	const uint work_size = dim.x * dim.y;
 
 	// spheres
 	wait_group_events(1, &copy_event);
 	for (int s = 0; s < sphere_count; s++) {
-		coord_ts.z = s;
-		t = read_imagef(ts, sampler, coord_ts).x;
+		float t = ts[ts_work_id + s * work_size];
 		if (0 < t && t < min_t) {
 			color_found = true;
 			min_t = t;
@@ -84,8 +66,7 @@ __kernel void draw(const float16 view, const float3 ray_o,
 
 	// lights
 	for (int l = sphere_count; l < total_spheres; l++) {
-		coord_ts.z = l;
-		t = read_imagef(ts, sampler, coord_ts).x;
+		float t = ts[ts_work_id + l * work_size];
 		if (0 < t && t < min_t) {
 			color_found = true;
 			min_t = t;

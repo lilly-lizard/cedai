@@ -150,15 +150,14 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 	light_count = lights.size();
 
 	// spheres and lights
-	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY, (sphere_count + light_count) * sizeof(Sphere));
+	cl_int result = 0;
+	cl_spheres = cl::Buffer(context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY, (sphere_count + light_count) * sizeof(Sphere), NULL, &result); checkCLError(result, "Error during cl_sphere_t creation");
+	checkCLError(result, "Error during cl_spheres creation");
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(Sphere), spheres.data());
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(Sphere), light_count * sizeof(Sphere), lights.data());
 
 	// inter-kernel buffers
-	cl_int result;
-	cl::ImageFormat sphere_format = { CL_LUMINANCE, CL_FLOAT };
-	cl_sphere_t = cl::Image2DArray(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, sphere_format,
-		sphere_count + light_count, image_width, image_height, 0, 0, NULL, &result);
+	cl_sphere_t = cl::Buffer(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, image_width * image_height * (sphere_count + light_count) * sizeof(cl_float), NULL, &result);
 	checkCLError(result, "Error during cl_sphere_t creation");
 
 	// output image
