@@ -111,8 +111,14 @@ __kernel void render(const float16 view, const float3 ray_o, const float time,
 	} else if (primitive_found == 1) {
 		float light = 0;
 		float3 intersection = mad(min_t, ray_d, ray_o);
-		for (int l = sphere_count; l < sphere_total; l++)
-			light += diffuse_sphere(intersection - spheres[index].pos, intersection, spheres[l].pos + light_offset * (l % 2 * 2 - 1));
+
+		for (int l = sphere_count; l < sphere_total; l++) {
+			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
+			bool in_shadow = shadow(intersection, light_pos, index, -1, sphere_count, polygon_count, spheres, vertices);
+			if (!in_shadow)
+				light += diffuse_sphere(intersection - spheres[index].pos, intersection,
+										spheres[l].pos + light_offset * (l % 2 * 2 - 1));
+		}
 		light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
 		color = convert_uchar4(convert_float4(color) * light);
 
@@ -123,6 +129,7 @@ __kernel void render(const float16 view, const float3 ray_o, const float time,
 		float3 v0 = vertices[index * 3];
 		float3 v1 = vertices[index * 3 + 1];
 		float3 v2 = vertices[index * 3 + 2];
+
 		for (int l = sphere_count; l < sphere_total; l++) {
 			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
 			bool in_shadow = shadow(intersection, light_pos, -1, index, sphere_count, polygon_count, spheres, vertices);
@@ -158,6 +165,7 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 	if (discriminant < 0) return -1;
 
 	float t = b - half_sqrt(discriminant);
+	//return select(-1.0f, t, isless(0, t));
 	return 0 < t ? t : -1;
 }
 
@@ -179,7 +187,8 @@ float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
 
 	float3 Q = cross(T, E1);
 	float v = dot(Q, D) * inv_det0;
-
+	
+	//return select(dot(Q, E2) * inv_det0, -1.0f, isless(v, 0) | isless(1, u + v));
 	return v < 0 || 1 < u + v ? -1 : dot(Q, E2) * inv_det0;
 }
 
@@ -255,6 +264,7 @@ void draw_dither(__write_only image2d_t output, uchar4 color, bool no_color_foun
 	int dither;
 	if (no_color_found) dither = 2;
 	else dither = luminance(color) / 64;
+	//int dither = select(luminance(color) / 64, 2, (int)no_color_found);
 	
 	// write
 	uint4 color_out = convert_uint4(color);

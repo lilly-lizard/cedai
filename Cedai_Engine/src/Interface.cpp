@@ -9,6 +9,8 @@
 #define FRAG_PATH "src/shaders/shader.frag"
 #define VERT_PATH "src/shaders/shader.vert"
 
+#define WINDOW_TITLE "Cedai"
+
 // PUBLIC FUNCTIONS
 
 void Interface::init(int screen_width, int screen_height) {
@@ -19,7 +21,7 @@ void Interface::init(int screen_width, int screen_height) {
 	glfwInit(); // initalizes the glfw library
 
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-	window = glfwCreateWindow(screen_width, screen_height, "Cedai", nullptr, nullptr); // make a window
+	window = glfwCreateWindow(screen_width, screen_height, WINDOW_TITLE, nullptr, nullptr); // make a window
 	if (!window) {
 		CD_ERROR("glfw window creation failed!");
 		throw std::runtime_error("glfw window creation failed");
@@ -61,6 +63,12 @@ void Interface::MinimizeCheck() {
 		glfwGetFramebufferSize(window, &width, &height);
 		glfwWaitEvents();
 	}
+}
+
+void Interface::showFPS(int fps) {
+	std::string title = WINDOW_TITLE;
+	title += " fps: " + std::to_string(fps);
+	glfwSetWindowTitle(window, title.c_str());
 }
 
 uint32_t Interface::GetKeyInputs() {

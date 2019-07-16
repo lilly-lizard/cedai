@@ -266,6 +266,7 @@ void Renderer::printErrorLog(const cl::Program& program, const cl::Device& devic
 notes:
 cpp reference: https://github.khronos.org/OpenCL-CLHPP/
 html spec: https://www.khronos.org/registry/OpenCL/specs/2.2/html/OpenCL_API.html
+
 vector data types: http://www.informit.com/articles/article.aspx?p=1732873&seqNum=3
 work group info: https://stackoverflow.com/questions/3957125/questions-about-global-and-local-work-size
 
@@ -289,6 +290,8 @@ use opengl event: https://software.intel.com/en-us/articles/sharing-surfaces-bet
 cl_unorm_8: https://stackoverflow.com/questions/31718492/meaning-of-cl-unorm-int8-for-cl-image-format-image-channel-data-type-and-its-di
 
 opencl raytracer: https://www.reddit.com/r/raytracing/comments/55wqu7/my_realtime_opencl_ray_tracer_uses_bvh/
-
 one kernel or multiple? register pressure https://stackoverflow.com/questions/9504828/write-multiple-kernels-or-a-single-kernel
+
+INTEL OCL OPTIMIZATION RECOMMENDATIONS: https://software.intel.com/en-us/iocl-opg
+ocl2 in kernel queueing (advenced pipeline): https://software.intel.com/en-us/articles/gpu-quicksort-in-opencl-20-using-nested-parallelism-and-work-group-scan-functions
 */

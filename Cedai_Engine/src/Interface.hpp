@@ -21,6 +21,7 @@ public:
 	void MinimizeCheck();
 	inline void PollEvents() { glfwPollEvents(); };
 	inline int WindowCloseCheck() { return glfwWindowShouldClose(window); };
+	void showFPS(int fps);
 
 	unsigned int GetKeyInputs();
 	void GetMouseChange(double& mouseX, double& mouseY);

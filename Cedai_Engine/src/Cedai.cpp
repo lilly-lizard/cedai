@@ -208,6 +208,9 @@ void Cedai::printFPS() {
 	elapsedTime = system_clock::now() - prevTime;
 	if (elapsedTime.count() > 1) {
 		CD_TRACE("fps = {}", fps);
+#ifdef DEBUG
+		interface.showFPS(fps);
+#endif
 		fpsSum += fps;
 		fpsCount++;
 		prevTime = system_clock::now();
