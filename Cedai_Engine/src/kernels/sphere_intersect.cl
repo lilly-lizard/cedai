@@ -13,7 +13,7 @@ float intersection(float3 ray_o, float3 ray_d, float3 center, float radius);
 // SPHERE INTERSECTION
 
 __kernel void sphere_intersect(const float16 view, const float3 ray_o,
-							   __constant Sphere* spheres,
+							   __global Sphere* spheres,
 							   __global float* ts) /* the t value of the intersection between ray[pixel] and sphere[id] */
 {
 	const int3 coord = (int3)(get_global_id(0), get_global_id(1), get_global_id(2));
@@ -24,13 +24,10 @@ __kernel void sphere_intersect(const float16 view, const float3 ray_o,
 	const float3 ray_d = normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
 										    uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
 										    uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
-
-	ts[coord.x +
-	   coord.y * dim.x +
-	   coord.z * dim.x * dim.y]
-	   = intersection(ray_o, ray_d,
-					  spheres[coord.z].pos,
-					  spheres[coord.z].radius);
+	
+	Sphere sphere = spheres[coord.z];
+	ts[coord.x + coord.y * dim.x + coord.z * dim.x * dim.y]
+		= intersection(ray_o, ray_d, sphere.pos, sphere.radius);
 }
 
 float intersection(float3 ray_o, float3 ray_d, float3 center, float radius) {
@@ -51,3 +48,7 @@ float intersection(float3 ray_o, float3 ray_d, float3 center, float radius) {
 	}
 	return t;
 }
+
+/*
+memory coalescence: https://stackoverflow.com/questions/5041328/in-cuda-what-is-memory-coalescing-and-how-is-it-achieved
+*/

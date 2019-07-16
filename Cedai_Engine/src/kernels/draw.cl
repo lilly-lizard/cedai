@@ -98,3 +98,7 @@ uchar3 draw_background(float3 ray_d)
 	float3 color = fabs(ray_d) * mult + offset;
 	return convert_uchar3(color * 255);
 }
+
+/*
+global synchronisation: https://industrybestpractice.blogspot.com/2012/07/global-synchronisation-in-opencl.html
+*/
