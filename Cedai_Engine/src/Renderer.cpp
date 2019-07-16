@@ -1,7 +1,7 @@
-#include "Renderer.h"
-#include "Interface.h"
-#include "tools/Log.h"
-#include "tools/config.h"
+#include "Renderer.hpp"
+#include "Interface.hpp"
+#include "tools/Log.hpp"
+#include "tools/config.hpp"
 
 // TODO only for windows
 #define GLFW_EXPOSE_NATIVE_WGL
@@ -18,7 +18,7 @@
 
 void Renderer::init(int image_width, int image_height, Interface* interface,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-		std::vector<cl_float3>& vertices, std::vector<cl_uchar3>& polygons) {
+		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygons) {
 	CD_INFO("Initialising renderer...");
 
 	this->image_width = image_width;
@@ -37,18 +37,21 @@ void Renderer::init(int image_width, int image_height, Interface* interface,
 	queue.finish();
 }
 
-void Renderer::queueRender(const float view[4][4]) {
+void Renderer::queueRender(const float view[4][4], float seconds) {
 	static cl_float16 cl_view;
 	static cl_float3 cl_pos;
+	static cl_float cl_time;
 
 	cl_view = {{ view[0][0], view[0][1], view[0][2], 0,
 				 view[1][0], view[1][1], view[1][2], 0,
 				 view[2][0], view[2][1], view[2][2], 0,
 				 0, 0, 0, 0 }};
 	cl_pos = {{ view[3][0], view[3][1], view[3][2] }};
+	cl_time = seconds;
 
 	kernel.setArg(0, cl_view);
 	kernel.setArg(1, cl_pos);
+	kernel.setArg(2, cl_time);
 
 	queue.enqueueAcquireGLObjects(&gl_objects, NULL, &textureDone);
 	queue.enqueueNDRangeKernel(kernel, NULL, global_work, local_work);
@@ -57,6 +60,10 @@ void Renderer::queueRender(const float view[4][4]) {
 
 void Renderer::queueFinish() {
 	queue.finish();
+}
+
+void Renderer::resizeWindow() {
+
 }
 
 void Renderer::cleanUp() {
@@ -145,7 +152,7 @@ void Renderer::createQueue() {
 
 void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-		std::vector<cl_float3>& vertices, std::vector<cl_uchar3>& polygons) {
+		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygons) {
 	sphere_count = spheres.size();
 	light_count = lights.size();
 	vertex_count = vertices.size();
@@ -166,10 +173,10 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 	queue.enqueueWriteBuffer(cl_vertices, CL_TRUE, 0, vertex_count * sizeof(cl_float3), vertices.data());
 
 	// polygons
-	cl_polygons = cl::Buffer(context, CL_MEM_READ_ONLY, polygon_count * sizeof(cl_uchar3), NULL, &result);
-	CD_INFO("polygon bytes = {}", polygon_count * sizeof(cl_uchar3));
+	cl_polygons = cl::Buffer(context, CL_MEM_READ_ONLY, polygon_count * sizeof(cl_uchar4), NULL, &result);
+	CD_INFO("polygon bytes = {}", polygon_count * sizeof(cl_uchar4));
 	checkCLError(result, "polygon buffer create");
-	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, polygon_count * sizeof(cl_uchar3), polygons.data());
+	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, polygon_count * sizeof(cl_uchar4), polygons.data());
 
 	// output image
 	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_NO_ACCESS, gl_texture_target, 0, gl_texture, &result);
@@ -183,16 +190,17 @@ void Renderer::createKernels() {
 
 	/* arg 0 = viewer position */
 	/* arg 1 = view matrix */
+	/* arg 2 = time (s) */
 
-	kernel.setArg(2, sphere_count);
-	kernel.setArg(3, light_count);
-	kernel.setArg(4, polygon_count);
+	kernel.setArg(3, sphere_count);
+	kernel.setArg(4, light_count);
+	kernel.setArg(5, polygon_count);
 
-	kernel.setArg(5, cl_spheres);
-	kernel.setArg(6, cl_vertices);
-	kernel.setArg(7, cl_polygons);
+	kernel.setArg(6, cl_spheres);
+	kernel.setArg(7, cl_vertices);
+	kernel.setArg(8, cl_polygons);
 
-	kernel.setArg(8, cl_output);
+	kernel.setArg(9, cl_output);
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
@@ -214,7 +222,7 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	const char* kernel_source = source.c_str();
 
 	// compiler options
-	std::string options = "-cl-fast-relaxed-math"; //  -cl-std=CL1.2
+	std::string options = "-cl-fast-relaxed-math -cl-denorms-are-zero -Werror"; //  -cl-std=CL1.2
 
 	// Create an OpenCL program by performing runtime source compilation for the chosen device
 	cl::Program program = cl::Program(context, kernel_source);

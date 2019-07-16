@@ -5,10 +5,10 @@ Engine notes...
 Coordinate system: x - forwards, y - right, z - up
 */
 
-#include "Interface.h"
-#include "Renderer.h"
-#include "tools/Sphere.h"
-#include "tools/Polygon.h"
+#include "Interface.hpp"
+#include "Renderer.hpp"
+#include "tools/Sphere.hpp"
+#include "tools/Polygon.hpp"
 
 #include <glm/glm.hpp> // vector/matrix linear algebra
 #include <chrono>
@@ -29,7 +29,7 @@ private:
 
 	std::vector<cd::Sphere> spheres;
 	std::vector<cd::Sphere> lights;
-	std::vector<cl_uchar3> polygon_colors;
+	std::vector<cl_uchar4> polygon_colors;
 	std::vector<cl_float3> vertices;
 
 	float view[4][4] = { 0 };
@@ -46,12 +46,11 @@ private:
 	glm::vec3 viewerForward =	glm::vec3(1, 0, 0);				 // direction you are facing
 	glm::vec3 viewerUp =		glm::vec3(0, 0, 1);				 // viewer up direction
 	glm::vec3 viewerCross = glm::cross(viewerUp, viewerForward); // cross product up x forward
-	std::chrono::time_point<std::chrono::high_resolution_clock> timePrev; // time value from the previous render
 
 	double fpsSum = 0;
 	int fpsCount = 0;
 
-	void createEntities();
+	void createPrimitives();
 
 	void processInputs();
 	void updateView();

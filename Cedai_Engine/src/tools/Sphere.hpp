@@ -11,7 +11,7 @@ namespace cd {
 		cl_float padding2; // not used
 		cl_float padding3; // not used
 		cl_float3 position;
-		cl_uchar3 color;
+		cl_uchar4 color;
 	};
 
 }

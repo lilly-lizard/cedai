@@ -1,6 +1,6 @@
-#include "Model_Loader.h"
+#include "Model_Loader.hpp"
 
-#include "tools/Log.h"
+#include "tools/Log.hpp"
 
 #include <iostream>
 #include <fstream>

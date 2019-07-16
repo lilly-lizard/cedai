@@ -1,7 +1,7 @@
 // using opengl code from http://wili.cc/blog/opengl-cs.html
 
-#include "Interface.h"
-#include "tools/Log.h"
+#include "Interface.hpp"
+#include "tools/Log.hpp"
 
 #include <iostream>
 #include <fstream>

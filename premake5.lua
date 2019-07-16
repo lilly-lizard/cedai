@@ -20,6 +20,7 @@ project "Cedai_Engine" -- game engine
 	files
 	{
 		"Cedai_Engine/src/**.h",		-- all headers
+		"Cedai_Engine/src/**.hpp",		-- all headers
 		"Cedai_Engine/src/**.cpp",		-- all source files
 		"Cedai_Engine/src/**.cl",		-- all opencl files
 		"vendor/gl3w/include/**.c",		-- gl3w.c

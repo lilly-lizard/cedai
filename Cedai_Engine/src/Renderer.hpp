@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tools/Sphere.h"
-#include "tools/Polygon.h"
+#include "tools/Sphere.hpp"
+#include "tools/Polygon.hpp"
 
 #include <CL/cl.hpp>
 #include <vector>
@@ -14,16 +14,16 @@ public:
 
 	void init(int image_width, int image_height, Interface* interface,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-		std::vector<cl_float3>& vertices, std::vector<cl_uchar3>& polygon_colors);
+		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygon_colors);
 
-	void queueRender(const float view[4][4]);
+	void queueRender(const float view[4][4], float seconds);
 	void queueFinish();
+
+	void resizeWindow();
 
 	void cleanUp();
 
 private:
-
-	const int foo = 0;
 
 	cl::Platform platform;
 	cl::Device device;
@@ -68,7 +68,7 @@ private:
 
 	void createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 			std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-			std::vector<cl_float3>& vertices, std::vector<cl_uchar3>& polygon_colors);
+			std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygon_colors);
 
 	void createKernels();
 	void createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint);

@@ -1,24 +1,30 @@
 /* https://stackoverflow.com/questions/4911400/shader-optimization-is-a-ternary-operator-equivalent-to-branching */
+// todo https://en.wikipedia.org/wiki/Phong_reflection_model
 
 #pragma OPENCL EXTENSION cl_khr_gl_sharing : enable
 
-typedef struct Sphere
+typedef struct
 {
 	float radius;
 	float3 pos;
-	uchar3 color;
+	uchar4 color;
 } Sphere;
 
 // DECLARATIONS AND CONSTANTS
 
-// to change resolution, change the output writing code as well
-#define RESOLUTION 2
+#define PI 3.14159265359f
+
+#define HALF_RESOLUTION
+#define DITHER
+
+#define LIGHT_RADIUS 3
+#define LIGHT_W PI / 4
 
 #define AMBIENT 0.2f
 #define LIGHT_STEP 0.2f
 
 #define BACKGROUND_OFFSET 0.3f
-#define BACKGROUND_MULTIPLIER 0.4f
+#define BACKGROUND_MULTIPLIER 0.5f
 
 const sampler_t sampler = CLK_FILTER_NEAREST | CLK_ADDRESS_CLAMP | CLK_NORMALIZED_COORDS_FALSE;
 
@@ -26,16 +32,25 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius);
 float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2);
 
 float diffuse_sphere(float3 normal, float3 intersection, float3 light);
-float diffuse_polygon(float3 normal, float3 intersection, float3 light, float3 ray_d);
+float diffuse_polygon(float3 normal, float3 intersection, float3 light_pos, float3 ray_d);
 float ceiling(float value, float multiple);
+bool shadow(float3 intersection, float3 light, int s_index, int p_index, const int sphere_count, const int polygon_count,
+			__constant Sphere* spheres, __constant float3* vertices);
+int luminance(uchar4 color);
 
-uchar3 draw_background(float3 ray_d);
+void draw(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord);
+void draw_half_res(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord);
+void draw_dither(__write_only image2d_t output, uchar4 color, bool no_color_found, float3 ray_d, int2 coord);
+uchar4 background_color(float3 ray_d);
 
 // ENTRY POINT
 
-__kernel void render(const float16 view, const float3 ray_o,
+__attribute__((work_group_size_hint(16, 16, 1)))
+__kernel void render(const float16 view, const float3 ray_o, const float time,
 					 const int sphere_count, const int light_count, const int polygon_count,
-					 __constant Sphere* spheres, __constant float3* vertices, __constant uchar3* polygon_colors,
+					 __constant Sphere* __restrict spheres,
+					 __constant float3* __restrict vertices,
+					 __constant uchar4* __restrict polygon_colors,
 					 __write_only image2d_t output)
 {
 	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
@@ -46,23 +61,22 @@ __kernel void render(const float16 view, const float3 ray_o,
 	const float3 ray_d = fast_normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
 												 uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
 												 uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
+
 	// check for intersections
-	uchar3 color = (uchar3)(0, 0, 0);
-	bool sphere_found = false;
-	bool light_found = false;
-	bool polygon_found = false;
+	uchar4 color = (uchar4)(0, 0, 0, 0);
 	float min_t = 100; // drop off distance
 	int index = 0;
+	uchar primitive_found = 0; // 1 = sphere, 2 = light, 3 = polygon
+
 	const int sphere_total = sphere_count + light_count;
+	const float3 light_offset = (float3)(LIGHT_RADIUS * cos(LIGHT_W * time), LIGHT_RADIUS * sin(LIGHT_W * time), 0);
 
 	// spheres
 	for (int s = 0; s < sphere_count; s++) {
 		Sphere sphere = spheres[s];
 		float t = sphere_intersect(ray_o, ray_d, sphere.pos, sphere.radius);
 		if (0 < t && t < min_t) {
-			sphere_found  = true;
-			light_found   = false;
-			polygon_found = false;
+			primitive_found = 1;
 			min_t = t;
 			color = sphere.color;
 			index = s;
@@ -71,11 +85,9 @@ __kernel void render(const float16 view, const float3 ray_o,
 	// lights
 	for (int l = sphere_count; l < sphere_total; l++) {
 		Sphere light = spheres[l];
-		float t = sphere_intersect(ray_o, ray_d, light.pos, light.radius);
+		float t = sphere_intersect(ray_o, ray_d, light.pos + light_offset * (l % 2 * 2 - 1), light.radius);
 		if (0 < t && t < min_t) {
-			sphere_found  = false;
-			light_found   = true;
-			polygon_found = false;
+			primitive_found = 2;
 			min_t = t;
 			color = light.color;
 			index = l;
@@ -85,56 +97,55 @@ __kernel void render(const float16 view, const float3 ray_o,
 	for (int p = 0; p < polygon_count; p++) {
 		float t = triangle_intersect(ray_o, ray_d, vertices[p * 3], vertices[p * 3 + 1], vertices[p * 3 + 2]);
 		if (0 < t && t < min_t) {
-			sphere_found  = false;
-			light_found   = false;
-			polygon_found = true;
+			primitive_found = 3;
 			min_t = t;
 			color = polygon_colors[p];
 			index = p;
 	}	}
 
-	// lighting
-	if (sphere_found) {
+	// no intersection
+	if (primitive_found == 0) {
+		color = background_color(ray_d);
+	
+	// sphere lighting
+	} else if (primitive_found == 1) {
 		float light = 0;
 		float3 intersection = mad(min_t, ray_d, ray_o);
 		for (int l = sphere_count; l < sphere_total; l++)
-			light += diffuse_sphere(intersection - spheres[index].pos, intersection, spheres[l].pos);
+			light += diffuse_sphere(intersection - spheres[index].pos, intersection, spheres[l].pos + light_offset * (l % 2 * 2 - 1));
 		light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
-		color = convert_uchar3(convert_float3(color) * light);
+		color = convert_uchar4(convert_float4(color) * light);
 
-	} else if (polygon_found) {
+	// polygon lighting
+	} else if (primitive_found == 3) {
+		float light = AMBIENT;
+		float3 intersection = mad(min_t, ray_d, ray_o);
 		float3 v0 = vertices[index * 3];
 		float3 v1 = vertices[index * 3 + 1];
 		float3 v2 = vertices[index * 3 + 2];
-		float light = 0;
-		for (int l = sphere_count; l < sphere_total; l++)
-			light += diffuse_polygon(cross(v1 - v0, v2 - v0), mad(min_t, ray_d, ray_o), spheres[l].pos, ray_d);
-		light = clamp(light, AMBIENT, 1.0f);
-		color = convert_uchar3(convert_float3(color) * light);
+		for (int l = sphere_count; l < sphere_total; l++) {
+			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
+			bool in_shadow = shadow(intersection, light_pos, -1, index, sphere_count, polygon_count, spheres, vertices);
+			if (!in_shadow)
+				light += diffuse_polygon(cross(v1 - v0, v2 - v0), intersection, light_pos, ray_d);
+		}
+		light = clamp(light, 0.0f, 1.0f);
+		color = convert_uchar4(convert_float4(color) * light);
 	}
 
-	// dither effect and background draw
-	int dither = (color.x + color.y + color.z) / 3 / 64;
-	if (!(sphere_found || light_found || polygon_found)) {
-		color = draw_background(ray_d);
-		dither = 2;
-	}
-	
-	// write
-	uint4 color_out = (uint4)(color.x, color.y, color.z, 0);
-	write_imageui(output, (int2)(coord.x * RESOLUTION, coord.y * RESOLUTION), color_out);
-	
-	if (dither > 0) write_imageui(output, (int2)(coord.x * RESOLUTION + 1, coord.y * RESOLUTION + 1), color_out);
-	else write_imageui(output, (int2)(coord.x * RESOLUTION + 1, coord.y * RESOLUTION + 1), (uint4)(0,0,0,0));
-	
-	if (dither > 1) write_imageui(output, (int2)(coord.x * RESOLUTION + 1, coord.y * RESOLUTION), color_out);
-	else write_imageui(output, (int2)(coord.x * RESOLUTION + 1, coord.y * RESOLUTION), (uint4)(0,0,0,0));
-	
-	if (dither > 2) write_imageui(output, (int2)(coord.x * RESOLUTION, coord.y * RESOLUTION + 1), color_out);
-	else write_imageui(output, (int2)(coord.x * RESOLUTION, coord.y * RESOLUTION + 1), (uint4)(0,0,0,0));
+	// draw
+	#ifndef HALF_RESOLUTION
+	draw(output, color, ray_d, coord);
+	#else
+	#ifdef DITHER
+	draw_dither(output, color, primitive_found == 0, ray_d, coord);
+	#else
+	draw_half_res(output, color, ray_d, coord);
+	#endif
+	#endif
 }
 
-// HELPER FUNCTIONS
+// INTERSECTION FUNCTIONS
 
 float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 { 
@@ -152,7 +163,7 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 
 float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
 {
-	// Möller-Trumbore algorithm. we use Cramer's rule to find [t,u,v] 
+	// Möller-Trumbore algorithm. we use Cramer's rule to find [t,u,v]
 	// https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
 	// returns -1 for no intersection, otherwise returns t (where intersection = O + tD)
 	
@@ -172,27 +183,95 @@ float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
 	return v < 0 || 1 < u + v ? -1 : dot(Q, E2) * inv_det0;
 }
 
+// LIGHTING FUNCTIONS
+
 float diffuse_sphere(float3 normal, float3 intersection, float3 light)
 {
 	return clamp(dot(fast_normalize(normal), fast_normalize(light - intersection)), 0.0f, 1.0f);
 }
 
-float diffuse_polygon(float3 normal, float3 intersection, float3 light, float3 ray_d)
+float diffuse_polygon(float3 normal, float3 intersection, float3 light_pos, float3 ray_d)
 {
-	float3 light_to_int = intersection - light;
-	return sign(dot(normal, light_to_int)) == sign(dot(normal, ray_d)) ?
-		clamp(dot(fast_normalize(normal), fast_normalize(light_to_int)), 0.0f, 1.0f) :
-		0;
+	float3 light_to_int = intersection - light_pos;
+	float light = fabs(dot(fast_normalize(normal), fast_normalize(light_to_int)));
+	return sign(dot(normal, light_to_int)) == sign(dot(normal, ray_d)) ? light : 0;
 }
 
-// rounds up to the nearest multiple of multiple
 float ceiling(float value, float multiple)
 {
 	return ceil(value/multiple) * multiple;
 }
 
-uchar3 draw_background(float3 ray_d)
+bool shadow(float3 intersection, float3 light, int s_index, int p_index,
+			const int sphere_count, const int polygon_count,
+			__constant Sphere* spheres, __constant float3* vertices) {
+	float3 ray_d = fast_normalize(light - intersection);
+	float3 ray_o = intersection;
+
+	// spheres
+	for (int s = 0; s < sphere_count; s++) {
+		if (s == s_index) continue;
+		Sphere sphere = spheres[s];
+		float t = sphere_intersect(ray_o, ray_d, sphere.pos, sphere.radius);
+		if (0 < t && t < 100) return true;
+	}
+
+	// polygons
+	for (int p = 0; p < polygon_count; p++) {
+		if (p == p_index) continue;
+		float t = triangle_intersect(ray_o, ray_d, vertices[p * 3], vertices[p * 3 + 1], vertices[p * 3 + 2]);
+		if (0 < t) return true;
+	}
+
+	return false;
+}
+
+int luminance(uchar4 color) {
+	uchar r = color.x;
+	uchar g = color.y;
+	uchar b = color.z;
+	return (r + r + r + g + g + g + g + b) >> 3;
+}
+
+// DRAWING FUNCTIONS
+
+void draw(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord)
+{
+	uint4 color_out = convert_uint4(color);
+	write_imageui(output, coord, color_out);
+}
+
+void draw_half_res(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord)
+{
+	uint4 color_out = convert_uint4(color);
+	write_imageui(output, (int2)(coord.x * 2, coord.y * 2), color_out);
+	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2 + 1), color_out);
+	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2), color_out);
+	write_imageui(output, (int2)(coord.x * 2, coord.y * 2 + 1), color_out);
+}
+
+void draw_dither(__write_only image2d_t output, uchar4 color, bool no_color_found, float3 ray_d, int2 coord)
+{
+	int dither;
+	if (no_color_found) dither = 2;
+	else dither = luminance(color) / 64;
+	
+	// write
+	uint4 color_out = convert_uint4(color);
+	write_imageui(output, (int2)(coord.x * 2, coord.y * 2), color_out);
+	
+	if (dither < 1) color_out = (uint4)(0,0,0,0);
+	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2 + 1), color_out);
+	
+	if (dither < 2) color_out = (uint4)(0,0,0,0);
+	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2), color_out);
+	
+	if (dither < 3) color_out = (uint4)(0,0,0,0);
+	write_imageui(output, (int2)(coord.x * 2, coord.y * 2 + 1), color_out);
+}
+
+uchar4 background_color(float3 ray_d)
 {
 	float3 color = fabs(ray_d) * BACKGROUND_MULTIPLIER + BACKGROUND_OFFSET;
-	return convert_uchar3(color * 255);
+	return (uchar4)(convert_uchar3(color * 255), 0);
 }

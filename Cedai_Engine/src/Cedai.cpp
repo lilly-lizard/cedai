@@ -1,8 +1,8 @@
-#include "Cedai.h"
-#include "Interface.h"
-#include "tools/Model_Loader.h"
-#include "tools/Inputs.h"
-#include "tools/Log.h"
+#include "Cedai.hpp"
+#include "Interface.hpp"
+#include "tools/Model_Loader.hpp"
+#include "tools/Inputs.hpp"
+#include "tools/Log.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -47,21 +47,21 @@ void Cedai::init() {
 	interface.init(screen_width, screen_height);
 	CD_INFO("Interface initialised.");
 	
-	createEntities();
+	createPrimitives();
 	renderer.init(screen_width, screen_height, &interface, spheres, lights, vertices, polygon_colors);
 	CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
-	timePrev = high_resolution_clock::now();
 	CD_INFO("Engine initialised.");
 }
 
 void Cedai::loop() {
 	bool quit = false;
+	static time_point<high_resolution_clock> timeStart = high_resolution_clock::now();
 
 	while (!quit && !interface.WindowCloseCheck()) {
 		// queue a render operation
-		renderer.queueRender(view);
+		renderer.queueRender(view, duration<float, seconds::period>(high_resolution_clock::now() - timeStart).count());
 
 		// input handling
 		interface.PollEvents();
@@ -84,27 +84,27 @@ void Cedai::cleanUp() {
 	CD_INFO("Finished cleaning.");
 }
 
-void Cedai::createEntities() {
+void Cedai::createPrimitives() {
 
 	spheres.push_back(cd::Sphere{ 1.0, 0, 0, 0,
 		cl_float3{{ 10, -3, 0 }},
-		cl_uchar3{{ 230, 128, 128 }} });
+		cl_uchar4{{ 200, 128, 254, 0 }} });
 
 	spheres.push_back(cd::Sphere{ 0.5, 0, 0, 0,
-		cl_float3{{ 4, 3, 1 }},
-		cl_uchar3{{ 255, 255, 128 }} });
+		cl_float3{{ 4, 2, 2.5 }},
+		cl_uchar4{{ 128, 255, 180, 0 }} });
 
 	spheres.push_back(cd::Sphere{ 0.2, 0, 0, 0,
-		cl_float3{{ 5, 2, -1 }},
-		cl_uchar3{{ 128, 128, 230 }} });
+		cl_float3{{ 6, 0, 3 }},
+		cl_uchar4{{ 255, 200, 128, 0 }} });
 
 	lights.push_back( cd::Sphere{ 0.1, 0, 0, 0,
-		cl_float3{{ 5, 4, 4 }},
-		cl_uchar3{{ 255, 255, 205 }} });
+		cl_float3{{ 2, 3, 4 }},
+		cl_uchar4{{ 255, 255, 205, 0 }} });
 
 	lights.push_back(cd::Sphere{ 0.1, 0, 0, 0,
 		cl_float3{{  -1, -6, -4 }},
-		cl_uchar3{{ 255, 255, 205 }} });
+		cl_uchar4{{ 255, 255, 205, 0 }} });
 
 	std::vector<glm::vec4> verticesLoad;
 	std::vector<glm::uvec4> polygonsLoad;
@@ -120,7 +120,7 @@ void Cedai::createEntities() {
 		vert = verticesLoad[polygonsLoad[p].z];
 		vertices.push_back( cl_float3{{ vert.x, vert.y, vert.z }} );
 
-		polygon_colors.push_back( cl_uchar3{{ 200, 200, 200 }} );
+		polygon_colors.push_back( cl_uchar4{{ 200, 200, 200, 0 }} );
 	}
 
 	CD_INFO("model(s) loaded.");
@@ -128,6 +128,7 @@ void Cedai::createEntities() {
 
 void Cedai::processInputs() {
 	// get time difference
+	static time_point<high_resolution_clock> timePrev = high_resolution_clock::now();
 	double timeDif = duration<double, seconds::period>(high_resolution_clock::now() - timePrev).count();
 	timePrev = high_resolution_clock::now();
 
