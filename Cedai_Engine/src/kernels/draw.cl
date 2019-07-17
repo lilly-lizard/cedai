@@ -20,11 +20,12 @@ uchar3 draw_background(float3 ray_d);
 
 // DRAW
 
+__attribute__((work_group_size_hint(16, 16, 1)))
 __kernel void draw(const float16 view, const float3 ray_o,
-				   __global Sphere* spheres,
-				   __local Sphere* spheres_local,
 				   const int sphere_count, const int light_count,
-				   __global const float* ts,
+				   __global Sphere* __restrict spheres,
+				   __local Sphere* __restrict spheres_local,
+				   __constant float* __restrict ts,
 				   __write_only image2d_t output)  /* rgb [0 - 255] */
 {
 	event_t copy_event = async_work_group_copy((__local char *)spheres_local, (__global char *)spheres,
@@ -35,9 +36,9 @@ __kernel void draw(const float16 view, const float3 ray_o,
 	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
 
 	const float3 uv = (float3)(dim.x, (float)coord.x - (float)dim.x / 2, (float)(dim.y - coord.y) - (float)dim.y / 2);
-	const float3 ray_d = normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
-										    uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
-										    uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
+	const float3 ray_d = fast_normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
+												 uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
+												 uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
 
 	// check for intersections
 	const uint total_spheres = sphere_count + light_count;
@@ -57,7 +58,7 @@ __kernel void draw(const float16 view, const float3 ray_o,
 			min_t = t;
 			// calculate light
 			float light = 0;
-			float3 intersection = ray_o + t * ray_d;
+			float3 intersection = mad(min_t, ray_d, ray_o);
 			for (int l = sphere_count; l < total_spheres; l++)
 				light += diffuse(intersection - spheres_local[s].pos, intersection, spheres_local[l].pos);
 			light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
@@ -82,7 +83,7 @@ __kernel void draw(const float16 view, const float3 ray_o,
 
 float diffuse(float3 normal, float3 intersection, float3 light)
 {
-	return clamp(dot(normalize(normal), normalize(light - intersection)), 0.0f, 1.0f);
+	return clamp(dot(fast_normalize(normal), fast_normalize(light - intersection)), 0.0f, 1.0f);
 }
 
 // rounds up to the nearest multiple of multiple

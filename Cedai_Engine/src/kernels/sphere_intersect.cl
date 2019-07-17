@@ -12,18 +12,19 @@ float intersection(float3 ray_o, float3 ray_d, float3 center, float radius);
 
 // SPHERE INTERSECTION
 
+__attribute__((work_group_size_hint(16, 16, 1)))
 __kernel void sphere_intersect(const float16 view, const float3 ray_o,
-							   __global Sphere* spheres,
-							   __global float* ts) /* the t value of the intersection between ray[pixel] and sphere[id] */
+							   __global Sphere* __restrict spheres,
+							   __global float* __restrict ts) /* the t value of the intersection between ray[pixel] and sphere[id] */
 {
 	const int3 coord = (int3)(get_global_id(0), get_global_id(1), get_global_id(2));
 	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
 
 	// create a camera ray
 	const float3 uv = (float3)(dim.x, (float)coord.x - (float)dim.x / 2, (float)(dim.y - coord.y) - (float)dim.y / 2);
-	const float3 ray_d = normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
-										    uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
-										    uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
+	const float3 ray_d = fast_normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
+												 uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
+												 uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
 	
 	Sphere sphere = spheres[coord.z];
 	ts[coord.x + coord.y * dim.x + coord.z * dim.x * dim.y]
@@ -39,14 +40,8 @@ float intersection(float3 ray_o, float3 ray_d, float3 center, float radius) {
 	float discriminant = b * b - c;
 	if (discriminant < 0) return -1;
 
-	float t = b - sqrt(discriminant);
-	if (t < 0) {
-		// the following 2 lines allows you to see inside the sphere
-		t = b - t + b; // b + sqrt(discriminant)
-		if (t < 0)
-			return -1;
-	}
-	return t;
+	float t = b - half_sqrt(discriminant);
+	return 0 < t ? t : -1;
 }
 
 /*

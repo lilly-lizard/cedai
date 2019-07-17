@@ -178,10 +178,10 @@ void Renderer::createKernels() {
 
 	/* rayGenKernel arg 0 = view matrix */
 	/* drawKernel arg 1 = view position */
-	drawKernel.setArg(2, cl_spheres);
-	drawKernel.setArg(3, (sphere_count + light_count) * sizeof(Sphere), NULL);
-	drawKernel.setArg(4, sphere_count);
-	drawKernel.setArg(5, light_count);
+	drawKernel.setArg(2, sphere_count);
+	drawKernel.setArg(3, light_count);
+	drawKernel.setArg(4, cl_spheres);
+	drawKernel.setArg(5, (sphere_count + light_count) * sizeof(Sphere), NULL);
 	drawKernel.setArg(6, cl_sphere_t);
 	drawKernel.setArg(7, cl_output);
 }
@@ -204,9 +204,12 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 
 	const char* kernel_source = source.c_str();
 
+	// compiler options
+	std::string options = "-cl-fast-relaxed-math -cl-denorms-are-zero -Werror"; // -cl-std=CL1.2
+
 	// Create an OpenCL program by performing runtime source compilation for the chosen device
 	cl::Program program = cl::Program(context, kernel_source);
-	cl_int result = program.build({ device });
+	cl_int result = program.build({ device }, options.c_str());
 	if (result) CD_ERROR("Error during openCL compilation {} error: ({})", filename, result);
 	if (result == CL_BUILD_PROGRAM_FAILURE) printErrorLog(program, device);
 
