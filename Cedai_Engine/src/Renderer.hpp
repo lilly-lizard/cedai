@@ -8,18 +8,18 @@
 #include <string>
 
 class Interface;
+class PrimitivePipeline;
 
 class Renderer {
 public:
 
-	void init(int image_width, int image_height, Interface* interface,
+	void init(int image_width, int image_height,
+		Interface* interface, PrimitivePipeline* vertexProcessor,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
 		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygon_colors);
 
-	void queueRender(const float view[4][4], float seconds);
-	void queueFinish();
-
-	void resizeWindow();
+	void renderQueue(const float view[4][4], float seconds);
+	void renderBarrier();
 
 	void cleanUp();
 
@@ -32,25 +32,17 @@ private:
 
 	cl::Kernel kernel;
 
-	cl::Event textureDone;
-	cl::Event rayGenDone;
-	cl::Event sphereDone;
-	cl::Event drawDone;
-
-	std::vector<cl::Event> sphereWaits{ rayGenDone };
-	std::vector<cl::Event> drawWaits{ textureDone, sphereDone };
-	std::vector<cl::Event> textureWaits{ drawDone };
-
 	int image_width;
 	int image_height;
 	cl::NDRange global_work;
 	cl::NDRange local_work;
 
 	cl::Buffer cl_spheres;
-	cl::Buffer cl_vertices;
+	//cl::Buffer cl_vertices;
+	cl::Buffer cl_gl_vertices;
 	cl::Buffer cl_polygons;
 	cl::ImageGL cl_output;
-	std::vector<cl::Memory> gl_objects{ cl_output };
+	std::vector<cl::Memory> gl_objects;
 
 	int sphere_count = 0;
 	int light_count = 0;
@@ -66,7 +58,7 @@ private:
 	void createContext(Interface* interface);
 	void createQueue();
 
-	void createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
+	void createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, cl_GLuint gl_vert_buffer,
 			std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
 			std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygon_colors);
 

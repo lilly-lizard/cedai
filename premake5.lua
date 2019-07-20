@@ -19,10 +19,12 @@ project "Cedai_Engine" -- game engine
 
 	files
 	{
-		"Cedai_Engine/src/**.h",		-- all headers
-		"Cedai_Engine/src/**.hpp",		-- all headers
-		"Cedai_Engine/src/**.cpp",		-- all source files
-		"Cedai_Engine/src/**.cl",		-- all opencl files
+		"Cedai_Engine/src/**.hpp",		-- headers
+		"Cedai_Engine/src/**.h",		-- headers
+		"Cedai_Engine/src/**.cpp",		-- source files
+		"Cedai_Engine/src/**.cl",		-- opencl kernels
+		"Cedai_Engine/src/**.vert",		-- vert shaders
+		"Cedai_Engine/src/**.frag",		-- frag shaders
 		"vendor/gl3w/include/**.c",		-- gl3w.c
 		"vendor/gl3w/include/GL/**.h"	-- gl3w.h and glcorearb.h
 	}

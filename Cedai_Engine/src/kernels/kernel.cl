@@ -285,3 +285,7 @@ uchar4 background_color(float3 ray_d)
 	float3 color = fabs(ray_d) * BACKGROUND_MULTIPLIER + BACKGROUND_OFFSET;
 	return (uchar4)(convert_uchar3(color * 255), 0);
 }
+
+/*
+constant vs. global: https://github.com/RadeonOpenCompute/ROCm/issues/203
+*/

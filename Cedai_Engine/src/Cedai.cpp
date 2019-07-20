@@ -48,7 +48,11 @@ void Cedai::init() {
 	CD_INFO("Interface initialised.");
 	
 	createPrimitives();
-	renderer.init(screen_width, screen_height, &interface, spheres, lights, vertices, polygon_colors);
+	vertexProcessor.init(&interface, vertices);
+	CD_INFO("Pimitive processing program initialised.");
+
+	renderer.init(screen_width, screen_height, &interface, &vertexProcessor,
+		spheres, lights, cl_vertices, cl_polygonColors);
 	CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
@@ -57,11 +61,12 @@ void Cedai::init() {
 
 void Cedai::loop() {
 	bool quit = false;
-	static time_point<high_resolution_clock> timeStart = high_resolution_clock::now();
+	time_point<high_resolution_clock> timeStart = high_resolution_clock::now();
 
 	while (!quit && !interface.WindowCloseCheck()) {
 		// queue a render operation
-		renderer.queueRender(view, duration<float, seconds::period>(high_resolution_clock::now() - timeStart).count());
+		float time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
+		renderer.renderQueue(view, time);
 
 		// input handling
 		interface.PollEvents();
@@ -71,16 +76,22 @@ void Cedai::loop() {
 		printFPS();
 
 		// draw to the window
-		renderer.queueFinish();
-		interface.draw();
+		renderer.renderBarrier();
+		vertexProcessor.vertexProcess(time);
+		interface.drawRun();
+		interface.drawBarrier();
+		vertexProcessor.vertexBarrier();
 	}
 }
 
 void Cedai::cleanUp() {
 	CD_INFO("Cleaning up...");
 	CD_INFO("Average fps = {}", fpsSum / fpsCount);
+
 	renderer.cleanUp();
+	vertexProcessor.cleanUp();
 	interface.cleanUp();
+
 	CD_INFO("Finished cleaning.");
 }
 
@@ -114,13 +125,18 @@ void Cedai::createPrimitives() {
 
 	for (int p = 0; p < polygonsLoad.size(); p++) {
 		glm::vec4 vert = verticesLoad[polygonsLoad[p].x];
-		vertices.push_back( cl_float3{{ vert.x, vert.y, vert.z }} );
-		vert = verticesLoad[polygonsLoad[p].y];
-		vertices.push_back( cl_float3{{ vert.x, vert.y, vert.z }} );
-		vert = verticesLoad[polygonsLoad[p].z];
-		vertices.push_back( cl_float3{{ vert.x, vert.y, vert.z }} );
+		vertices.push_back(glm::vec4( vert.x, vert.y, vert.z, 0));
+		cl_vertices.push_back(cl_float3{{ vert.x, vert.y, vert.z }});
 
-		polygon_colors.push_back( cl_uchar4{{ 200, 200, 200, 0 }} );
+		vert = verticesLoad[polygonsLoad[p].y];
+		vertices.push_back(glm::vec4(vert.x, vert.y, vert.z, 0));
+		cl_vertices.push_back(cl_float3{{ vert.x, vert.y, vert.z }});
+
+		vert = verticesLoad[polygonsLoad[p].z];
+		vertices.push_back(glm::vec4(vert.x, vert.y, vert.z, 0));
+		cl_vertices.push_back(cl_float3{{ vert.x, vert.y, vert.z }});
+
+		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 0 }} );
 	}
 
 	CD_INFO("model(s) loaded.");
@@ -138,16 +154,16 @@ void Cedai::processInputs() {
 
 	// LOOK
 
-	float viewAngleHoriz = (double)mouseMovement[0] * radiansPerMousePosHoriz;
+	float viewAngleHoriz = (double)mouseMovement[0] * radiansPerMousePosYaw;
 	viewerForward = glm::rotate(viewerForward, viewAngleHoriz, viewerUp);
 	viewerCross = glm::cross(viewerUp, viewerForward);
 
-	float viewAngleVert = (double)mouseMovement[1] * radiansPerMousePosVert;
+	float viewAngleVert = (double)mouseMovement[1] * radiansPerMousePosPitch;
 	viewerForward = glm::rotate(viewerForward, viewAngleVert, viewerCross);
 	viewerUp = glm::cross(viewerForward, viewerCross);
 
 	if ((bool)(inputs & CD_INPUTS::ROTATEL) != (bool)(inputs & CD_INPUTS::ROTATER)) {
-		float viewAngleFront = radiansPerSecondFront * timeDif * (inputs & CD_INPUTS::ROTATEL ? 1 : -1);
+		float viewAngleFront = radiansPerSecondRoll * timeDif * (inputs & CD_INPUTS::ROTATEL ? 1 : -1);
 		viewerUp = glm::rotate(viewerUp, viewAngleFront, viewerForward);
 		viewerCross = glm::cross(viewerUp, viewerForward);
 	}

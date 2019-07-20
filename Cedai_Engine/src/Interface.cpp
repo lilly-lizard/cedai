@@ -6,8 +6,8 @@
 #include <iostream>
 #include <fstream>
 
-#define FRAG_PATH "src/shaders/shader.frag"
-#define VERT_PATH "src/shaders/shader.vert"
+#define VERT_PATH "src/shaders/draw.vert"
+#define FRAG_PATH "src/shaders/draw.frag"
 
 #define WINDOW_TITLE "Cedai"
 
@@ -35,26 +35,50 @@ void Interface::init(int screen_width, int screen_height) {
 		throw std::runtime_error("opengl init failed");
 	}
 
+	CD_INFO("OpenGL version: {}", glGetString(GL_VERSION));
+	CD_INFO("OpenGL rendering device: {}", glGetString(GL_RENDERER));
+
+	glGetIntegerv(GL_MAJOR_VERSION, &majorVersion);
+	glGetIntegerv(GL_MINOR_VERSION, &minorVersion);
+	if (majorVersion < 4 && minorVersion < 3) {
+		CD_ERROR("openGL version number less than 4.3");
+		CD_ERROR("4.3 functionality is required for this program to run"); // i.e. shader storage buffer object
+		throw std::runtime_error("openGL version");
+	}
+
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // disable mouse cursor
 	glfwGetCursorPos(window, &mousePosPrev[0], &mousePosPrev[1]); // get mouse position
 
-	// set up opengl program
-	createTexture();
-	createRenderProgram();
-
-	CD_INFO("OpenGL version: {}", glGetString(GL_VERSION));
-	CD_INFO("OpenGL rendering device: {}", glGetString(GL_RENDERER));
+	// set up opengl draw program
+	cd::createProgramGL(drawPipeline.programHandle, VERT_PATH, FRAG_PATH);
+	createDrawTexture();
+	setProgramIO();
+	cd::checkErrorsGL("draw program create");
 
 	// set key bindings
 	mapKeys();
 }
 
-void Interface::draw() {
-	glUseProgram(renderHandle);
+GLuint Interface::getTexHandle() { return drawPipeline.texHandle; }
+GLenum Interface::getTexTarget() { return drawPipeline.texTarget; }
+GLFWwindow* Interface::getWindow() { return window; }
+
+void Interface::drawRun() {
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+	glVertexAttribPointer(vertexLocation, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(vertexLocation);
+
+	glUseProgram(drawPipeline.programHandle);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glfwSwapBuffers(window);
-	checkErrors("GL draw");
+
+	cd::checkErrorsGL("GL draw");
+}
+
+void Interface::drawBarrier() {
 	glFinish();
+	glfwSwapBuffers(window);
 }
 
 void Interface::MinimizeCheck() {
@@ -92,12 +116,91 @@ void Interface::GetMouseChange(double& mouseX, double& mouseY) {
 }
 
 void Interface::cleanUp() {
-	glDeleteTextures(1, &texHandle);
+	glDeleteTextures(1, &drawPipeline.texHandle);
 	glfwDestroyWindow(window);
 	glfwTerminate();
 }
 
-// HELPER FUNCTIONS
+// OPENGL HELPER FUNCTIONS
+
+void cd::createProgramGL(GLuint &program, std::string vertPath, std::string fragPath) {
+	program = glCreateProgram();
+
+	GLuint vert = glCreateShader(GL_VERTEX_SHADER);
+	GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
+
+	std::string vertSrc = cd::readFile(vertPath.c_str());
+	std::string fragSrc = cd::readFile(fragPath.c_str());
+
+	GLchar const* vertString[] = { vertSrc.c_str() };
+	GLchar const* fragString[] = { fragSrc.c_str() };
+
+	glShaderSource(vert, 1, vertString, NULL);
+	glShaderSource(frag, 1, fragString, NULL);
+
+	glCompileShader(vert);
+	int rvalue;
+	glGetShaderiv(vert, GL_COMPILE_STATUS, &rvalue);
+	if (!rvalue) {
+		CD_ERROR("Error in compiling vert shader: {} error: {}", vertPath, rvalue);
+		throw std::runtime_error("opengl setup error");
+	}
+	glAttachShader(program, vert);
+
+	glCompileShader(frag);
+	glGetShaderiv(frag, GL_COMPILE_STATUS, &rvalue);
+	if (!rvalue) {
+		CD_ERROR("Error in compiling frag shader: {} error: {}", fragPath, rvalue);
+		throw std::runtime_error("opengl setup error");
+	}
+	glAttachShader(program, frag);
+
+	glLinkProgram(program);
+	glGetProgramiv(program, GL_LINK_STATUS, &rvalue);
+	if (!rvalue) {
+		CD_ERROR("Error in linking shader program error: {}", rvalue);
+		throw std::runtime_error("opengl setup error");
+	}
+	glUseProgram(program);
+
+	glDeleteShader(vert);
+	glDeleteShader(frag);
+}
+
+void cd::checkErrorsGL(std::string desc) {
+	bool error_found = false;
+	GLenum e = glGetError();
+	while (e != GL_NO_ERROR) {
+		error_found = true;
+		CD_ERROR("OpenGL error in {}: {}", desc, e);
+		e = glGetError();
+	}
+	if (error_found)
+		throw std::runtime_error("opengl error");
+}
+
+std::string cd::readFile(const std::string& filename) {
+	// open file
+	std::ifstream file(filename, std::ios::ate | std::ios::binary); // ate: read from the end of the file; binary: file type
+	if (!file.is_open()) {
+		CD_ERROR("Unable to open file: " + filename);
+		throw std::runtime_error("~ failed to open file!");
+	}
+
+	// allocate a buffer
+	size_t fileSize = (size_t)file.tellg(); // read position = file size
+	std::string buffer(fileSize, ' ');
+
+	// go back to beginning and read all bytes at once
+	file.seekg(0);
+	file.read(buffer.data(), fileSize);
+
+	// close and return bytes
+	file.close();
+	return buffer;
+}
+
+// PRIVATE FUNCTIONS
 
 void Interface::mapKeys() {
 	keyBindings[GLFW_KEY_ESCAPE] = CD_INPUTS::ESC;
@@ -123,71 +226,30 @@ void Interface::mapKeys() {
 	keyBindings[GLFW_KEY_X] = CD_INPUTS::INTERACTR;
 }
 
-void Interface::createTexture() {
+void Interface::createDrawTexture() {
 	// create output texture for opencl to write to
-	glGenTextures(1, &texHandle);
-	texTarget = GL_TEXTURE_2D;
-	glBindTexture(texTarget, texHandle);
+	glGenTextures(1, &drawPipeline.texHandle);
+	drawPipeline.texTarget = GL_TEXTURE_2D;
+	glBindTexture(drawPipeline.texTarget, drawPipeline.texHandle);
 
-	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	
-	glTexImage2D(texTarget, 0, GL_RGBA8UI, screen_width, screen_height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
-	checkErrors("texture gen");
+	glTexImage2D(drawPipeline.texTarget, 0, GL_RGBA8UI, screen_width, screen_height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
+	cd::checkErrorsGL("texture gen");
 }
 
-void Interface::createRenderProgram() {
-	renderHandle = glCreateProgram();
-	GLuint vp = glCreateShader(GL_VERTEX_SHADER);
-	GLuint fp = glCreateShader(GL_FRAGMENT_SHADER);
+void Interface::setProgramIO() {
 
-	std::string vpSrc = readFile(VERT_PATH);
-	std::string fpSrc = readFile(FRAG_PATH);
+	GLuint vertexArray;
+	glGenVertexArrays(1, &vertexArray);
+	glBindVertexArray(vertexArray);
 
-	GLchar const* vpString[] = { vpSrc.c_str() };
-	GLchar const* fpString[] = { fpSrc.c_str() };
+	glGenBuffers(1, &vertexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 
-	glShaderSource(vp, 1, vpString, NULL);
-	glShaderSource(fp, 1, fpString, NULL);
-
-	glCompileShader(vp);
-	int rvalue;
-	glGetShaderiv(vp, GL_COMPILE_STATUS, &rvalue);
-	if (!rvalue) {
-		CD_ERROR("Error in compiling vp");
-		throw std::runtime_error("opengl setup error");
-	}
-	glAttachShader(renderHandle, vp);
-
-	glCompileShader(fp);
-	glGetShaderiv(fp, GL_COMPILE_STATUS, &rvalue);
-	if (!rvalue) {
-		CD_ERROR("Error in compiling fp");
-		throw std::runtime_error("opengl setup error");
-	}
-	glAttachShader(renderHandle, fp);
-
-	glBindFragDataLocation(renderHandle, 0, "color");
-	glLinkProgram(renderHandle);
-
-	glGetProgramiv(renderHandle, GL_LINK_STATUS, &rvalue);
-	if (!rvalue) {
-		CD_ERROR("Error in linking sp");
-		throw std::runtime_error("opengl setup error");
-	}
-
-	glUseProgram(renderHandle);
-	glUniform1i(glGetUniformLocation(renderHandle, "srcTex"), 0);
-
-	GLuint vertArray;
-	glGenVertexArrays(1, &vertArray);
-	glBindVertexArray(vertArray);
-
-	GLuint posBuf;
-	glGenBuffers(1, &posBuf);
-	glBindBuffer(GL_ARRAY_BUFFER, posBuf);
 	float data[] = {
 		-1.0f, -1.0f,
 		-1.0f,  1.0f,
@@ -195,44 +257,13 @@ void Interface::createRenderProgram() {
 		 1.0f,  1.0f
 	};
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 8, data, GL_STREAM_DRAW);
-	GLint posPtr = glGetAttribLocation(renderHandle, "pos");
-	glVertexAttribPointer(posPtr, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(posPtr);
 
-	checkErrors("Render shaders");
-}
+	vertexLocation = glGetAttribLocation(drawPipeline.programHandle, "pos");
+	glVertexAttribPointer(vertexLocation, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(vertexLocation);
 
-void Interface::checkErrors(std::string desc) {
-	bool error_found = false;
-	GLenum e = glGetError();
-	while (e != GL_NO_ERROR) {
-		error_found = true;
-		CD_ERROR("OpenGL error in {}: {}", desc, e);
-		e = glGetError();
-	}
-	if (error_found)
-		throw std::runtime_error("opengl error");
-}
-
-std::string Interface::readFile(const std::string& filename) {
-	// open file
-	std::ifstream file(filename, std::ios::ate | std::ios::binary); // ate: read from the end of the file; binary: file type
-	if (!file.is_open()) {
-		CD_ERROR("Unable to open file: " + filename);
-		throw std::runtime_error("~ failed to open file!");
-	}
-
-	// allocate a buffer
-	size_t fileSize = (size_t)file.tellg(); // read position = file size
-	std::string buffer(fileSize, ' ');
-
-	// go back to beginning and read all bytes at once
-	file.seekg(0);
-	file.read(buffer.data(), fileSize);
-
-	// close and return bytes
-	file.close();
-	return buffer;
+	glBindFragDataLocation(drawPipeline.programHandle, 0, "color");
+	glUniform1i(glGetUniformLocation(drawPipeline.programHandle, "srcTex"), 0);
 }
 
 /*

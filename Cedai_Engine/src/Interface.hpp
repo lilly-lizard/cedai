@@ -8,15 +8,24 @@
 #include <map>
 #include <string>
 
+ // opengl functions
+
+namespace cd {
+	void createProgramGL(GLuint &program, std::string vertPath, std::string fragPath);
+	void checkErrorsGL(std::string desc);
+	std::string readFile(const std::string& filename);
+}
+
 class Interface {
 public:
 	void init(int screen_width, int screen_height);
 
-	inline GLuint getTexHandle() { return texHandle; }
-	inline GLenum getTexTarget() { return texTarget; }
-	inline GLFWwindow* getWindow() { return window; }
+	GLuint getTexHandle();
+	GLenum getTexTarget();
+	GLFWwindow* getWindow();
 
-	void draw();
+	void drawRun();
+	void drawBarrier();
 
 	void MinimizeCheck();
 	inline void PollEvents() { glfwPollEvents(); };
@@ -31,21 +40,23 @@ public:
 private:
 
 	GLFWwindow* window;
-	int screen_width;
-	int screen_height;
+	int screen_width = 0, screen_height = 0;
+	GLint majorVersion = 0, minorVersion = 0;
 
-	GLuint texHandle;
-	GLenum texTarget;
-	GLuint renderHandle;
+	struct drawPipeline {
+		GLuint texHandle;
+		GLenum texTarget;
+		GLuint programHandle;
+	} drawPipeline;
+
+	GLuint vertexBuffer;
+	GLint vertexLocation;
 
 	std::map<int, CD_INPUTS> keyBindings;
 	double mousePosPrev[2];
 
 	void mapKeys();
 
-	void createTexture();
-	void createRenderProgram();
-
-	void checkErrors(std::string desc);
-	std::string readFile(const std::string& filename);
+	void createDrawTexture();
+	void setProgramIO();
 };

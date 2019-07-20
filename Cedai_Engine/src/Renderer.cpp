@@ -1,5 +1,6 @@
 #include "Renderer.hpp"
 #include "Interface.hpp"
+#include "tools/PrimitivePipeline.hpp"
 #include "tools/Log.hpp"
 #include "tools/config.hpp"
 
@@ -16,7 +17,8 @@
 
 // PUBLIC FUNCTIONS
 
-void Renderer::init(int image_width, int image_height, Interface* interface,
+void Renderer::init(int image_width, int image_height,
+		Interface* interface, PrimitivePipeline* vertexProcessor,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
 		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygons) {
 	CD_INFO("Initialising renderer...");
@@ -30,14 +32,15 @@ void Renderer::init(int image_width, int image_height, Interface* interface,
 	createContext(interface);
 	createQueue();
 
-	createBuffers(interface->getTexTarget(), interface->getTexHandle(), spheres, lights, vertices, polygons);
+	createBuffers(interface->getTexTarget(), interface->getTexHandle(), vertexProcessor->getVertexBuffer(),
+		spheres, lights, vertices, polygons);
 	createKernels();
 	setWorkGroups();
 
 	queue.finish();
 }
 
-void Renderer::queueRender(const float view[4][4], float seconds) {
+void Renderer::renderQueue(const float view[4][4], float seconds) {
 	static cl_float16 cl_view;
 	static cl_float3 cl_pos;
 	static cl_float cl_time;
@@ -53,17 +56,13 @@ void Renderer::queueRender(const float view[4][4], float seconds) {
 	kernel.setArg(1, cl_pos);
 	kernel.setArg(2, cl_time);
 
-	queue.enqueueAcquireGLObjects(&gl_objects, NULL, &textureDone);
+	queue.enqueueAcquireGLObjects(&gl_objects);
 	queue.enqueueNDRangeKernel(kernel, NULL, global_work, local_work);
-	queue.enqueueReleaseGLObjects(&gl_objects, &textureWaits);
+	queue.enqueueReleaseGLObjects(&gl_objects);
 }
 
-void Renderer::queueFinish() {
+void Renderer::renderBarrier() {
 	queue.finish();
-}
-
-void Renderer::resizeWindow() {
-
 }
 
 void Renderer::cleanUp() {
@@ -150,7 +149,7 @@ void Renderer::createQueue() {
 	checkCLError(res, "Failed openCL queue creation");
 }
 
-void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
+void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, cl_GLuint gl_vert_buffer,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
 		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygons) {
 	sphere_count = spheres.size();
@@ -167,10 +166,16 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(cd::Sphere), light_count * sizeof(cd::Sphere), lights.data());
 
 	// vertices
-	cl_vertices = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_count * sizeof(cl_float3), NULL, &result);
-	CD_INFO("vertex bytes = {}", vertex_count * sizeof(cl_float3));
-	checkCLError(result, "vertex buffer create");
-	queue.enqueueWriteBuffer(cl_vertices, CL_TRUE, 0, vertex_count * sizeof(cl_float3), vertices.data());
+	//cl_vertices = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_count * sizeof(cl_float3), NULL, &result);
+	//CD_INFO("vertex bytes = {}", vertex_count * sizeof(cl_float3));
+	//checkCLError(result, "vertex buffer create");
+	//queue.enqueueWriteBuffer(cl_vertices, CL_TRUE, 0, vertex_count * sizeof(cl_float3), vertices.data());
+
+	// gl vertices
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, gl_vert_buffer);
+	cl_gl_vertices = cl::BufferGL(context, CL_MEM_READ_WRITE, gl_vert_buffer, &result);
+	checkCLError(result, "gl vertex buffer create");
+	gl_objects.push_back(cl_gl_vertices);
 
 	// polygons
 	cl_polygons = cl::Buffer(context, CL_MEM_READ_ONLY, polygon_count * sizeof(cl_uchar4), NULL, &result);
@@ -179,9 +184,10 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture,
 	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, polygon_count * sizeof(cl_uchar4), polygons.data());
 
 	// output image
+	glBindTexture(gl_texture_target, gl_texture);
 	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_NO_ACCESS, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
-	gl_objects[0] = cl_output;
+	gl_objects.push_back(cl_output);
 }
 
 void Renderer::createKernels() {
@@ -197,7 +203,8 @@ void Renderer::createKernels() {
 	kernel.setArg(5, polygon_count);
 
 	kernel.setArg(6, cl_spheres);
-	kernel.setArg(7, cl_vertices);
+	//kernel.setArg(7, cl_vertices);
+	kernel.setArg(7, cl_gl_vertices);
 	kernel.setArg(8, cl_polygons);
 
 	kernel.setArg(9, cl_output);
