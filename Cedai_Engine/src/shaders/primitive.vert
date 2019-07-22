@@ -9,12 +9,15 @@ layout(std140, binding = 0) buffer POSITION_OUT
 	vec4 position_out[];
 };
 
-uniform UBO
-{
-	float time;
-} ubo;
+uniform mat4 bones[10];
 
 void main()
 {
-	position_out[gl_VertexID] = position_in + float(ubo.time);
+	vec4 position = position_in;
+	for (int b = 0; b < 4; b++) {
+		if (bone_indices[b] != -1) {
+			position += bones[bone_indices[b]] * position;
+	}	}
+
+	position_out[gl_VertexID] = position;
 }

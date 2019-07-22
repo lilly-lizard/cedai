@@ -9,8 +9,10 @@
 
 // PUBLIC FUNCTIONS
 
-void PrimitiveProcessor::init(Interface* interface, std::vector<glm::vec4>& positions) {
+void PrimitiveProcessor::init(Interface *interface, std::vector<glm::vec4> &positions, std::vector<glm::mat4> &bones) {
 	CD_INFO("Initialising primitive processing program...");
+	vertexCount = positions.size();
+	int boneCount = bones.size();
 
 	// create program
 	cd::createProgramGL(program, VERT_PATH, FRAG_PATH);
@@ -20,31 +22,26 @@ void PrimitiveProcessor::init(Interface* interface, std::vector<glm::vec4>& posi
 	createRasteriseTarget();
 
 	// init vertex buffer data
-	vertexProcess(0);
+	vertexProcess(bones);
 	vertexBarrier();
 }
 
-void PrimitiveProcessor::vertexProcess(float time) {
+void PrimitiveProcessor::vertexProcess(std::vector<glm::mat4> &bones) {
 
-	// write to the uniform buffer object
+	// setup the program
 
-	ubo_time = time;
-	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-	GLvoid* p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-	memcpy(p, &ubo_time, sizeof(ubo_time));
-	glUnmapBuffer(GL_UNIFORM_BUFFER);
-
-	// setup and run the program
-
+	glUseProgram(program);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
 	glBindVertexArray(vertexArray);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferIn);
 	setVertexAttributes();
 
-	glUseProgram(program);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount);
+	updateUniforms(bones);
 
+	// run
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount);
 	cd::checkErrorsGL("GL process primitives");
 }
 
@@ -84,8 +81,7 @@ void PrimitiveProcessor::createRasteriseTarget() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void PrimitiveProcessor::setProgramIO(std::vector<glm::vec4>& positions) {
-	vertexCount = positions.size();
+void PrimitiveProcessor::setProgramIO(std::vector<glm::vec4> &positions) {
 
 	// vertex input
 
@@ -114,15 +110,6 @@ void PrimitiveProcessor::setProgramIO(std::vector<glm::vec4>& positions) {
 	GLuint vertexOutIndex = 0;
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, vertexOutIndex, vertexBufferOut);
 
-	// time uniform buffer object
-
-	glGenBuffers(1, &ubo);
-	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(ubo_time), &ubo_time, GL_DYNAMIC_DRAW);
-
-	GLuint uboIndex = glGetUniformBlockIndex(program, "UBO");
-	glBindBufferBase(GL_UNIFORM_BUFFER, uboIndex, ubo);
-
 	cd::checkErrorsGL("primitive pipeline set io");
 }
 
@@ -144,6 +131,19 @@ void PrimitiveProcessor::setVertexAttributes() {
 	int weightsLocation = 2;
 	glVertexAttribPointer(weightsLocation, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsets[2]);
 	glEnableVertexAttribArray(weightsLocation);
+}
+
+void PrimitiveProcessor::updateUniforms(std::vector<glm::mat4> &bones) {
+	GLint location = glGetUniformLocation(program, "bones");
+	int boneCount = bones.size();
+	int bufferSize = 10;
+
+	if (location != -1 && boneCount == bufferSize)
+		glUniformMatrix4fv(location, bufferSize, GL_FALSE, (const GLfloat*)bones.data());
+	else
+		CD_WARN("PrimitiveProcessor::updateUniforms invalid bone transform write");
+
+	cd::checkErrorsGL("hoi");
 }
 
 /*

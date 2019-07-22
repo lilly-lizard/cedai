@@ -48,7 +48,7 @@ void Cedai::init() {
 	CD_INFO("Interface initialised.");
 	
 	createPrimitives();
-	vertexProcessor.init(&interface, vertices);
+	vertexProcessor.init(&interface, vertices, bones);
 	CD_INFO("Pimitive processing program initialised.");
 
 	renderer.init(screen_width, screen_height, &interface, &vertexProcessor,
@@ -65,8 +65,8 @@ void Cedai::loop() {
 
 	while (!quit && !interface.WindowCloseCheck()) {
 		// queue a render operation
-		float time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
-		renderer.renderQueue(view, time);
+		double time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
+		renderer.renderQueue(view, (float)time);
 
 		// input handling
 		interface.PollEvents();
@@ -77,7 +77,7 @@ void Cedai::loop() {
 
 		// draw to the window
 		renderer.renderBarrier();
-		vertexProcessor.vertexProcess(time);
+		vertexProcessor.vertexProcess(bones);
 		interface.drawRun();
 		interface.drawBarrier();
 		vertexProcessor.vertexBarrier();
@@ -97,6 +97,8 @@ void Cedai::cleanUp() {
 
 void Cedai::createPrimitives() {
 
+	// spheres
+
 	spheres.push_back(cd::Sphere{ 1.0, 0, 0, 0,
 		cl_float3{{ 10, -3, 0 }},
 		cl_uchar4{{ 200, 128, 254, 0 }} });
@@ -109,6 +111,8 @@ void Cedai::createPrimitives() {
 		cl_float3{{ 6, 0, 3 }},
 		cl_uchar4{{ 255, 200, 128, 0 }} });
 
+	// lights
+
 	lights.push_back( cd::Sphere{ 0.1, 0, 0, 0,
 		cl_float3{{ 2, 3, 4 }},
 		cl_uchar4{{ 255, 255, 205, 0 }} });
@@ -117,11 +121,15 @@ void Cedai::createPrimitives() {
 		cl_float3{{  -1, -6, -4 }},
 		cl_uchar4{{ 255, 255, 205, 0 }} });
 
+	// model loading
+
 	std::vector<glm::vec4> verticesLoad;
 	std::vector<glm::uvec4> polygonsLoad;
 	
 	CD_INFO("loading model(s)...");
 	cd::LoadModel(MAIZE_FILE, verticesLoad, polygonsLoad);
+
+	// vertex positions and polygon colors
 
 	for (int p = 0; p < polygonsLoad.size(); p++) {
 		glm::vec4 vert = verticesLoad[polygonsLoad[p].x];
@@ -138,6 +146,10 @@ void Cedai::createPrimitives() {
 
 		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 0 }} );
 	}
+
+	// bones
+
+	bones.resize(10, glm::mat4(1.0f));
 
 	CD_INFO("model(s) loaded.");
 }
