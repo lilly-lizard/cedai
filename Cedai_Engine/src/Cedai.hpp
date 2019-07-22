@@ -7,7 +7,7 @@ Coordinate system: x - forwards, y - right, z - up
 
 #include "Interface.hpp"
 #include "Renderer.hpp"
-#include "tools/PrimitivePipeline.hpp"
+#include "PrimitiveProcessor.hpp"
 #include "tools/Sphere.hpp"
 #include "tools/Polygon.hpp"
 
@@ -28,7 +28,7 @@ private:
 
 	Interface interface;
 	Renderer renderer;
-	PrimitivePipeline vertexProcessor;
+	PrimitiveProcessor vertexProcessor;
 
 	std::vector<cd::Sphere> spheres;
 	std::vector<cd::Sphere> lights;

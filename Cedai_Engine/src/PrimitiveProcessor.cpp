@@ -1,18 +1,20 @@
-#include "PrimitivePipeline.hpp"
+#include "PrimitiveProcessor.hpp"
 #include "Interface.hpp"
 #include "tools/Log.hpp"
+
+#include <array>
 
 #define VERT_PATH "src/shaders/primitive.vert"
 #define FRAG_PATH "src/shaders/primitive.frag"
 
 // PUBLIC FUNCTIONS
 
-void PrimitivePipeline::init(Interface* interface, std::vector<glm::vec4>& vertices) {
+void PrimitiveProcessor::init(Interface* interface, std::vector<glm::vec4>& positions) {
 	CD_INFO("Initialising primitive processing program...");
 
 	// create program
 	cd::createProgramGL(program, VERT_PATH, FRAG_PATH);
-	setProgramIO(vertices);
+	setProgramIO(positions);
 
 	// make dummy render target
 	createRasteriseTarget();
@@ -22,7 +24,7 @@ void PrimitivePipeline::init(Interface* interface, std::vector<glm::vec4>& verti
 	vertexBarrier();
 }
 
-void PrimitivePipeline::vertexProcess(float time) {
+void PrimitiveProcessor::vertexProcess(float time) {
 
 	// write to the uniform buffer object
 
@@ -35,10 +37,10 @@ void PrimitivePipeline::vertexProcess(float time) {
 	// setup and run the program
 
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-	
+
+	glBindVertexArray(vertexArray);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferIn);
-	glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(vertexLocation);
+	setVertexAttributes();
 
 	glUseProgram(program);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount);
@@ -46,11 +48,11 @@ void PrimitivePipeline::vertexProcess(float time) {
 	cd::checkErrorsGL("GL process primitives");
 }
 
-void PrimitivePipeline::vertexBarrier() {
+void PrimitiveProcessor::vertexBarrier() {
 	glFinish();
 }
 
-void PrimitivePipeline::cleanUp() {
+void PrimitiveProcessor::cleanUp() {
 	glDeleteRenderbuffers(1, &renderbuffer);
 	glDeleteFramebuffers(1, &framebuffer);
 	glDeleteBuffers(1, &vertexBufferOut);
@@ -58,7 +60,7 @@ void PrimitivePipeline::cleanUp() {
 
 // PRIVATE FUNCTIONS
 
-void PrimitivePipeline::createRasteriseTarget() {
+void PrimitiveProcessor::createRasteriseTarget() {
 	glGenFramebuffers(1, &framebuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
@@ -82,41 +84,66 @@ void PrimitivePipeline::createRasteriseTarget() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void PrimitivePipeline::setProgramIO(std::vector<glm::vec4>& vertices) {
-	vertexCount = vertices.size();
+void PrimitiveProcessor::setProgramIO(std::vector<glm::vec4>& positions) {
+	vertexCount = positions.size();
 
 	// vertex input
 
-	GLuint vertArray;
-	glGenVertexArrays(1, &vertArray);
-	glBindVertexArray(vertArray);
-	
+	gl_vertices.resize(vertexCount);
+	for (int v = 0; v < vertexCount; v++) {
+		gl_vertices[v].position = positions[v];
+		gl_vertices[v].boneIndices = glm::ivec4(-1, -1, -1, -1);
+		gl_vertices[v].boneWeights = glm::vec4(0, 0, 0, 0);
+	}
+
+	glGenVertexArrays(1, &vertexArray);
+	glBindVertexArray(vertexArray);
+
 	glGenBuffers(1, &vertexBufferIn);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferIn);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * vertexCount, vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cd::Vertex) * vertexCount, gl_vertices.data(), GL_STATIC_DRAW);
 
-	vertexLocation = glGetAttribLocation(program, "vertex");
-	glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(vertexLocation);
+	setVertexAttributes();
 
-	// vertext output
+	// vertex output
 
 	glGenBuffers(1, &vertexBufferOut);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertexBufferOut);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * vertexCount, NULL, GL_DYNAMIC_COPY);
+
 	GLuint vertexOutIndex = 0;
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, vertexOutIndex, vertexBufferOut);
 
-	// time ubo
+	// time uniform buffer object
 
-	// todo generate buffers togehter?
 	glGenBuffers(1, &ubo);
 	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(ubo_time), &ubo_time, GL_DYNAMIC_DRAW);
+
 	GLuint uboIndex = glGetUniformBlockIndex(program, "UBO");
 	glBindBufferBase(GL_UNIFORM_BUFFER, uboIndex, ubo);
 
 	cd::checkErrorsGL("primitive pipeline set io");
+}
+
+void PrimitiveProcessor::setVertexAttributes() {
+	std::array<int, 3> offsets = cd::Vertex::getOffsets();
+	size_t stride = sizeof(glm::vec4) + sizeof(glm::ivec4) + sizeof(glm::vec4);
+
+	// position
+	int positionLocation = 0;
+	glVertexAttribPointer(positionLocation, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsets[0]);
+	glEnableVertexAttribArray(positionLocation);
+
+	// bone indices
+	int indicesLocation = 1;
+	glVertexAttribPointer(indicesLocation, 4, GL_INT, GL_FALSE, stride, (void*)offsets[1]);
+	glEnableVertexAttribArray(indicesLocation);
+
+	// bone weights
+	int weightsLocation = 2;
+	glVertexAttribPointer(weightsLocation, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsets[2]);
+	glEnableVertexAttribArray(weightsLocation);
 }
 
 /*

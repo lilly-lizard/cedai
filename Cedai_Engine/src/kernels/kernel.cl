@@ -17,6 +17,8 @@ typedef struct
 #define HALF_RESOLUTION
 #define DITHER
 
+#define DROP_OFF 1000
+
 #define LIGHT_RADIUS 3
 #define LIGHT_W PI / 4
 
@@ -64,7 +66,7 @@ __kernel void render(const float16 view, const float3 ray_o, const float time,
 
 	// check for intersections
 	uchar4 color = (uchar4)(0, 0, 0, 0);
-	float min_t = 100; // drop off distance
+	float min_t = DROP_OFF; // drop off distance
 	int index = 0;
 	uchar primitive_found = 0; // 1 = sphere, 2 = light, 3 = polygon
 

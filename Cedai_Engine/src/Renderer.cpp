@@ -1,6 +1,6 @@
 #include "Renderer.hpp"
 #include "Interface.hpp"
-#include "tools/PrimitivePipeline.hpp"
+#include "PrimitiveProcessor.hpp"
 #include "tools/Log.hpp"
 #include "tools/config.hpp"
 
@@ -18,7 +18,7 @@
 // PUBLIC FUNCTIONS
 
 void Renderer::init(int image_width, int image_height,
-		Interface* interface, PrimitivePipeline* vertexProcessor,
+		Interface* interface, PrimitiveProcessor* vertexProcessor,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
 		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygons) {
 	CD_INFO("Initialising renderer...");

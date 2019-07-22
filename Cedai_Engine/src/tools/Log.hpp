@@ -1,11 +1,5 @@
 #pragma once
 
-/*
-Example usage:
-CD_INFO("swap chain image count = {}", imageCount);
-formatting: https://fmt.dev/dev/syntax.html
-*/
-
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/ostr.h"
 

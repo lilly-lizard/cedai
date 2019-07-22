@@ -8,13 +8,13 @@
 #include <string>
 
 class Interface;
-class PrimitivePipeline;
+class PrimitiveProcessor;
 
 class Renderer {
 public:
 
 	void init(int image_width, int image_height,
-		Interface* interface, PrimitivePipeline* vertexProcessor,
+		Interface* interface, PrimitiveProcessor* vertexProcessor,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
 		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygon_colors);
 

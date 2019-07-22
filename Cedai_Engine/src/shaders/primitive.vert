@@ -1,10 +1,12 @@
 #version 430
 
-layout(location = 1) in vec4 vertex;
+layout(std140, location = 0) in vec4 position_in;
+layout(std140, location = 1) in ivec4 bone_indices;
+layout(std140, location = 2) in vec4 bone_weights;
 
-layout(std140, binding = 0) buffer VERTICES_OUT
+layout(std140, binding = 0) buffer POSITION_OUT
 {
-	vec4 vertices_out[];
+	vec4 position_out[];
 };
 
 uniform UBO
@@ -12,6 +14,7 @@ uniform UBO
 	float time;
 } ubo;
 
-void main() {
-	vertices_out[gl_VertexID] = vertex + float(ubo.time);
+void main()
+{
+	position_out[gl_VertexID] = position_in + float(ubo.time);
 }

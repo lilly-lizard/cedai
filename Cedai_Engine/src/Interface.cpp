@@ -169,10 +169,10 @@ void cd::createProgramGL(GLuint &program, std::string vertPath, std::string frag
 
 void cd::checkErrorsGL(std::string desc) {
 	bool error_found = false;
-	GLenum e = glGetError();
+	int e = glGetError();
 	while (e != GL_NO_ERROR) {
 		error_found = true;
-		CD_ERROR("OpenGL error in {}: {}", desc, e);
+		CD_ERROR("OpenGL error in '{}': {} - {:#x}", desc, e, e);
 		e = glGetError();
 	}
 	if (error_found)
