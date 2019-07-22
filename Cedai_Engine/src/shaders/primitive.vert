@@ -1,5 +1,7 @@
 #version 430
 
+#define MAX_BONES 50
+
 layout(std140, location = 0) in vec4 position_in;
 layout(std140, location = 1) in ivec4 bone_indices;
 layout(std140, location = 2) in vec4 bone_weights;
@@ -9,14 +11,15 @@ layout(std140, binding = 0) buffer POSITION_OUT
 	vec4 position_out[];
 };
 
-uniform mat4 bones[10];
+uniform mat4 bones[MAX_BONES];
 
 void main()
 {
 	vec4 position = position_in;
 	for (int b = 0; b < 4; b++) {
-		if (bone_indices[b] != -1) {
-			position += bones[bone_indices[b]] * position;
+		int bone_index = bone_indices[b];
+		if (0 <= bone_index && bone_index < MAX_BONES) {
+			position += bones[bone_index] * position * bone_weights[bone_index];
 	}	}
 
 	position_out[gl_VertexID] = position;

@@ -7,6 +7,8 @@
 #define VERT_PATH "src/shaders/primitive.vert"
 #define FRAG_PATH "src/shaders/primitive.frag"
 
+#define MAX_BONES 50
+
 // PUBLIC FUNCTIONS
 
 void PrimitiveProcessor::init(Interface *interface, std::vector<glm::vec4> &positions, std::vector<glm::mat4> &bones) {
@@ -136,14 +138,11 @@ void PrimitiveProcessor::setVertexAttributes() {
 void PrimitiveProcessor::updateUniforms(std::vector<glm::mat4> &bones) {
 	GLint location = glGetUniformLocation(program, "bones");
 	int boneCount = bones.size();
-	int bufferSize = 10;
 
-	if (location != -1 && boneCount == bufferSize)
-		glUniformMatrix4fv(location, bufferSize, GL_FALSE, (const GLfloat*)bones.data());
+	if (location != -1 && boneCount <= MAX_BONES)
+		glUniformMatrix4fv(location, boneCount, GL_FALSE, (const GLfloat*)bones.data());
 	else
 		CD_WARN("PrimitiveProcessor::updateUniforms invalid bone transform write");
-
-	cd::checkErrorsGL("hoi");
 }
 
 /*
