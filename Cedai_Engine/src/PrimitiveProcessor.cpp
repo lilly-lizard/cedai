@@ -7,8 +7,6 @@
 #define VERT_PATH "src/shaders/primitive.vert"
 #define FRAG_PATH "src/shaders/primitive.frag"
 
-#define MAX_BONES 50
-
 // PUBLIC FUNCTIONS
 
 void PrimitiveProcessor::init(Interface *interface, std::vector<cd::VertexGl> &vertices, std::vector<glm::mat4> &bones) {
@@ -40,6 +38,7 @@ void PrimitiveProcessor::vertexProcess(std::vector<glm::mat4> &bones) {
 	setVertexAttributes();
 
 	updateUniforms(bones);
+	glFinish();
 
 	// run
 
@@ -119,7 +118,7 @@ void PrimitiveProcessor::setVertexAttributes() {
 
 	// bone indices
 	int indicesLocation = 1;
-	glVertexAttribPointer(indicesLocation, 4, GL_INT, GL_FALSE, stride, (void*)offsets[1]);
+	glVertexAttribIPointer(indicesLocation, 4, GL_INT, stride, (void*)offsets[1]);
 	glEnableVertexAttribArray(indicesLocation);
 
 	// bone weights
@@ -132,6 +131,9 @@ void PrimitiveProcessor::updateUniforms(std::vector<glm::mat4> &bones) {
 	GLint location = glGetUniformLocation(program, "bones");
 	int boneCount = bones.size();
 
+	void *ptr = bones.data();
+
+	// TODO only first bone getting through???
 	if (location != -1 && boneCount <= MAX_BONES)
 		glUniformMatrix4fv(location, boneCount, GL_FALSE, (const GLfloat*)bones.data());
 	else

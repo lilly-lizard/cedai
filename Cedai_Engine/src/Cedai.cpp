@@ -81,9 +81,7 @@ void Cedai::loop() {
 		// game logic
 		processInputs();
 		updateAnimation(time);
-#		ifdef PRINT_FPS
-		printFPS();
-#		endif
+		fpsHandle();
 
 		// draw to the window
 		renderer.renderBarrier();
@@ -140,7 +138,7 @@ void Cedai::createPrimitives() {
 	for (int p = 0; p < maize.vertices.size(); p++)
 		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 255 }} );
 
-	//bones.resize(20, glm::mat4(1.0f));
+	//bones.resize(MAX_BONES, glm::mat4(1.0f));
 
 	CD_INFO("model(s) loaded.");
 }
@@ -234,7 +232,7 @@ void Cedai::printViewData() {
 	CD_TRACE("up:		{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerUp[0], viewerUp[1], viewerUp[2]);
 }
 
-void Cedai::printFPS() {
+void Cedai::fpsHandle() {
 	static int fps = 0;
 	static time_point<system_clock> prevTime = system_clock::now();
 
@@ -243,9 +241,11 @@ void Cedai::printFPS() {
 	elapsedTime = system_clock::now() - prevTime;
 	if (elapsedTime.count() > 1) {
 
+#		ifdef PRINT_FPS
 		CD_TRACE("fps = {}", fps);
 #		ifdef DEBUG
 		interface.showFPS(fps);
+#		endif
 #		endif
 
 		fpsSum += fps;

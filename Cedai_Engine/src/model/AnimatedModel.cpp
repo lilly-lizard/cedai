@@ -108,7 +108,7 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 		// get global transforms for each bone for this keyframe
 		for (int j = 0; j < bones.size(); j++) {
 			FbxAMatrix globalTransform = bones[j].node->EvaluateGlobalTransform(animationTime);
-			keyframe.boneTransforms.push_back(convertMatrix(globalTransform));
+			keyframe.boneTransforms[j] = convertMatrix(globalTransform);
 		}
 
 		animation.frames.push_back(keyframe);
@@ -174,8 +174,6 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 	}
 
 	// convert vertices array into non indexed array
-	CD_WARN("polygons {}", indices.size());
-	CD_WARN("vertices {}", indexedVertices.size());
 	for (int p = 0; p < indices.size(); p++) {
 		vertices.push_back(indexedVertices[indices[p].x]);
 		vertices.push_back(indexedVertices[indices[p].y]);

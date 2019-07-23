@@ -32,7 +32,7 @@ namespace cd
 	struct Keyframe
 	{
 		double time = 0;
-		std::vector<glm::mat4> boneTransforms;
+		std::vector<glm::mat4> boneTransforms = std::vector<glm::mat4>(MAX_BONES, glm::mat4(1.0));
 	};
 
 	struct AnimClip
