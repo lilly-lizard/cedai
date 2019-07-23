@@ -3,10 +3,3 @@
 bin/
 bin-int/
 VTune\ Amplifier\ Results/
-
-# Files
-*.user
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
-*.sln

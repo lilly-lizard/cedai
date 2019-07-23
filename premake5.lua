@@ -1,13 +1,13 @@
 workspace "Cedai"
 	architecture "x64" -- no 32 bit support
 
-	configurations
-	{
+	configurations {
 		"debug",
 		"release"
 	}
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+fbxdir = "C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/"
 
 project "Cedai_Engine" -- game engine
 	location "Cedai_Engine"
@@ -17,8 +17,7 @@ project "Cedai_Engine" -- game engine
 	targetdir ("Cedai_Engine/bin/" .. outputdir)	-- binaries
 	objdir ("Cedai_Engine/bin-int/" .. outputdir)	-- intermediate files
 
-	files
-	{
+	files {
 		"Cedai_Engine/src/**.hpp",		-- headers
 		"Cedai_Engine/src/**.h",		-- headers
 		"Cedai_Engine/src/**.cpp",		-- source files
@@ -29,26 +28,34 @@ project "Cedai_Engine" -- game engine
 		"vendor/gl3w/include/GL/**.h"	-- gl3w.h and glcorearb.h
 	}
 
-	includedirs
-	{
+	includedirs {
 		"Cedai_Engine/src",
 		"$(INTELOCLSDKROOT)/include",	-- opencl
 		"vendor/glm",					-- glm
 		"vendor/glfw/include",			-- glfw
 		"vendor/gl3w/include",			-- gl3w
-		"vendor/spdlog/include"			-- spdlog
+		"vendor/spdlog/include",		-- spdlog
+		"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/include"
 	}
 
-	libdirs
-	{
+	libdirs {
 		"$(INTELOCLSDKROOT)/lib/x64",	-- opencl
-		"vendor/glfw/lib-vc2017"		-- glfw
+		"vendor/glfw/lib-vc2017",		-- glfw
+		"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/%{cfg.buildcfg}"
 	}
 
-	links
-	{
+	links {
 		"OpenCL.lib",
-		"glfw3.lib"
+		"glfw3.lib",
+		"libfbxsdk.lib"
+	}
+
+	defines {
+		"FBXSDK_SHARED"
+	}
+
+	postbuildcommands {
+		"{COPY} C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/%{cfg.buildcfg}/libfbxsdk.dll %{cfg.buildtarget.directory}"
 	}
 
 	filter "system:windows"

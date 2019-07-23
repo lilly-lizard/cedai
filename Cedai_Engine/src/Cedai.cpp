@@ -8,8 +8,9 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
 #include <iomanip>
+#include <math.h>
 
-#define PRINT_FPS
+//#define PRINT_FPS
 
 #define MAIZE_FILE "../assets/maize.bin"
 #define FBX_PATH "../assets/maize.fbx"
@@ -52,11 +53,11 @@ void Cedai::init() {
 	CD_INFO("Interface initialised.");
 	
 	createPrimitives();
-	vertexProcessor.init(&interface, maize.vertices, bones);
+	vertexProcessor.init(&interface, maize.vertices, maize.animation.frames[keyFrameIndex].boneTransforms);
 	CD_INFO("Pimitive processing program initialised.");
 
 	renderer.init(screen_width, screen_height, &interface, &vertexProcessor,
-		spheres, lights, cl_vertices, cl_polygonColors);
+		spheres, lights, cl_polygonColors);
 	CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
@@ -79,13 +80,14 @@ void Cedai::loop() {
 
 		// game logic
 		processInputs();
+		updateAnimation(time);
 #		ifdef PRINT_FPS
 		printFPS();
 #		endif
 
 		// draw to the window
 		renderer.renderBarrier();
-		vertexProcessor.vertexProcess(bones);
+		vertexProcessor.vertexProcess(maize.animation.frames[keyFrameIndex].boneTransforms);
 		interface.drawRun();
 		interface.drawBarrier();
 		vertexProcessor.vertexBarrier();
@@ -134,13 +136,11 @@ void Cedai::createPrimitives() {
 	// !! ANIMATED MODEL
 
 	maize.loadFBX(FBX_PATH);
-
+	CD_WARN("{}", maize.vertices.size());
 	for (int p = 0; p < maize.vertices.size(); p++)
 		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 255 }} );
 
-	// bones
-
-	bones.resize(20, glm::mat4(1.0f));
+	//bones.resize(20, glm::mat4(1.0f));
 
 	CD_INFO("model(s) loaded.");
 }
@@ -194,6 +194,18 @@ void Cedai::processInputs() {
 		viewerPosition += viewerUp * glm::vec3(inputs & CD_INPUTS::UP ? strafeSpeed * timeDif : -strafeSpeed * timeDif);
 
 	updateView();
+}
+
+void Cedai::updateAnimation(double time) {
+	double relativeTime = fmod(time, maize.animation.duration);
+
+	// figure out which frame we're on
+	for (int f = 0; f < maize.animation.frames.size() - 1; f++) {
+		if (maize.animation.frames[f].time <= relativeTime && relativeTime < maize.animation.frames[f + 1].time) {
+			keyFrameIndex = f;
+			break;
+		}
+	}
 }
 
 // HELPER

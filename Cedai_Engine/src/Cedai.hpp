@@ -31,14 +31,10 @@ private:
 	PrimitiveProcessor vertexProcessor;
 
 	AnimatedModel maize;
+	int keyFrameIndex = 0;
 
 	std::vector<cd::Sphere> spheres;
 	std::vector<cd::Sphere> lights;
-	//std::vector<glm::vec4> vertices;
-	std::vector<glm::mat4> bones;
-
-	// TODO remove these
-	std::vector<cl_float3> cl_vertices;
 	std::vector<cl_uchar4> cl_polygonColors;
 
 	float view[4][4] = { 0 };
@@ -62,9 +58,9 @@ private:
 	void createPrimitives();
 
 	void processInputs();
+	void updateAnimation(double time);
+
 	void updateView();
 	void printViewData();
 	void printFPS();
-
-	void updateAnimation();
 };

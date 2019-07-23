@@ -20,8 +20,8 @@ namespace cd
 
 	struct BoneWeight
 	{
-		int boneIndex;
-		float weight;
+		int boneIndex = -1;
+		float weight = 0;
 	};
 
 	struct VertexBones
@@ -31,33 +31,33 @@ namespace cd
 
 	struct Keyframe
 	{
-		double time;
-		std::vector<FbxAMatrix> boneTransforms;
+		double time = 0;
+		std::vector<glm::mat4> boneTransforms;
 	};
 
 	struct AnimClip
 	{
-		double duration;
-		std::vector<Bone> bones;
+		double duration = 0;
 		std::vector<Keyframe> frames;
 	};
 }
 
 class AnimatedModel {
 public:
-	void loadFBX(std::string filePath);
-
 	std::vector<cd::VertexGl> vertices;
 	cd::AnimClip animation;
 
+	void loadFBX(std::string filePath);
+
 private:
+	std::vector<cd::Bone> bones;
 
 	int loadAnimatedModel(FbxScene *scene);
 
 	void getMesh(FbxNode *pNode, FbxMesh **mesh);
 	glm::mat4 convertMatrix(FbxAMatrix fbxMatrix);
 
-	bool findBones(std::vector<cd::Bone> &bones, FbxNode *node);
-	void loadBones(std::vector<cd::Bone> &bones, FbxNode *node, int parentIndex);
-	int getBoneIndex(std::vector<cd::Bone> &bones, std::string boneName);
+	bool findBones(FbxNode *node);
+	void loadBones(FbxNode *node, int parentIndex);
+	int getBoneIndex(std::string boneName);
 };

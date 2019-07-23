@@ -14,8 +14,7 @@ public:
 
 	void init(int image_width, int image_height,
 		Interface* interface, PrimitiveProcessor* vertexProcessor,
-		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygon_colors);
+		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygon_colors);
 
 	void renderQueue(const float view[4][4], float seconds);
 	void renderBarrier();
@@ -44,7 +43,6 @@ private:
 
 	int sphere_count = 0;
 	int light_count = 0;
-	int vertex_count = 0;
 	int polygon_count = 0;
 
 	void createPlatform();
@@ -57,8 +55,7 @@ private:
 	void createQueue();
 
 	void createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, cl_GLuint gl_vert_buffer,
-			std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-			std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygon_colors);
+			std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygon_colors);
 
 	void createKernels();
 	void createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint);

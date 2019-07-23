@@ -1,4 +1,5 @@
 #include "AnimatedModel.hpp"
+#include "tools/Log.hpp"
 
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
@@ -58,6 +59,7 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 	// time and frames
 	FbxTime animationTime = animStack->GetLocalTimeSpan().GetDuration();
 	FbxLongLong frameCount = animationTime.GetFrameCount(FbxTime::EMode::eFrames24) + 1;
+	animation.duration = animationTime.GetSecondDouble();
 
 	FbxNode *rootNode = scene->GetRootNode();
 	if (!rootNode) return -1; // todo error handling?
@@ -92,7 +94,7 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 	}
 
 	// get skeleton bones
-	bool skeletonFound = findBones(animation.bones, rootNode);
+	bool skeletonFound = findBones(rootNode);
 	if (!skeletonFound) return -1;
 
 	// load keyframes
@@ -104,9 +106,9 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 		keyframe.time = animationTime.GetSecondDouble();
 
 		// get global transforms for each bone for this keyframe
-		for (int j = 0; j < animation.bones.size(); j++) {
-			FbxAMatrix globalTransform = animation.bones[j].node->EvaluateGlobalTransform(animationTime);
-			keyframe.boneTransforms.push_back(globalTransform);
+		for (int j = 0; j < bones.size(); j++) {
+			FbxAMatrix globalTransform = bones[j].node->EvaluateGlobalTransform(animationTime);
+			keyframe.boneTransforms.push_back(convertMatrix(globalTransform));
 		}
 
 		animation.frames.push_back(keyframe);
@@ -135,7 +137,7 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 		FbxCluster *cluster = skin->GetCluster(c);
 
 		// find associated bone/node
-		int boneIndex = getBoneIndex(animation.bones, cluster->GetLink()->GetName());
+		int boneIndex = getBoneIndex(cluster->GetLink()->GetName());
 		if (boneIndex == -1) return -1;
 
 		// todo what is this?
@@ -144,7 +146,7 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 		FbxAMatrix globalBindposeInverseMatrix;
 		cluster->GetTransformMatrix(transformMatrix); // node containing link
 		cluster->GetTransformLinkMatrix(transformLinkMatrix); // link node
-		animation.bones[boneIndex].globalBindposeInverse = transformLinkMatrix.Inverse() * transformMatrix * geometryTransform;
+		bones[boneIndex].globalBindposeInverse = transformLinkMatrix.Inverse() * transformMatrix * geometryTransform;
 
 		// loop through the vertices affected by this cluster
 		int *indices = cluster->GetControlPointIndices();
@@ -172,6 +174,8 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 	}
 
 	// convert vertices array into non indexed array
+	CD_WARN("polygons {}", indices.size());
+	CD_WARN("vertices {}", indexedVertices.size());
 	for (int p = 0; p < indices.size(); p++) {
 		vertices.push_back(indexedVertices[indices[p].x]);
 		vertices.push_back(indexedVertices[indices[p].y]);
@@ -197,7 +201,7 @@ void AnimatedModel::getMesh(FbxNode *pNode, FbxMesh **mesh) {
 }
 
 // traverses node tree to find skeleton nodes
-bool AnimatedModel::findBones(std::vector<cd::Bone> &bones, FbxNode *node) {
+bool AnimatedModel::findBones(FbxNode *node) {
 	// check if this node is a bone
 	bool isBone = false;
 	for (int a = 0; a < node->GetNodeAttributeCount(); a++) {
@@ -207,12 +211,12 @@ bool AnimatedModel::findBones(std::vector<cd::Bone> &bones, FbxNode *node) {
 
 	if (isBone) {
 		// load bones
-		loadBones(bones, node, -1);
+		loadBones(node, -1);
 		return true;
 	} else {
 		// loop through node children to keep looking for a bone tree
 		for (int n = 0; n < node->GetChildCount(); n++) {
-			if (findBones(bones, node->GetChild(n)))
+			if (findBones(node->GetChild(n)))
 				return true;
 		}
 	}
@@ -220,7 +224,7 @@ bool AnimatedModel::findBones(std::vector<cd::Bone> &bones, FbxNode *node) {
 }
 
 // makes bones from a skeleton node and it's children
-void AnimatedModel::loadBones(std::vector<cd::Bone> &bones, FbxNode *node, int parentIndex) {
+void AnimatedModel::loadBones(FbxNode *node, int parentIndex) {
 	Bone bone;
 	bone.node = node;
 	bone.parentIndex = parentIndex;
@@ -229,10 +233,10 @@ void AnimatedModel::loadBones(std::vector<cd::Bone> &bones, FbxNode *node, int p
 
 	int myindex = bones.size() - 1;
 	for (int n = 0; n < node->GetChildCount(); n++)
-		loadBones(bones, node->GetChild(n), myindex);
+		loadBones(node->GetChild(n), myindex);
 }
 
-int AnimatedModel::getBoneIndex(std::vector<cd::Bone> &bones, std::string boneName) {
+int AnimatedModel::getBoneIndex(std::string boneName) {
 	for (int j = 0; j < bones.size(); j++) {
 		if (bones[j].name == boneName)
 			return j;
@@ -255,4 +259,14 @@ opengl skeletal animation overview: https://www.khronos.org/opengl/wiki/Skeletal
 3d model optimisation: http://manual.notch.one/0.9.22/en/topic/optimising-3d-scenes-for-notch
 opengl skeleton tutorial: http://ogldev.atspace.co.uk/www/tutorial38/tutorial38.html
 more links: https://www.reddit.com/r/opengl/comments/4du56u/trying_to_understand_skeletal_animation/
+*/
+
+/*
+documentation: http://help.autodesk.com/view/FBX/2019/ENU/
+cpp reference: https://help.autodesk.com/cloudhelp/2018/ENU/FBX-Developer-Help/cpp_ref/index.html
+
+animation: https://stackoverflow.com/questions/45690006/fbx-sdk-skeletal-animations
+
+matrix conversion: https://stackoverflow.com/questions/35245433/fbx-node-transform-calculation
+blender fbx exporting problems: https://blog.mattnewport.com/fixing-scale-problems-exporting-fbx-files-from-blender-to-unity-5/
 */
