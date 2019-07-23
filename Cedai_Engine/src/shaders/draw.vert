@@ -1,6 +1,7 @@
 #version 430
 
 layout(location = 0) in vec2 pos;
+
 layout(location = 0) out vec2 texCoord;
 
 void main() {

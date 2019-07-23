@@ -65,4 +65,6 @@ private:
 	void updateView();
 	void printViewData();
 	void printFPS();
+
+	void updateAnimation();
 };

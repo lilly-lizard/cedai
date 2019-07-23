@@ -9,6 +9,8 @@
 #include <iostream>
 #include <iomanip>
 
+#define PRINT_FPS
+
 #define MAIZE_FILE "../assets/maize.bin"
 #define FBX_PATH "../assets/maize.fbx"
 
@@ -18,6 +20,8 @@ const int screen_width = 960;
 const int screen_height = 640;
 // 640 x 480
 // 960 x 640
+
+// MAIN FUNCTIONS
 
 int main() {
 	Cedai App;
@@ -72,8 +76,12 @@ void Cedai::loop() {
 		interface.PollEvents();
 		inputs = interface.GetKeyInputs();
 		quit = inputs & CD_INPUTS::ESC;
+
+		// game logic
 		processInputs();
+#		ifdef PRINT_FPS
 		printFPS();
+#		endif
 
 		// draw to the window
 		renderer.renderBarrier();
@@ -94,6 +102,8 @@ void Cedai::cleanUp() {
 
 	CD_INFO("Finished cleaning.");
 }
+
+// INITIALIZATION
 
 void Cedai::createPrimitives() {
 
@@ -130,10 +140,12 @@ void Cedai::createPrimitives() {
 
 	// bones
 
-	bones.resize(10, glm::mat4(1.0f));
+	bones.resize(20, glm::mat4(1.0f));
 
 	CD_INFO("model(s) loaded.");
 }
+
+// GAME LOGIC
 
 void Cedai::processInputs() {
 	// get time difference
@@ -184,6 +196,8 @@ void Cedai::processInputs() {
 	updateView();
 }
 
+// HELPER
+
 void Cedai::updateView() {
 	view[0][0] = viewerForward[0];
 	view[0][1] = viewerForward[1];
@@ -216,10 +230,12 @@ void Cedai::printFPS() {
 	duration<double> elapsedTime;
 	elapsedTime = system_clock::now() - prevTime;
 	if (elapsedTime.count() > 1) {
+
 		CD_TRACE("fps = {}", fps);
-#ifdef DEBUG
+#		ifdef DEBUG
 		interface.showFPS(fps);
-#endif
+#		endif
+
 		fpsSum += fps;
 		fpsCount++;
 		prevTime = system_clock::now();
