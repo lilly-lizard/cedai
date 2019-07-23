@@ -19,7 +19,7 @@ void main()
 	for (int b = 0; b < 4; b++) {
 		int bone_index = bone_indices[b];
 		if (0 <= bone_index && bone_index < MAX_BONES) {
-			position += bones[bone_index] * position * bone_weights[bone_index];
+			position += bones[bone_index] * position_in * bone_weights[bone_index];
 	}	}
 
 	position_out[gl_VertexID] = position;

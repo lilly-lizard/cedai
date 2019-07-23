@@ -3,8 +3,8 @@ workspace "Cedai"
 
 	configurations
 	{
-		"Debug",
-		"Release"
+		"debug",
+		"release"
 	}
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"

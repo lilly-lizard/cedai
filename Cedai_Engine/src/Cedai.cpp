@@ -1,6 +1,5 @@
 #include "Cedai.hpp"
 #include "Interface.hpp"
-#include "tools/Model_Loader.hpp"
 #include "tools/Inputs.hpp"
 #include "tools/Log.hpp"
 
@@ -11,6 +10,7 @@
 #include <iomanip>
 
 #define MAIZE_FILE "../assets/maize.bin"
+#define FBX_PATH "../assets/maize.fbx"
 
 using namespace std::chrono;
 
@@ -48,7 +48,7 @@ void Cedai::init() {
 	CD_INFO("Interface initialised.");
 	
 	createPrimitives();
-	vertexProcessor.init(&interface, vertices, bones);
+	vertexProcessor.init(&interface, maize.vertices, bones);
 	CD_INFO("Pimitive processing program initialised.");
 
 	renderer.init(screen_width, screen_height, &interface, &vertexProcessor,
@@ -99,53 +99,34 @@ void Cedai::createPrimitives() {
 
 	// spheres
 
-	spheres.push_back(cd::Sphere{ 1.0, 0, 0, 0,
+	spheres.push_back(cd::Sphere{ 1.0, 0, 0, 1.0,
 		cl_float3{{ 10, -3, 0 }},
-		cl_uchar4{{ 200, 128, 254, 0 }} });
+		cl_uchar4{{ 200, 128, 254, 255 }} });
 
-	spheres.push_back(cd::Sphere{ 0.5, 0, 0, 0,
+	spheres.push_back(cd::Sphere{ 0.5, 0, 0, 1.0,
 		cl_float3{{ 4, 2, 2.5 }},
-		cl_uchar4{{ 128, 255, 180, 0 }} });
+		cl_uchar4{{ 128, 255, 180, 255 }} });
 
-	spheres.push_back(cd::Sphere{ 0.2, 0, 0, 0,
+	spheres.push_back(cd::Sphere{ 0.2, 0, 0, 1.0,
 		cl_float3{{ 6, 0, 3 }},
-		cl_uchar4{{ 255, 200, 128, 0 }} });
+		cl_uchar4{{ 255, 200, 128, 255 }} });
 
 	// lights
 
-	lights.push_back( cd::Sphere{ 0.1, 0, 0, 0,
+	lights.push_back( cd::Sphere{ 0.1, 0, 0, 1.0,
 		cl_float3{{ 2, 3, 4 }},
-		cl_uchar4{{ 255, 255, 205, 0 }} });
+		cl_uchar4{{ 255, 255, 205, 255 }} });
 
-	lights.push_back(cd::Sphere{ 0.1, 0, 0, 0,
+	lights.push_back(cd::Sphere{ 0.1, 0, 0, 1.0,
 		cl_float3{{  -1, -6, -4 }},
-		cl_uchar4{{ 255, 255, 205, 0 }} });
+		cl_uchar4{{ 255, 255, 205, 255 }} });
 
-	// model loading
+	// !! ANIMATED MODEL
 
-	std::vector<glm::vec4> verticesLoad;
-	std::vector<glm::uvec4> polygonsLoad;
-	
-	CD_INFO("loading model(s)...");
-	cd::LoadModel(MAIZE_FILE, verticesLoad, polygonsLoad);
+	maize.loadFBX(FBX_PATH);
 
-	// vertex positions and polygon colors
-
-	for (int p = 0; p < polygonsLoad.size(); p++) {
-		glm::vec4 vert = verticesLoad[polygonsLoad[p].x];
-		vertices.push_back(glm::vec4( vert.x, vert.y, vert.z, 0));
-		cl_vertices.push_back(cl_float3{{ vert.x, vert.y, vert.z }});
-
-		vert = verticesLoad[polygonsLoad[p].y];
-		vertices.push_back(glm::vec4(vert.x, vert.y, vert.z, 0));
-		cl_vertices.push_back(cl_float3{{ vert.x, vert.y, vert.z }});
-
-		vert = verticesLoad[polygonsLoad[p].z];
-		vertices.push_back(glm::vec4(vert.x, vert.y, vert.z, 0));
-		cl_vertices.push_back(cl_float3{{ vert.x, vert.y, vert.z }});
-
-		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 0 }} );
-	}
+	for (int p = 0; p < maize.vertices.size(); p++)
+		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 255 }} );
 
 	// bones
 

@@ -1,4 +1,6 @@
 #include "FBX_Loader.h"
+#include "Tools.h"
+#include "AnimationLoader.h"
 
 #include <fbxsdk.h>
 #include <fbxsdk/scene/geometry/fbxmesh.h>
@@ -15,24 +17,9 @@
 #define IN_PATH "maize.bin"
 
 std::vector<glm::vec4> vertices;
-std::vector<glm::uvec4> polygons;
+std::vector<glm::uvec4> indices;
 
 // LOAD FBX
-
-void getMesh(FbxNode* pNode, FbxMesh** mesh) {
-	const char* nodeName = pNode->GetName();
-
-	for (int i = 0; i < pNode->GetNodeAttributeCount(); i++) {
-		FbxNodeAttribute* pAttribute = pNode->GetNodeAttributeByIndex(i);
-		if (pAttribute->GetAttributeType() == FbxNodeAttribute::eMesh) {
-			std::cout << "mesh name = " << pAttribute->GetName() << std::endl;
-			*mesh = static_cast<FbxMesh*>(pAttribute);
-		}
-	}
-
-	for (int j = 0; j < pNode->GetChildCount(); j++)
-		getMesh(pNode->GetChild(j), mesh);
-}
 
 void loadFBX() {
 	std::cout << "starting fbx read..." << std::endl;
@@ -44,6 +31,7 @@ void loadFBX() {
 	if (!importer->Initialize(FBX_PATH, -1, sdkManager->GetIOSettings())) {
 		printf("Call to FbxImporter::Initialize() failed.\n");
 		printf("Error returned: %s\n\n", importer->GetStatus().GetErrorString());
+		sdkManager->Destroy();
 		exit(-1);
 	}
 
@@ -51,30 +39,58 @@ void loadFBX() {
 	importer->Import(scene);
 	importer->Destroy();
 
+	// node hierarchy
+	std::cout << "\n ~ node hierarchy:" << std::endl;
 	FbxNode* rootNode = scene->GetRootNode();
 	FbxMesh* mesh = nullptr;
-	if (rootNode) {
-		for (int i = 0; i < rootNode->GetChildCount(); i++)
-			getMesh(rootNode->GetChild(i), &mesh);
-	}
-
-	if (mesh != nullptr) {
-		std::cout << "mesh found!" << std::endl;
-		std::cout << "reading..." << std::endl;
-	}
-	else {
-		std::cout << "no mesh found." << std::endl;
+	if (!rootNode) {
+		printf("Error: no root node found in scene");
 		sdkManager->Destroy();
-		return;
+		exit(-1);
 	}
 
+	// print details of all nodes
+	cd::PrintNode(rootNode);
+	printf("\n");
+
+
+	// animation processing
+	if (cd::loadAnimatedModel(scene) != 0) {
+		std::cout << "animation loading error" << std::endl;
+		sdkManager->Destroy();
+		exit(-1);
+	} else {
+		std::cout << " -- animation loading success! --" << std::endl;
+	}
+
+
+	// find the mesh
+	cd::getMesh(rootNode, &mesh);
+	std::cout << " ~" << std::endl;
+
+	if (mesh == nullptr) {
+		std::cout << "error: no mesh found" << std::endl;
+		sdkManager->Destroy();
+		exit(-1);
+	}
+
+	std::cout << "mesh found!" << std::endl;
+	std::cout << "reading..." << std::endl;
+
+	// mesh transform TODO: should be local transform?? (same thing in this case)
+	FbxAMatrix meshTransformFbx = mesh->GetNode()->EvaluateGlobalTransform();
+	glm::mat4 meshTransform = cd::convertMatrix(meshTransformFbx);
+
+	// get vertices
 	FbxVector4* controlPoints = mesh->GetControlPoints();
 	std::cout << "vertex count = " << mesh->GetControlPointsCount() << std::endl;
 	for (int i = 0; i < mesh->GetControlPointsCount(); i++) {
-		FbxVector4 controlPoint = controlPoints[i];
-		vertices.push_back(glm::vec4(-controlPoint[2], controlPoint[0], controlPoint[1], 0));
+		glm::vec4 vertex = glm::vec4(controlPoints[i][0], controlPoints[i][1], controlPoints[i][2], 0);
+		vertex = meshTransform * vertex;
+		vertices.push_back(vertex);
 	}
 
+	// get indices
 	std::cout << "polygon count = " << mesh->GetPolygonCount() << std::endl;
 	for (int i = 0; i < mesh->GetPolygonCount(); i++) {
 		if (mesh->GetPolygonSize(i) != 3) {
@@ -82,7 +98,7 @@ void loadFBX() {
 			sdkManager->Destroy();
 			return;
 		}
-		polygons.push_back(glm::uvec4(mesh->GetPolygonVertex(i, 0), mesh->GetPolygonVertex(i, 1), mesh->GetPolygonVertex(i, 2), 0));
+		indices.push_back(glm::uvec4(mesh->GetPolygonVertex(i, 0), mesh->GetPolygonVertex(i, 1), mesh->GetPolygonVertex(i, 2), 0));
 	}
 
 	std::cout << "fbx load success!" << std::endl;
@@ -99,12 +115,12 @@ void writeBinary() {
 	output.write((char*) &version_number, sizeof(uint16_t));
 
 	uint32_t num_vertices = vertices.size();
-	uint32_t num_polygons = polygons.size();
+	uint32_t num_polygons = indices.size();
 	output.write((char*) &num_vertices, sizeof(uint32_t));
 	output.write((char*) &num_polygons, sizeof(uint32_t));
 
 	output.write((char*) vertices.data(), sizeof(glm::vec4) * num_vertices);
-	output.write((char*) polygons.data(), sizeof(glm::uvec4) * num_polygons);
+	output.write((char*) indices.data(), sizeof(glm::uvec4) * num_polygons);
 
 	output.close();
 	std::cout << "model write success!" << std::endl;
@@ -150,7 +166,7 @@ void readBinary() {
 	}
 
 	for (int p = 0; p < num_polygons; p++) {
-		if (polygons_temp[21] != polygons[21])
+		if (polygons_temp[21] != indices[21])
 			std::cout << "p not equal: " << p << std::endl;
 	}
 }
@@ -168,4 +184,9 @@ void main() {
 TODO: casting?? (remember pixels bug...)
 documentation: http://help.autodesk.com/view/FBX/2019/ENU/
 cpp reference: https://help.autodesk.com/cloudhelp/2018/ENU/FBX-Developer-Help/cpp_ref/index.html
+
+animation: https://stackoverflow.com/questions/45690006/fbx-sdk-skeletal-animations
+
+matrix conversion: https://stackoverflow.com/questions/35245433/fbx-node-transform-calculation
+blender fbx exporting problems: https://blog.mattnewport.com/fixing-scale-problems-exporting-fbx-files-from-blender-to-unity-5/
 */

@@ -11,14 +11,14 @@
 
 // PUBLIC FUNCTIONS
 
-void PrimitiveProcessor::init(Interface *interface, std::vector<glm::vec4> &positions, std::vector<glm::mat4> &bones) {
+void PrimitiveProcessor::init(Interface *interface, std::vector<cd::VertexGl> &vertices, std::vector<glm::mat4> &bones) {
 	CD_INFO("Initialising primitive processing program...");
-	vertexCount = positions.size();
+	vertexCount = vertices.size();
 	int boneCount = bones.size();
 
 	// create program
 	cd::createProgramGL(program, VERT_PATH, FRAG_PATH);
-	setProgramIO(positions);
+	setProgramIO(vertices);
 
 	// make dummy render target
 	createRasteriseTarget();
@@ -83,23 +83,16 @@ void PrimitiveProcessor::createRasteriseTarget() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void PrimitiveProcessor::setProgramIO(std::vector<glm::vec4> &positions) {
+void PrimitiveProcessor::setProgramIO(std::vector<cd::VertexGl> &vertices) {
 
 	// vertex input
-
-	gl_vertices.resize(vertexCount);
-	for (int v = 0; v < vertexCount; v++) {
-		gl_vertices[v].position = positions[v];
-		gl_vertices[v].boneIndices = glm::ivec4(-1, -1, -1, -1);
-		gl_vertices[v].boneWeights = glm::vec4(0, 0, 0, 0);
-	}
 
 	glGenVertexArrays(1, &vertexArray);
 	glBindVertexArray(vertexArray);
 
 	glGenBuffers(1, &vertexBufferIn);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferIn);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cd::Vertex) * vertexCount, gl_vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cd::VertexGl) * vertexCount, vertices.data(), GL_STATIC_DRAW);
 
 	setVertexAttributes();
 
@@ -116,7 +109,7 @@ void PrimitiveProcessor::setProgramIO(std::vector<glm::vec4> &positions) {
 }
 
 void PrimitiveProcessor::setVertexAttributes() {
-	std::array<int, 3> offsets = cd::Vertex::getOffsets();
+	std::array<int, 3> offsets = cd::VertexGl::getOffsets();
 	size_t stride = sizeof(glm::vec4) + sizeof(glm::ivec4) + sizeof(glm::vec4);
 
 	// position

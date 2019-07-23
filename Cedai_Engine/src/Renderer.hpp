@@ -1,7 +1,6 @@
 #pragma once
 
-#include "tools/Sphere.hpp"
-#include "tools/Polygon.hpp"
+#include "model/Sphere.hpp"
 
 #include <CL/cl.hpp>
 #include <vector>
@@ -38,7 +37,6 @@ private:
 	cl::NDRange local_work;
 
 	cl::Buffer cl_spheres;
-	//cl::Buffer cl_vertices;
 	cl::Buffer cl_gl_vertices;
 	cl::Buffer cl_polygons;
 	cl::ImageGL cl_output;

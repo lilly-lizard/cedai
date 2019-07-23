@@ -8,8 +8,8 @@ Coordinate system: x - forwards, y - right, z - up
 #include "Interface.hpp"
 #include "Renderer.hpp"
 #include "PrimitiveProcessor.hpp"
-#include "tools/Sphere.hpp"
-#include "tools/Polygon.hpp"
+#include "model/AnimatedModel.hpp"
+#include "model/Sphere.hpp"
 
 #include <glm/glm.hpp>
 #include <CL/cl.h>
@@ -30,9 +30,11 @@ private:
 	Renderer renderer;
 	PrimitiveProcessor vertexProcessor;
 
+	AnimatedModel maize;
+
 	std::vector<cd::Sphere> spheres;
 	std::vector<cd::Sphere> lights;
-	std::vector<glm::vec4> vertices;
+	//std::vector<glm::vec4> vertices;
 	std::vector<glm::mat4> bones;
 
 	// TODO remove these
