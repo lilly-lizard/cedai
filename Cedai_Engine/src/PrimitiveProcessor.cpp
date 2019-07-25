@@ -9,7 +9,7 @@
 
 // PUBLIC FUNCTIONS
 
-void PrimitiveProcessor::init(Interface *interface, std::vector<cd::VertexGl> &vertices, std::vector<glm::mat4> &bones) {
+void PrimitiveProcessor::init(Interface *interface, std::vector<cd::Vertex> &vertices, std::vector<glm::mat4> &bones) {
 	CD_INFO("Initialising primitive processing program...");
 	vertexCount = vertices.size();
 	int boneCount = bones.size();
@@ -82,7 +82,7 @@ void PrimitiveProcessor::createRasteriseTarget() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void PrimitiveProcessor::setProgramIO(std::vector<cd::VertexGl> &vertices) {
+void PrimitiveProcessor::setProgramIO(std::vector<cd::Vertex> &vertices) {
 
 	// vertex input
 
@@ -91,7 +91,7 @@ void PrimitiveProcessor::setProgramIO(std::vector<cd::VertexGl> &vertices) {
 
 	glGenBuffers(1, &vertexBufferIn);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferIn);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cd::VertexGl) * vertexCount, vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cd::Vertex) * vertexCount, vertices.data(), GL_STATIC_DRAW);
 
 	setVertexAttributes();
 
@@ -108,7 +108,7 @@ void PrimitiveProcessor::setProgramIO(std::vector<cd::VertexGl> &vertices) {
 }
 
 void PrimitiveProcessor::setVertexAttributes() {
-	std::array<int, 3> offsets = cd::VertexGl::getOffsets();
+	std::array<int, 3> offsets = cd::Vertex::getOffsets();
 	size_t stride = sizeof(glm::vec4) + sizeof(glm::ivec4) + sizeof(glm::vec4);
 
 	// position
@@ -133,7 +133,6 @@ void PrimitiveProcessor::updateUniforms(std::vector<glm::mat4> &bones) {
 
 	void *ptr = bones.data();
 
-	// TODO only first bone getting through???
 	if (location != -1 && boneCount <= MAX_BONES)
 		glUniformMatrix4fv(location, boneCount, GL_FALSE, (const GLfloat*)bones.data());
 	else

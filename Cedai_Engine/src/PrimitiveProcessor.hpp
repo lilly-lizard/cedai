@@ -1,6 +1,6 @@
 #pragma once
 
-#include "model/VertexGl.hpp"
+#include "model/Vertex.hpp"
 
 #include <GL/gl3w.h>
 #include <glm/glm.hpp>
@@ -11,7 +11,7 @@ class Interface;
 
 class PrimitiveProcessor {
 public:
-	void init(Interface *interface, std::vector<cd::VertexGl> &vertices, std::vector<glm::mat4> &bones);
+	void init(Interface *interface, std::vector<cd::Vertex> &vertices, std::vector<glm::mat4> &bones);
 
 	inline GLuint getVertexBuffer() { return vertexBufferOut; }
 
@@ -31,7 +31,7 @@ private:
 	uint32_t boneCount = 0, vertexCount = 0;
 
 	void createRasteriseTarget();
-	void setProgramIO(std::vector<cd::VertexGl> &vertices);
+	void setProgramIO(std::vector<cd::Vertex> &vertices);
 
 	void setVertexAttributes();
 	void updateUniforms(std::vector<glm::mat4> &bones);

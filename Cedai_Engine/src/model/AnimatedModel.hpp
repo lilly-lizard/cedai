@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VertexGl.hpp"
+#include "Vertex.hpp"
 
 #include <fbxsdk.h>
 #include <glm/glm.hpp>
@@ -38,7 +38,7 @@ namespace cd
 
 class AnimatedModel {
 public:
-	std::vector<cd::VertexGl> vertices;
+	std::vector<cd::Vertex> vertices;
 	cd::AnimationClip animation;
 
 	void loadFBX(std::string filePath);

@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 using namespace cd;
 
@@ -49,7 +50,7 @@ void AnimatedModel::loadFBX(std::string filePath) {
 
 int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 	std::vector<glm::uvec3> indices;
-	std::vector<VertexGl> indexedVertices;
+	std::vector<Vertex> indexedVertices;
 	std::vector<VertexBones> vertexBones;
 
 	// just the first animation stack
@@ -79,7 +80,7 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 	FbxVector4 *controlPoints = mesh->GetControlPoints();
 	std::cout << "vertex count = " << mesh->GetControlPointsCount() << std::endl;
 	for (int i = 0; i < mesh->GetControlPointsCount(); i++) {
-		VertexGl vertex;
+		Vertex vertex;
 
 		// vertex position
 		vertex.position = glm::vec4(controlPoints[i][0], controlPoints[i][1], controlPoints[i][2], 0);

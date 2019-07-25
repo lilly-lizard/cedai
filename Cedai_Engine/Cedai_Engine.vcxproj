@@ -108,7 +108,7 @@
     <ClInclude Include="src\model\AnimatedModel.hpp" />
     <ClInclude Include="src\model\Model_Loader.hpp" />
     <ClInclude Include="src\model\Sphere.hpp" />
-    <ClInclude Include="src\model\VertexGl.hpp" />
+    <ClInclude Include="src\model\Vertex.hpp" />
     <ClInclude Include="src\tools\Config.hpp" />
     <ClInclude Include="src\tools\Inputs.hpp" />
     <ClInclude Include="src\tools\Log.hpp" />

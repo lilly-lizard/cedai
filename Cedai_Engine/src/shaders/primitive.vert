@@ -26,5 +26,5 @@ void main()
 	}	}
 	animation += mat4(1) * clamp(weight_remaining, 0, 1);
 	
-	position_out[gl_VertexID] = animation * position_in;
+	position_out[gl_VertexID] = animation * position_in + animation[3];
 }
