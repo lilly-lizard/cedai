@@ -28,7 +28,6 @@ void AnimatedModel::loadFBX(std::string filePath) {
 	// node hierarchy
 	std::cout << "\n ~ node hierarchy:" << std::endl;
 	FbxNode *rootNode = scene->GetRootNode();
-	FbxMesh *mesh = nullptr;
 	if (!rootNode) {
 		printf("Error: no root node found in scene");
 		sdkManager->Destroy();

@@ -131,7 +131,7 @@ __kernel void render(const float16 view, const float3 ray_o, const float time,
 		float3 v0 = vertices[index * 3];
 		float3 v1 = vertices[index * 3 + 1];
 		float3 v2 = vertices[index * 3 + 2];
-
+		
 		for (int l = sphere_count; l < sphere_total; l++) {
 			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
 			bool in_shadow = shadow(intersection, light_pos, -1, index, sphere_count, polygon_count, spheres, vertices);

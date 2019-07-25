@@ -71,7 +71,9 @@ void Cedai::loop() {
 	while (!quit && !interface.WindowCloseCheck()) {
 		// queue a render operation
 		double time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
+		//time_point<high_resolution_clock> debug = high_resolution_clock::now();
 		renderer.renderQueue(view, (float)time);
+		//double hi = duration<double, seconds::period>(high_resolution_clock::now() - debug).count();
 
 		// input handling
 		interface.PollEvents();
@@ -83,12 +85,15 @@ void Cedai::loop() {
 		updateAnimation(time);
 		fpsHandle();
 
+
 		// draw to the window
 		renderer.renderBarrier();
 		vertexProcessor.vertexProcess(maize.animation.keyframes[keyFrameIndex].boneTransforms);
 		interface.drawRun();
 		interface.drawBarrier();
 		vertexProcessor.vertexBarrier();
+		//double hi2 = duration<double, seconds::period>(high_resolution_clock::now() - debug).count() - hi;
+		//CD_WARN("{} {}", hi * 1000, hi2 *1000);
 	}
 }
 
@@ -131,14 +136,11 @@ void Cedai::createPrimitives() {
 		cl_float3{{  -1, -6, -4 }},
 		cl_uchar4{{ 255, 255, 205, 255 }} });
 
-	// !! ANIMATED MODEL
+	// animated model
 
 	maize.loadFBX(FBX_PATH);
-	CD_WARN("{}", maize.vertices.size());
 	for (int p = 0; p < maize.vertices.size(); p++)
 		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 255 }} );
-
-	//bones.resize(MAX_BONES, glm::mat4(1.0f));
 
 	CD_INFO("model(s) loaded.");
 }
