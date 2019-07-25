@@ -16,12 +16,15 @@ uniform mat4 bones[MAX_BONES];
 
 void main()
 {
-	vec4 position = position_in;
+	mat4 animation;
+	float weight_remaining = 1;
 	for (int b = 0; b < 4; b++) {
 		int bone_index = bone_indices[b];
-		if (0 <= bone_index && bone_index < MAX_BONES)
-			position = bones[bone_index] * position_in * bone_weights[b] + position;
-	}
-
-	position_out[gl_VertexID] = position;
+		if (0 <= bone_index && bone_index < MAX_BONES) {
+			animation += bones[bone_index] * bone_weights[b];
+			weight_remaining -= bone_weights[b];
+	}	}
+	animation += mat4(1) * clamp(weight_remaining, 0, 1);
+	
+	position_out[gl_VertexID] = animation * position_in;
 }

@@ -49,8 +49,8 @@ void AnimatedModel::loadFBX(std::string filePath) {
 
 int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 	std::vector<glm::uvec3> indices;
-	std::vector<cd::VertexGl> indexedVertices;
-	std::vector<cd::VertexBones> vertexBones;
+	std::vector<VertexGl> indexedVertices;
+	std::vector<VertexBones> vertexBones;
 
 	// just the first animation stack
 	FbxAnimStack *animStack = scene->GetCurrentAnimationStack();
@@ -63,6 +63,8 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 
 	FbxNode *rootNode = scene->GetRootNode();
 	if (!rootNode) return -1; // todo error handling?
+
+	// MESH PROCESSING
 
 	// get mesh
 	FbxMesh *mesh = nullptr;
@@ -93,26 +95,11 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 		indices.push_back(glm::uvec3(mesh->GetPolygonVertex(i, 0), mesh->GetPolygonVertex(i, 1), mesh->GetPolygonVertex(i, 2)));
 	}
 
-	// get skeleton bones
+	// SKELETON PROCESSING
+
+	// get bones
 	bool skeletonFound = findBones(rootNode);
 	if (!skeletonFound) return -1;
-
-	// load keyframes
-	for (long f = 0; f < frameCount; f++) { // bind pose at frame 0
-		Keyframe keyframe;
-
-		// get keyframe time
-		animationTime.SetFrame(f, FbxTime::EMode::eFrames24);
-		keyframe.time = animationTime.GetSecondDouble();
-
-		// get global transforms for each bone for this keyframe
-		for (int j = 0; j < bones.size(); j++) {
-			FbxAMatrix globalTransform = bones[j].node->EvaluateGlobalTransform(animationTime);
-			keyframe.boneTransforms[j] = convertMatrix(globalTransform);
-		}
-
-		animation.frames.push_back(keyframe);
-	}
 
 	// find for a skin mesh deformer (todo vertex cache?)
 	FbxSkin *skin = nullptr;
@@ -125,11 +112,15 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 	}
 	if (skin == nullptr) return -1;
 
-	// todo: same as meshTransformation??
-	const FbxVector4 lT = mesh->GetNode()->GetGeometricTranslation(FbxNode::eSourcePivot);
-	const FbxVector4 lR = mesh->GetNode()->GetGeometricRotation(FbxNode::eSourcePivot);
-	const FbxVector4 lS = mesh->GetNode()->GetGeometricScaling(FbxNode::eSourcePivot);
-	FbxAMatrix geometryTransform = FbxAMatrix(lT, lR, lS);
+	// get bind pose
+	FbxPose *bindPose = nullptr;
+	for (int p = 0; p < scene->GetPoseCount(); p++) {
+		FbxPose *poseTemp = scene->GetPose(p);
+		if (poseTemp->IsBindPose())
+			bindPose = poseTemp;
+	}
+	if (bindPose == nullptr)
+		CD_ERROR("AnimatedModel load: no bind pose found");
 
 	// process clusters ('clusters' of vertices for each bone)
 	vertexBones.resize(indexedVertices.size());
@@ -140,13 +131,11 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 		int boneIndex = getBoneIndex(cluster->GetLink()->GetName());
 		if (boneIndex == -1) return -1;
 
-		// todo what is this?
-		FbxAMatrix transformMatrix;
-		FbxAMatrix transformLinkMatrix;
-		FbxAMatrix globalBindposeInverseMatrix;
-		cluster->GetTransformMatrix(transformMatrix); // node containing link
-		cluster->GetTransformLinkMatrix(transformLinkMatrix); // link node
-		bones[boneIndex].globalBindposeInverse = transformLinkMatrix.Inverse() * transformMatrix * geometryTransform;
+		// get the bind pose matrix for this bone
+		int nodeIndex = bindPose->Find(cluster->GetLink());
+		if (nodeIndex == -1)
+			CD_ERROR("AnimatedModel load: bone {} node not found in bind pose", boneIndex);
+		else bones[boneIndex].bindPose = convertMatrix(bindPose->GetMatrix(nodeIndex));
 
 		// loop through the vertices affected by this cluster
 		int *indices = cluster->GetControlPointIndices();
@@ -162,15 +151,31 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 		}
 	}
 
-	// TODO quaternian and offset for each bone
-	// TODO shave down BoneWeights of the vertices to 4 bones each
-
 	// add bone data to vertices (only the top 4)
 	for (int v = 0; v < indexedVertices.size(); v++) {
 		for (int w = 0; w < vertexBones[v].boneWeights.size() && w < 4; w++) {
 			indexedVertices[v].boneIndices[w] = vertexBones[v].boneWeights[w].boneIndex;
 			indexedVertices[v].boneWeights[w] = vertexBones[v].boneWeights[w].weight;
 		}
+	}
+
+	// ANIMATION PROCESSING
+
+	// load keyframes
+	for (long f = 0; f < frameCount; f++) {
+		Keyframe keyframe;
+
+		// get keyframe time
+		animationTime.SetFrame(f, FbxTime::EMode::eFrames24);
+		keyframe.time = animationTime.GetSecondDouble();
+
+		// get global transforms for each bone for this keyframe
+		for (int b = 0; b < bones.size(); b++) {
+			glm::mat4 globalTransform = convertMatrix(bones[b].node->EvaluateGlobalTransform(animationTime));
+			keyframe.boneTransforms[b] = globalTransform * glm::inverse(bones[b].bindPose);
+		}
+
+		animation.keyframes.push_back(keyframe);
 	}
 
 	// convert vertices array into non indexed array
@@ -194,8 +199,8 @@ void AnimatedModel::getMesh(FbxNode *pNode, FbxMesh **mesh) {
 		}
 	}
 
-	for (int j = 0; j < pNode->GetChildCount(); j++)
-		getMesh(pNode->GetChild(j), mesh);
+	for (int n = 0; n < pNode->GetChildCount(); n++)
+		getMesh(pNode->GetChild(n), mesh);
 }
 
 // traverses node tree to find skeleton nodes
@@ -227,6 +232,7 @@ void AnimatedModel::loadBones(FbxNode *node, int parentIndex) {
 	bone.node = node;
 	bone.parentIndex = parentIndex;
 	bone.name = node->GetName();
+	// ... we'll find the bind pose later in the clusters
 	bones.push_back(bone);
 
 	int myindex = bones.size() - 1;
@@ -235,11 +241,19 @@ void AnimatedModel::loadBones(FbxNode *node, int parentIndex) {
 }
 
 int AnimatedModel::getBoneIndex(std::string boneName) {
-	for (int j = 0; j < bones.size(); j++) {
-		if (bones[j].name == boneName)
-			return j;
+	for (int b = 0; b < bones.size(); b++) {
+		if (bones[b].name == boneName)
+			return b;
 	}
 	return -1;
+}
+
+glm::mat4 AnimatedModel::convertMatrix(FbxMatrix fbxMatrix) {
+	glm::dvec4 c0 = glm::make_vec4((double *)fbxMatrix.GetColumn(0).Buffer());
+	glm::dvec4 c1 = glm::make_vec4((double *)fbxMatrix.GetColumn(1).Buffer());
+	glm::dvec4 c2 = glm::make_vec4((double *)fbxMatrix.GetColumn(2).Buffer());
+	glm::dvec4 c3 = glm::make_vec4((double *)fbxMatrix.GetColumn(3).Buffer());
+	return glm::transpose(glm::mat4(c0, c1, c2, c3));
 }
 
 glm::mat4 AnimatedModel::convertMatrix(FbxAMatrix fbxMatrix) {
@@ -257,6 +271,9 @@ opengl skeletal animation overview: https://www.khronos.org/opengl/wiki/Skeletal
 3d model optimisation: http://manual.notch.one/0.9.22/en/topic/optimising-3d-scenes-for-notch
 opengl skeleton tutorial: http://ogldev.atspace.co.uk/www/tutorial38/tutorial38.html
 more links: https://www.reddit.com/r/opengl/comments/4du56u/trying_to_understand_skeletal_animation/
+
+inverse bind pose explaination https://stackoverflow.com/questions/17127994/opengl-bone-animation-why-do-i-need-inverse-of-bind-pose-when-working-with-gp
+get bind pose from fbx sdk: https://forums.autodesk.com/t5/fbx-forum/getting-bind-pose/td-p/4054651
 */
 
 /*
@@ -267,4 +284,7 @@ animation: https://stackoverflow.com/questions/45690006/fbx-sdk-skeletal-animati
 
 matrix conversion: https://stackoverflow.com/questions/35245433/fbx-node-transform-calculation
 blender fbx exporting problems: https://blog.mattnewport.com/fixing-scale-problems-exporting-fbx-files-from-blender-to-unity-5/
+
+fbx vs collada: https://www.gamedev.net/forums/topic/643045-collada-or-fbx/
+https://community.khronos.org/t/why-collada-failed/6884/2
 */

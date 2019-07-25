@@ -10,7 +10,7 @@
 #include <iomanip>
 #include <math.h>
 
-//#define PRINT_FPS
+#define PRINT_FPS
 
 #define MAIZE_FILE "../assets/maize.bin"
 #define FBX_PATH "../assets/maize.fbx"
@@ -53,7 +53,7 @@ void Cedai::init() {
 	CD_INFO("Interface initialised.");
 	
 	createPrimitives();
-	vertexProcessor.init(&interface, maize.vertices, maize.animation.frames[keyFrameIndex].boneTransforms);
+	vertexProcessor.init(&interface, maize.vertices, maize.animation.keyframes[keyFrameIndex].boneTransforms);
 	CD_INFO("Pimitive processing program initialised.");
 
 	renderer.init(screen_width, screen_height, &interface, &vertexProcessor,
@@ -85,7 +85,7 @@ void Cedai::loop() {
 
 		// draw to the window
 		renderer.renderBarrier();
-		vertexProcessor.vertexProcess(maize.animation.frames[keyFrameIndex].boneTransforms);
+		vertexProcessor.vertexProcess(maize.animation.keyframes[keyFrameIndex].boneTransforms);
 		interface.drawRun();
 		interface.drawBarrier();
 		vertexProcessor.vertexBarrier();
@@ -198,8 +198,8 @@ void Cedai::updateAnimation(double time) {
 	double relativeTime = fmod(time, maize.animation.duration);
 
 	// figure out which frame we're on
-	for (int f = 0; f < maize.animation.frames.size() - 1; f++) {
-		if (maize.animation.frames[f].time <= relativeTime && relativeTime < maize.animation.frames[f + 1].time) {
+	for (int f = 0; f < maize.animation.keyframes.size() - 1; f++) {
+		if (maize.animation.keyframes[f].time <= relativeTime && relativeTime < maize.animation.keyframes[f + 1].time) {
 			keyFrameIndex = f;
 			break;
 		}

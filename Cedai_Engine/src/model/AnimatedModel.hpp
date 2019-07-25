@@ -9,43 +9,37 @@
 
 namespace cd
 {
-	struct Bone {
-		FbxNode *node = nullptr;
-		int parentIndex = -1;
-		std::string name;
-		FbxAMatrix globalBindposeInverse;
-
-		Bone() { globalBindposeInverse.SetIdentity(); }
-	};
-
-	struct BoneWeight
-	{
-		int boneIndex = -1;
-		float weight = 0;
-	};
-
-	struct VertexBones
-	{
-		std::vector<BoneWeight> boneWeights;
-	};
-
-	struct Keyframe
-	{
+	struct Keyframe {
 		double time = 0;
 		std::vector<glm::mat4> boneTransforms = std::vector<glm::mat4>(MAX_BONES, glm::mat4(1.0));
 	};
 
-	struct AnimClip
-	{
+	struct AnimationClip {
 		double duration = 0;
-		std::vector<Keyframe> frames;
+		std::vector<Keyframe> keyframes;
+	};
+
+	struct Bone {
+		FbxNode *node = nullptr;
+		int parentIndex = -1;
+		std::string name;
+		glm::mat4 bindPose = glm::mat4(1.0);
+	};
+
+	struct BoneWeight {
+		int boneIndex = -1;
+		float weight = 0;
+	};
+
+	struct VertexBones {
+		std::vector<BoneWeight> boneWeights;
 	};
 }
 
 class AnimatedModel {
 public:
 	std::vector<cd::VertexGl> vertices;
-	cd::AnimClip animation;
+	cd::AnimationClip animation;
 
 	void loadFBX(std::string filePath);
 
@@ -55,6 +49,7 @@ private:
 	int loadAnimatedModel(FbxScene *scene);
 
 	void getMesh(FbxNode *pNode, FbxMesh **mesh);
+	glm::mat4 convertMatrix(FbxMatrix fbxMatrix);
 	glm::mat4 convertMatrix(FbxAMatrix fbxMatrix);
 
 	bool findBones(FbxNode *node);

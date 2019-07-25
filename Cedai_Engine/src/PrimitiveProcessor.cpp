@@ -144,4 +144,6 @@ void PrimitiveProcessor::updateUniforms(std::vector<glm::mat4> &bones) {
 render texture target: https://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture/  https://github.com/opengl-tutorials/ogl/blob/master/tutorial14_render_to_texture/tutorial14.cpp
 opengl context: https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)
 wgl context: https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglcreatecontext
+
+integer artribute: https://stackoverflow.com/questions/15844939/sending-array-to-shader-with-gluniformmatrix
 */
