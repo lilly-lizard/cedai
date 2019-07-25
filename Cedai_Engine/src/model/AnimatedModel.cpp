@@ -284,6 +284,7 @@ cpp reference: https://help.autodesk.com/cloudhelp/2018/ENU/FBX-Developer-Help/c
 animation: https://stackoverflow.com/questions/45690006/fbx-sdk-skeletal-animations
 
 matrix conversion: https://stackoverflow.com/questions/35245433/fbx-node-transform-calculation
+glm matrix decompose: https://stackoverflow.com/questions/17918033/glm-decompose-mat4-into-translation-and-rotation
 blender fbx exporting problems: https://blog.mattnewport.com/fixing-scale-problems-exporting-fbx-files-from-blender-to-unity-5/
 
 fbx vs collada: https://www.gamedev.net/forums/topic/643045-collada-or-fbx/
