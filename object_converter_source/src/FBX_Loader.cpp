@@ -1,6 +1,6 @@
 #include "FBX_Loader.h"
+#include "AnimatedModel.h"
 #include "Tools.h"
-#include "AnimationLoader.h"
 
 #include <fbxsdk.h>
 #include <fbxsdk/scene/geometry/fbxmesh.h>
@@ -11,117 +11,50 @@
 #include <fstream>
 #include <vector>
 
-#define VERSION_NUMBER 0
 #define FBX_PATH "maize.fbx"
 #define OUT_PATH "maize.bin"
 #define IN_PATH "maize.bin"
 
-std::vector<glm::vec4> vertices;
-std::vector<glm::uvec4> indices;
+// MAIN
 
-// LOAD FBX
+void writeBinary(const AnimatedModel &model);
+void readBinary(AnimatedModel &model);
 
-void loadFBX() {
-	std::cout << "starting fbx read..." << std::endl;
-	FbxManager* sdkManager = FbxManager::Create();
-	FbxIOSettings* ios = FbxIOSettings::Create(sdkManager, IOSROOT);
-	sdkManager->SetIOSettings(ios);
-
-	FbxImporter* importer = FbxImporter::Create(sdkManager, "");
-	if (!importer->Initialize(FBX_PATH, -1, sdkManager->GetIOSettings())) {
-		printf("Call to FbxImporter::Initialize() failed.\n");
-		printf("Error returned: %s\n\n", importer->GetStatus().GetErrorString());
-		sdkManager->Destroy();
-		exit(-1);
+int main() {
+	AnimatedModel model;
+	try {
+		model.loadFBX(FBX_PATH);
+		writeBinary(model);
+		AnimatedModel model_in;
+		readBinary(model_in);
+	} catch (const std::exception &e) {
+		std::cerr << e.what() << std::endl;
+		return EXIT_FAILURE;
 	}
-
-	FbxScene* scene = FbxScene::Create(sdkManager, "myScene");
-	importer->Import(scene);
-	importer->Destroy();
-
-	// node hierarchy
-	std::cout << "\n ~ node hierarchy:" << std::endl;
-	FbxNode* rootNode = scene->GetRootNode();
-	FbxMesh* mesh = nullptr;
-	if (!rootNode) {
-		printf("Error: no root node found in scene");
-		sdkManager->Destroy();
-		exit(-1);
-	}
-
-	// print details of all nodes
-	cd::PrintNode(rootNode);
-	printf("\n");
-
-
-	// animation processing
-	if (cd::loadAnimatedModel(scene) != 0) {
-		std::cout << "animation loading error" << std::endl;
-		sdkManager->Destroy();
-		exit(-1);
-	} else {
-		std::cout << " -- animation loading success! --" << std::endl;
-	}
-
-
-	// find the mesh
-	cd::getMesh(rootNode, &mesh);
-	std::cout << " ~" << std::endl;
-
-	if (mesh == nullptr) {
-		std::cout << "error: no mesh found" << std::endl;
-		sdkManager->Destroy();
-		exit(-1);
-	}
-
-	std::cout << "mesh found!" << std::endl;
-	std::cout << "reading..." << std::endl;
-
-	// mesh transform TODO: should be local transform?? (same thing in this case)
-	FbxAMatrix meshTransformFbx = mesh->GetNode()->EvaluateGlobalTransform();
-	glm::mat4 meshTransform = cd::convertMatrix(meshTransformFbx);
-
-	// get vertices
-	FbxVector4* controlPoints = mesh->GetControlPoints();
-	std::cout << "vertex count = " << mesh->GetControlPointsCount() << std::endl;
-	for (int i = 0; i < mesh->GetControlPointsCount(); i++) {
-		glm::vec4 vertex = glm::vec4(controlPoints[i][0], controlPoints[i][1], controlPoints[i][2], 0);
-		vertex = meshTransform * vertex;
-		vertices.push_back(vertex);
-	}
-
-	// get indices
-	std::cout << "polygon count = " << mesh->GetPolygonCount() << std::endl;
-	for (int i = 0; i < mesh->GetPolygonCount(); i++) {
-		if (mesh->GetPolygonSize(i) != 3) {
-			std::cout << "polygon " << i << " has " << mesh->GetPolygonSize(i) << " indices!" << std::endl;
-			sdkManager->Destroy();
-			return;
-		}
-		indices.push_back(glm::uvec4(mesh->GetPolygonVertex(i, 0), mesh->GetPolygonVertex(i, 1), mesh->GetPolygonVertex(i, 2), 0));
-	}
-
-	std::cout << "fbx load success!" << std::endl;
-	sdkManager->Destroy();
+	std::cout << "exiting..." << std::endl;
+	return 0;
 }
 
 // WRITE CEDAI BINARY
 
-void writeBinary() {
+void writeBinary(const AnimatedModel &model) {
 	std::cout << "starting model binary write..." << std::endl;
 	std::ofstream output(OUT_PATH, std::ios::binary);
-
+	
 	uint16_t version_number = VERSION_NUMBER;
 	output.write((char*) &version_number, sizeof(uint16_t));
-
-	uint32_t num_vertices = vertices.size();
-	uint32_t num_polygons = indices.size();
+	
+	uint32_t num_vertices = model.vertices.size();
+	uint32_t num_keyframes = model.animation.keyframes.size();
+	uint32_t num_bones = MAX_BONES;
 	output.write((char*) &num_vertices, sizeof(uint32_t));
-	output.write((char*) &num_polygons, sizeof(uint32_t));
-
-	output.write((char*) vertices.data(), sizeof(glm::vec4) * num_vertices);
-	output.write((char*) indices.data(), sizeof(glm::uvec4) * num_polygons);
-
+	output.write((char*) & num_keyframes, sizeof(uint32_t));
+	output.write((char*) & num_bones, sizeof(uint32_t));
+	
+	output.write((char*) model.vertices.data(), sizeof(cd::Vertex) * num_vertices);
+	output.write((char*) &model.animation.duration, sizeof(double));
+	output.write((char*) model.animation.keyframes.data(), sizeof(cd::Keyframe) * num_keyframes);
+	
 	output.close();
 	std::cout << "model write success!" << std::endl;
 }
@@ -133,7 +66,7 @@ bool fileExists(const std::string& name) {
 	return (stat(name.c_str(), &buffer) == 0);
 }
 
-void readBinary() {
+void readBinary(AnimatedModel &model) {
 	if (!fileExists(IN_PATH)) {
 		std::cout << "model reader file not found" << std::endl;
 		return;
@@ -148,36 +81,22 @@ void readBinary() {
 		return;
 	}
 
-	uint32_t num_vertices, num_polygons;
+	uint32_t num_vertices, num_keyframes, num_bones;
 	input.read((char*) &num_vertices, sizeof(uint32_t));
-	input.read((char*) &num_polygons, sizeof(uint32_t));
+	input.read((char*) &num_keyframes, sizeof(uint32_t));
+	input.read((char*) &num_bones, sizeof(uint32_t));
+	if (num_bones != MAX_BONES) throw std::runtime_error("file read: incompatible bone count");
 
-	//vertices.clear();
-	//polygons.clear();
-	std::vector<glm::vec4> vertices_temp(num_vertices);
-	std::vector<glm::uvec4> polygons_temp(num_polygons);
+	model.vertices.clear();
+	model.vertices.resize(num_vertices);
+	model.animation.keyframes.clear();
+	model.animation.keyframes.resize(num_keyframes);
 
-	input.read((char*) vertices_temp.data(), sizeof(glm::vec4) * num_vertices);
-	input.read((char*) polygons_temp.data(), sizeof(glm::vec4) * num_polygons);
+	input.read((char*) model.vertices.data(), sizeof(cd::Vertex) * num_vertices);
+	input.read((char*) &model.animation.duration, sizeof(double));
+	input.read((char*) model.animation.keyframes.data(), sizeof(cd::Keyframe) * num_keyframes);
 
-	for (int v = 0; v < num_vertices; v++) {
-		if (vertices_temp[21] != vertices[21])
-			std::cout << "v not equal: " << v << std::endl;
-	}
-
-	for (int p = 0; p < num_polygons; p++) {
-		if (polygons_temp[21] != indices[21])
-			std::cout << "p not equal: " << p << std::endl;
-	}
-}
-
-// MAIN
-
-void main() {
-	loadFBX();
-	writeBinary();
-	//readBinary();
-	std::cout << "exiting..." << std::endl;
+	std::cout << "model read success!" << std::endl;
 }
 
 /*

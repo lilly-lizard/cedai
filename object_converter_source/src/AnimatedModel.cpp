@@ -1,5 +1,4 @@
-#include "AnimatedModel.hpp"
-#include "tools/Log.hpp"
+#include "AnimatedModel.h"
 
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
@@ -99,7 +98,8 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 
 	// get bones
 	bool skeletonFound = findBones(rootNode);
-	if (!skeletonFound) return -1;
+	if (!skeletonFound) throw std::runtime_error("no skeleton found");
+	if (bones.size() >= MAX_BONES) throw std::runtime_error("too many bones");
 
 	// find for a skin mesh deformer (todo vertex cache?)
 	FbxSkin *skin = nullptr;
@@ -120,7 +120,7 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 			bindPose = poseTemp;
 	}
 	if (bindPose == nullptr)
-		CD_ERROR("AnimatedModel load: no bind pose found");
+		std::cout << "ERROR AnimatedModel load: no bind pose found" << std::endl;
 
 	// process clusters ('clusters' of vertices for each bone)
 	vertexBones.resize(indexedVertices.size());
@@ -134,7 +134,7 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 		// get the bind pose matrix for this bone
 		int nodeIndex = bindPose->Find(cluster->GetLink());
 		if (nodeIndex == -1)
-			CD_ERROR("AnimatedModel load: bone {} node not found in bind pose", boneIndex);
+			std::cout << "ERROR AnimatedModel load: bone " << boneIndex << " node not found in bind pose" << std::endl;
 		else bones[boneIndex].bindPose = convertMatrix(bindPose->GetMatrix(nodeIndex));
 
 		// loop through the vertices affected by this cluster
@@ -178,7 +178,7 @@ int AnimatedModel::loadAnimatedModel(FbxScene *scene) {
 		animation.keyframes.push_back(keyframe);
 	}
 
-	// convert vertices array into non indexed array
+	// convert vertices array into non indexed array TODO std::move? https://stackoverflow.com/questions/3279543/what-is-the-copy-and-swap-idiom
 	for (int p = 0; p < indices.size(); p++) {
 		vertices.push_back(indexedVertices[indices[p].x]);
 		vertices.push_back(indexedVertices[indices[p].y]);

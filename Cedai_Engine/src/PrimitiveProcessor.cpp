@@ -9,10 +9,9 @@
 
 // PUBLIC FUNCTIONS
 
-void PrimitiveProcessor::init(Interface *interface, std::vector<cd::Vertex> &vertices, std::vector<glm::mat4> &bones) {
+void PrimitiveProcessor::init(Interface *interface, std::vector<cd::Vertex> &vertices, std::array<glm::mat4, MAX_BONES> &bones) {
 	CD_INFO("Initialising primitive processing program...");
 	vertexCount = vertices.size();
-	int boneCount = bones.size();
 
 	// create program
 	cd::createProgramGL(program, VERT_PATH, FRAG_PATH);
@@ -26,7 +25,7 @@ void PrimitiveProcessor::init(Interface *interface, std::vector<cd::Vertex> &ver
 	vertexBarrier();
 }
 
-void PrimitiveProcessor::vertexProcess(std::vector<glm::mat4> &bones) {
+void PrimitiveProcessor::vertexProcess(std::array<glm::mat4, MAX_BONES> &bones) {
 
 	// setup the program
 
@@ -127,14 +126,11 @@ void PrimitiveProcessor::setVertexAttributes() {
 	glEnableVertexAttribArray(weightsLocation);
 }
 
-void PrimitiveProcessor::updateUniforms(std::vector<glm::mat4> &bones) {
+void PrimitiveProcessor::updateUniforms(std::array<glm::mat4, MAX_BONES> &bones) {
 	GLint location = glGetUniformLocation(program, "bones");
-	int boneCount = bones.size();
 
-	void *ptr = bones.data();
-
-	if (location != -1 && boneCount <= MAX_BONES)
-		glUniformMatrix4fv(location, boneCount, GL_FALSE, (const GLfloat*)bones.data());
+	if (location != -1)
+		glUniformMatrix4fv(location, MAX_BONES, GL_FALSE, (const GLfloat*)bones.data());
 	else
 		CD_WARN("PrimitiveProcessor::updateUniforms invalid bone transform write");
 }

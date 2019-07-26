@@ -2,34 +2,6 @@
 #include "Tools.h"
 
 #include <iostream>
-#include <glm/gtc/type_ptr.hpp>
-
-glm::mat4 cd::convertMatrix(FbxAMatrix fbxMatrix) {
-	glm::dvec4 c0 = glm::make_vec4((double*)fbxMatrix.GetColumn(0).Buffer());
-	glm::dvec4 c1 = glm::make_vec4((double*)fbxMatrix.GetColumn(1).Buffer());
-	glm::dvec4 c2 = glm::make_vec4((double*)fbxMatrix.GetColumn(2).Buffer());
-	glm::dvec4 c3 = glm::make_vec4((double*)fbxMatrix.GetColumn(3).Buffer());
-	return glm::transpose(glm::mat4(c0, c1, c2, c3));
-}
-
-////////////////// GET MESH //////////////////
-
-void cd::getMesh(FbxNode* pNode, FbxMesh** mesh) {
-	const char* nodeName = pNode->GetName();
-
-	for (int i = 0; i < pNode->GetNodeAttributeCount(); i++) {
-		FbxNodeAttribute* pAttribute = pNode->GetNodeAttributeByIndex(i);
-		if (pAttribute->GetAttributeType() == FbxNodeAttribute::eMesh) {
-			std::cout << "mesh name = " << pAttribute->GetName() << std::endl;
-			*mesh = FbxCast<FbxMesh>(pAttribute);
-		}
-	}
-
-	for (int j = 0; j < pNode->GetChildCount(); j++)
-		getMesh(pNode->GetChild(j), mesh);
-}
-
-////////////////// PRINT NODES //////////////////
 
 /* Tab character ("\t") counter */
 int numTabs = 0;

@@ -2,6 +2,7 @@
 #include "Interface.hpp"
 #include "tools/Inputs.hpp"
 #include "tools/Log.hpp"
+#include "model/Model_Loader.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -71,9 +72,7 @@ void Cedai::loop() {
 	while (!quit && !interface.WindowCloseCheck()) {
 		// queue a render operation
 		double time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
-		//time_point<high_resolution_clock> debug = high_resolution_clock::now();
 		renderer.renderQueue(view, (float)time);
-		//double hi = duration<double, seconds::period>(high_resolution_clock::now() - debug).count();
 
 		// input handling
 		interface.PollEvents();
@@ -85,15 +84,12 @@ void Cedai::loop() {
 		updateAnimation(time);
 		fpsHandle();
 
-
 		// draw to the window
 		renderer.renderBarrier();
 		vertexProcessor.vertexProcess(maize.animation.keyframes[keyFrameIndex].boneTransforms);
 		interface.drawRun();
 		interface.drawBarrier();
 		vertexProcessor.vertexBarrier();
-		//double hi2 = duration<double, seconds::period>(high_resolution_clock::now() - debug).count() - hi;
-		//CD_WARN("{} {}", hi * 1000, hi2 *1000);
 	}
 }
 
@@ -114,31 +110,32 @@ void Cedai::createPrimitives() {
 
 	// spheres
 
-	spheres.push_back(cd::Sphere{ 1.0, 0, 0, 1.0,
+	spheres.push_back(cd::Sphere( 1.0,
 		cl_float3{{ 10, -3, 0 }},
-		cl_uchar4{{ 200, 128, 254, 255 }} });
+		cl_uchar4{{ 200, 128, 254, 255 }} ));
 
-	spheres.push_back(cd::Sphere{ 0.5, 0, 0, 1.0,
+	spheres.push_back(cd::Sphere( 0.5,
 		cl_float3{{ 4, 2, 2.5 }},
-		cl_uchar4{{ 128, 255, 180, 255 }} });
+		cl_uchar4{{ 128, 255, 180, 255 }} ));
 
-	spheres.push_back(cd::Sphere{ 0.2, 0, 0, 1.0,
+	spheres.push_back(cd::Sphere( 0.2,
 		cl_float3{{ 6, 0, 3 }},
-		cl_uchar4{{ 255, 200, 128, 255 }} });
+		cl_uchar4{{ 255, 200, 128, 255 }} ));
 
 	// lights
 
-	lights.push_back( cd::Sphere{ 0.1, 0, 0, 1.0,
+	lights.push_back(cd::Sphere( 0.1,
 		cl_float3{{ 2, 3, 4 }},
-		cl_uchar4{{ 255, 255, 205, 255 }} });
+		cl_uchar4{{ 255, 255, 205, 255 }} ));
 
-	lights.push_back(cd::Sphere{ 0.1, 0, 0, 1.0,
-		cl_float3{{  -1, -6, -4 }},
-		cl_uchar4{{ 255, 255, 205, 255 }} });
+	lights.push_back(cd::Sphere( 0.1,
+		cl_float3{{ -1, -6, -4 }},
+		cl_uchar4{{ 255, 255, 205, 255 }} ));
 
 	// animated model
 
-	maize.loadFBX(FBX_PATH);
+	//maize.loadFBX(FBX_PATH);
+	cd::LoadModelv1(MAIZE_FILE, maize);
 	for (int p = 0; p < maize.vertices.size(); p++)
 		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 255 }} );
 

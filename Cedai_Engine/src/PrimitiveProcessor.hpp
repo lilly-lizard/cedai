@@ -11,11 +11,11 @@ class Interface;
 
 class PrimitiveProcessor {
 public:
-	void init(Interface *interface, std::vector<cd::Vertex> &vertices, std::vector<glm::mat4> &bones);
+	void init(Interface *interface, std::vector<cd::Vertex> &vertices, std::array<glm::mat4, MAX_BONES> &bones);
 
 	inline GLuint getVertexBuffer() { return vertexBufferOut; }
 
-	void vertexProcess(std::vector<glm::mat4> &bones);
+	void vertexProcess(std::array<glm::mat4, MAX_BONES> &bones);
 	void vertexBarrier();
 
 	void cleanUp();
@@ -27,12 +27,11 @@ private:
 
 	GLuint vertexBufferIn, vertexBufferOut;
 	GLuint vertexArray;
-
-	uint32_t boneCount = 0, vertexCount = 0;
+	uint32_t vertexCount = 0;
 
 	void createRasteriseTarget();
 	void setProgramIO(std::vector<cd::Vertex> &vertices);
 
 	void setVertexAttributes();
-	void updateUniforms(std::vector<glm::mat4> &bones);
+	void updateUniforms(std::array<glm::mat4, MAX_BONES> &bones);
 };

@@ -34,28 +34,17 @@ project "Cedai_Engine" -- game engine
 		"vendor/glm",					-- glm
 		"vendor/glfw/include",			-- glfw
 		"vendor/gl3w/include",			-- gl3w
-		"vendor/spdlog/include",		-- spdlog
-		"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/include"
+		"vendor/spdlog/include"			-- spdlog
 	}
 
 	libdirs {
 		"$(INTELOCLSDKROOT)/lib/x64",	-- opencl
-		"vendor/glfw/lib-vc2017",		-- glfw
-		"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/%{cfg.buildcfg}"
+		"vendor/glfw/lib-vc2017"		-- glfw
 	}
 
 	links {
 		"OpenCL.lib",
-		"glfw3.lib",
-		"libfbxsdk.lib"
-	}
-
-	defines {
-		"FBXSDK_SHARED"
-	}
-
-	postbuildcommands {
-		"{COPY} C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/%{cfg.buildcfg}/libfbxsdk.dll %{cfg.buildtarget.directory}"
+		"glfw3.lib"
 	}
 
 	filter "system:windows"
