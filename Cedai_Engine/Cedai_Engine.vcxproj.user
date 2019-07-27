@@ -3,14 +3,4 @@
   <PropertyGroup>
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <RemoteDebuggerCommand>C:\Users\David\Documents\CURRENT_WORK\Cedai\Cedai_Engine\Cedai_Engine.exe</RemoteDebuggerCommand>
-    <RemoteDebuggerWorkingDirectory>C:\Users\David\Documents\CURRENT_WORK\Cedai\Cedai_Engine</RemoteDebuggerWorkingDirectory>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <RemoteDebuggerCommand>C:\Users\David\Documents\CURRENT_WORK\Cedai\Cedai_Engine\Cedai_Engine.exe</RemoteDebuggerCommand>
-    <RemoteDebuggerWorkingDirectory>C:\Users\David\Documents\CURRENT_WORK\Cedai\Cedai_Engine</RemoteDebuggerWorkingDirectory>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
 </Project>

@@ -1,5 +1,6 @@
 #include "Cedai.hpp"
 #include "Interface.hpp"
+#include "model/Model_Loader.hpp"
 #include "tools/Inputs.hpp"
 #include "tools/Log.hpp"
 #include "model/Model_Loader.hpp"
@@ -13,9 +14,11 @@
 
 //#define PRINT_FPS
 
-#define MAIZE_FILE "../assets/maize.bin"
-
 using namespace std::chrono;
+
+#define PRINT_FPS
+
+#define MAIZE_FILE "../assets/maize_v1.bin"
 
 const int screen_width = 960;
 const int screen_height = 640;
@@ -109,36 +112,43 @@ void Cedai::createPrimitives() {
 
 	// spheres
 
-	spheres.push_back(cd::Sphere( 1.0,
-		cl_float3{{ 10, -3, 0 }},
-		cl_uchar4{{ 200, 128, 254, 255 }} ));
+	spheres.push_back(cd::Sphere(1.0,
+		cl_float3{ { 10, -3, 0 } },
+		cl_uchar4{ { 200, 128, 254, 255 } }));
 
-	spheres.push_back(cd::Sphere( 0.5,
-		cl_float3{{ 4, 2, 2.5 }},
-		cl_uchar4{{ 128, 255, 180, 255 }} ));
+	spheres.push_back(cd::Sphere(0.5,
+		cl_float3{ { 4, 2, 2.5 } },
+		cl_uchar4{ { 128, 255, 180, 255 } }));
 
-	spheres.push_back(cd::Sphere( 0.2,
-		cl_float3{{ 6, 0, 3 }},
-		cl_uchar4{{ 255, 200, 128, 255 }} ));
+	spheres.push_back(cd::Sphere(0.2,
+		cl_float3{ { 6, 0, 3 } },
+		cl_uchar4{ { 255, 200, 128, 255 } }));
 
 	// lights
 
-	lights.push_back(cd::Sphere( 0.1,
-		cl_float3{{ 2, 3, 4 }},
-		cl_uchar4{{ 255, 255, 205, 255 }} ));
+	lights.push_back(cd::Sphere(0.1,
+		cl_float3{ { 2, 3, 4 } },
+		cl_uchar4{ { 255, 255, 205, 255 } }));
 
-	lights.push_back(cd::Sphere( 0.1,
-		cl_float3{{ -1, -6, -4 }},
-		cl_uchar4{{ 255, 255, 205, 255 }} ));
+	lights.push_back(cd::Sphere(0.1,
+		cl_float3{ { -1, -6, -4 } },
+		cl_uchar4{ { 255, 255, 205, 255 } }));
 
 	// animated model
 
-	//maize.loadFBX(FBX_PATH);
+	CD_INFO("loading model(s)...");
+
 	cd::LoadModelv1(MAIZE_FILE, maize);
-	for (int p = 0; p < maize.vertices.size(); p++)
-		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 255 }} );
+	for (int p = 0; p < maize.vertices.size() / 3; p++)
+		cl_polygonColors.push_back(cl_uchar4{ { 200, 200, 200, 255 } });
+
+	if (maize.vertices.size() * 3 != cl_polygonColors.size())
+		CD_WARN("Cedai model init warning: unequal number of vertices for the number of polygons");
 
 	CD_INFO("model(s) loaded.");
+
+	CD_INFO("number of vertices = {}", maize.vertices.size());
+	CD_INFO("number of polygons = {}", cl_polygonColors.size());
 }
 
 // GAME LOGIC
@@ -194,7 +204,7 @@ void Cedai::processInputs() {
 
 void Cedai::updateAnimation(double time) {
 	double relativeTime = fmod(time, maize.animation.duration);
-
+	
 	// figure out which frame we're on
 	for (int f = 0; f < maize.animation.keyframes.size() - 1; f++) {
 		if (maize.animation.keyframes[f].time <= relativeTime && relativeTime < maize.animation.keyframes[f + 1].time) {

@@ -70,9 +70,6 @@
       <AdditionalDependencies>OpenCL.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;..\vendor\glfw\lib-vc2017;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <PostBuildEvent>
-      <Command>xcopy  /y /d "C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\$(Configuration)\libfbxsdk.dll" $(OutDir)</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <ClCompile>
@@ -85,7 +82,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
       <StringPooling>true</StringPooling>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -94,9 +91,6 @@
       <AdditionalDependencies>OpenCL.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;..\vendor\glfw\lib-vc2017;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <PostBuildEvent>
-      <Command>xcopy  /y /d "C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\$(Configuration)\libfbxsdk.dll" $(OutDir)</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\vendor\gl3w\include\GL\gl3w.h" />

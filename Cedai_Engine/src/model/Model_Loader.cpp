@@ -22,7 +22,7 @@ void cd::LoadModelv0(const std::string& filePath, std::vector<glm::vec4>& vertic
 	const int version_number = 0;
 
 	uint16_t version_in;
-	input.read((char*)& version_in, sizeof(uint16_t));
+	input.read((char *)&version_in, sizeof(uint16_t));
 	if (version_in != version_number) {
 		CD_ERROR("file version number {} incomatible with reader version {}", version_in, version_number);
 		throw std::runtime_error("model reader error");
@@ -53,7 +53,7 @@ void cd::LoadModelv1(const std::string &filePath, AnimatedModel &model) {
 	uint16_t version_in;
 	input.read((char *)& version_in, sizeof(uint16_t));
 	if (version_in != version_number) {
-		CD_ERROR("file version number {} incomatible with reader version {}", version_in, version_number);
+		CD_ERROR("file version number {} incompatible with reader version {}", version_in, version_number);
 		throw std::runtime_error("model reader error");
 	}
 
@@ -71,7 +71,7 @@ void cd::LoadModelv1(const std::string &filePath, AnimatedModel &model) {
 	model.animation.keyframes.clear();
 	model.animation.keyframes.resize(num_keyframes);
 
-	input.read((char *) model.vertices.data(), sizeof(cd::Vertex) * num_vertices);
-	input.read((char *) &model.animation.duration, sizeof(double));
-	input.read((char *) model.animation.keyframes.data(), sizeof(cd::Keyframe) * num_keyframes);
+	input.read((char *)model.vertices.data(), sizeof(cd::Vertex) * num_vertices);
+	input.read((char *)& model.animation.duration, sizeof(double));
+	input.read((char *)model.animation.keyframes.data(), sizeof(cd::Keyframe) * num_keyframes);
 }

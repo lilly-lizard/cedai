@@ -3,13 +3,14 @@
 /*
 Engine notes...
 Coordinate system: x - forwards, y - right, z - up
+the number of polygons rendered depends on the number of polygon colors passed to the renderer
 */
 
 #include "Interface.hpp"
 #include "Renderer.hpp"
 #include "PrimitiveProcessor.hpp"
-#include "model/AnimatedModel.hpp"
 #include "model/Sphere.hpp"
+#include "model/AnimatedModel.hpp"
 
 #include <glm/glm.hpp>
 #include <CL/cl.h>

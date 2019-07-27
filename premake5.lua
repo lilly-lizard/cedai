@@ -1,7 +1,8 @@
 workspace "Cedai"
 	architecture "x64" -- no 32 bit support
 
-	configurations {
+	configurations
+	{
 		"debug",
 		"release"
 	}
@@ -56,10 +57,10 @@ project "Cedai_Engine" -- game engine
 			"CD_PLATFORM_WINDOWS"
 		}
 
-	filter "configurations:Debug"
+	filter "configurations:debug"
 		defines "DEBUG"
 		symbols "On"
 
-	filter "configurations:Release"
+	filter "configurations:release"
 		defines "NDEBUG"
 		optimize "On"

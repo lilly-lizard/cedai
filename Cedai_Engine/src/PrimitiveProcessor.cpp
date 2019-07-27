@@ -2,8 +2,6 @@
 #include "Interface.hpp"
 #include "tools/Log.hpp"
 
-#include <array>
-
 #define VERT_PATH "src/shaders/primitive.vert"
 #define FRAG_PATH "src/shaders/primitive.frag"
 
