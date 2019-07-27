@@ -142,7 +142,7 @@ void Cedai::createPrimitives() {
 	for (int p = 0; p < maize.vertices.size() / 3; p++)
 		cl_polygonColors.push_back(cl_uchar4{ { 200, 200, 200, 255 } });
 
-	if (maize.vertices.size() * 3 != cl_polygonColors.size())
+	if (maize.vertices.size() != cl_polygonColors.size() * 3)
 		CD_WARN("Cedai model init warning: unequal number of vertices for the number of polygons");
 
 	CD_INFO("model(s) loaded.");
