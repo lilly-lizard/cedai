@@ -11,10 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{D0D8009E-BC3B-9042-65C1-C8F851035CC5}</ProjectGuid>
+    <ProjectGuid>{22E6E92C-8E52-A527-5746-3D85C371C78F}</ProjectGuid>
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>Cedai_Engine</RootNamespace>
+    <RootNamespace>Cedai_Model_Converter</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -44,22 +44,22 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>bin\debug-windows-x86_64\</OutDir>
     <IntDir>bin-int\debug-windows-x86_64\</IntDir>
-    <TargetName>Cedai_Engine</TargetName>
+    <TargetName>Cedai_Model_Converter</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>bin\release-windows-x86_64\</OutDir>
     <IntDir>bin-int\release-windows-x86_64\</IntDir>
-    <TargetName>Cedai_Engine</TargetName>
+    <TargetName>Cedai_Model_Converter</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>CD_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;$(INTELOCLSDKROOT)\include;..\vendor\glm;..\vendor\glfw\include;..\vendor\gl3w\include;..\vendor\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>FBXSDK_SHARED;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\Cedai_Engine\src;..\vendor\glm;C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -67,16 +67,19 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>OpenCL.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;..\vendor\glfw\lib-vc2017;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libfbxsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>IF EXIST "C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\debug\libfbxsdk.dll"\ (xcopy /Q /E /Y /I "C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\debug\libfbxsdk.dll" $(TargetDir) &gt; nul) ELSE (xcopy /Q /Y /I "C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\debug\libfbxsdk.dll" $(TargetDir) &gt; nul)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>CD_PLATFORM_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;$(INTELOCLSDKROOT)\include;..\vendor\glm;..\vendor\glfw\include;..\vendor\gl3w\include;..\vendor\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>FBXSDK_SHARED;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\Cedai_Engine\src;..\vendor\glm;C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -88,40 +91,22 @@
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>OpenCL.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;..\vendor\glfw\lib-vc2017;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libfbxsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>IF EXIST "C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\release\libfbxsdk.dll"\ (xcopy /Q /E /Y /I "C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\release\libfbxsdk.dll" $(TargetDir) &gt; nul) ELSE (xcopy /Q /Y /I "C:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\release\libfbxsdk.dll" $(TargetDir) &gt; nul)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\vendor\gl3w\include\GL\gl3w.h" />
-    <ClInclude Include="..\vendor\gl3w\include\GL\glcorearb.h" />
-    <ClInclude Include="src\Cedai.hpp" />
-    <ClInclude Include="src\Interface.hpp" />
-    <ClInclude Include="src\PrimitiveProcessor.hpp" />
-    <ClInclude Include="src\Renderer.hpp" />
-    <ClInclude Include="src\model\AnimatedModel.hpp" />
-    <ClInclude Include="src\model\Model_Loader.hpp" />
-    <ClInclude Include="src\model\Sphere.hpp" />
-    <ClInclude Include="src\model\Vertex.hpp" />
-    <ClInclude Include="src\tools\Config.hpp" />
-    <ClInclude Include="src\tools\Inputs.hpp" />
-    <ClInclude Include="src\tools\Log.hpp" />
+    <ClInclude Include="src\AnimatedModel.h" />
+    <ClInclude Include="src\FBX_Loader.h" />
+    <ClInclude Include="src\Tools.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\vendor\gl3w\include\gl3w.c" />
-    <ClCompile Include="src\Cedai.cpp" />
-    <ClCompile Include="src\Interface.cpp" />
-    <ClCompile Include="src\PrimitiveProcessor.cpp" />
-    <ClCompile Include="src\Renderer.cpp" />
-    <ClCompile Include="src\model\Model_Loader.cpp" />
-    <ClCompile Include="src\tools\Log.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="src\kernels\kernel.cl" />
-    <None Include="src\shaders\draw.frag" />
-    <None Include="src\shaders\draw.vert" />
-    <None Include="src\shaders\primitive.frag" />
-    <None Include="src\shaders\primitive.vert" />
+    <ClCompile Include="src\AnimatedModel.cpp" />
+    <ClCompile Include="src\FBX_Loader.cpp" />
+    <ClCompile Include="src\Tools.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

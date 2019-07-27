@@ -72,7 +72,7 @@ void Cedai::loop() {
 	time_point<high_resolution_clock> timeStart = high_resolution_clock::now();
 
 	while (!quit && !interface.WindowCloseCheck()) {
-		// queue a render operation
+		// queue a render operation (opencl pipeline)
 		double time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
 		renderer.renderQueue(view, (float)time);
 
@@ -86,12 +86,12 @@ void Cedai::loop() {
 		updateAnimation(time);
 		fpsHandle();
 
-		// draw to the window
 		renderer.renderBarrier();
+		// process vertices and draw to the window (2 opengl pipelines)
 		vertexProcessor.vertexProcess(maize.animation.keyframes[keyFrameIndex].boneTransforms);
 		interface.drawRun();
-		interface.drawBarrier();
 		vertexProcessor.vertexBarrier();
+		interface.drawBarrier();
 	}
 }
 
@@ -234,12 +234,6 @@ void Cedai::updateView() {
 	view[3][2] = viewerPosition[2];
 }
 
-void Cedai::printViewData() {
-	CD_TRACE("forward:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerForward[0], viewerForward[1], viewerForward[2]);
-	CD_TRACE("cross:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerCross[0], viewerCross[1], viewerCross[2]);
-	CD_TRACE("up:		{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerUp[0], viewerUp[1], viewerUp[2]);
-}
-
 void Cedai::fpsHandle() {
 	static int fps = 0;
 	static time_point<system_clock> prevTime = system_clock::now();
@@ -261,4 +255,10 @@ void Cedai::fpsHandle() {
 		prevTime = system_clock::now();
 		fps = 0;
 	}
+}
+
+void Cedai::printViewData() {
+	CD_TRACE("forward:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerForward[0], viewerForward[1], viewerForward[2]);
+	CD_TRACE("cross:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerCross[0], viewerCross[1], viewerCross[2]);
+	CD_TRACE("up:		{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerUp[0], viewerUp[1], viewerUp[2]);
 }

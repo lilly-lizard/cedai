@@ -1,5 +1,5 @@
 #include "FBX_Loader.h"
-#include "AnimatedModel.h"
+
 #include "Tools.h"
 
 #include <fbxsdk.h>
@@ -10,15 +10,14 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <string>
 
 #define FBX_PATH "maize.fbx"
-#define OUT_PATH "maize.bin"
-#define IN_PATH "maize.bin"
+#define FILENAME "maize"
+#define OUT_PATH ""
+#define IN_PATH ""
 
 // MAIN
-
-void writeBinary(const AnimatedModel &model);
-void readBinary(AnimatedModel &model);
 
 int main() {
 	AnimatedModel model;
@@ -39,7 +38,8 @@ int main() {
 
 void writeBinary(const AnimatedModel &model) {
 	std::cout << "starting model binary write..." << std::endl;
-	std::ofstream output(OUT_PATH, std::ios::binary);
+	std::string file_name = std::string(OUT_PATH) + FILENAME + "_v" + std::to_string(VERSION_NUMBER) + ".bin";
+	std::ofstream output(file_name, std::ios::binary);
 	
 	uint16_t version_number = VERSION_NUMBER;
 	output.write((char*) &version_number, sizeof(uint16_t));
@@ -67,12 +67,13 @@ bool fileExists(const std::string& name) {
 }
 
 void readBinary(AnimatedModel &model) {
-	if (!fileExists(IN_PATH)) {
+	std::string file_name = std::string(IN_PATH) + FILENAME + "_v" + std::to_string(VERSION_NUMBER) + ".bin";
+	if (!fileExists(file_name)) {
 		std::cout << "model reader file not found" << std::endl;
 		return;
 	}
 
-	std::ifstream input(IN_PATH, std::ios::binary);
+	std::ifstream input(file_name, std::ios::binary);
 
 	uint16_t version_number;
 	input.read((char*) &version_number, sizeof(uint16_t));
