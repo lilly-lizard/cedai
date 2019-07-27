@@ -5,8 +5,10 @@
 #include "tools/config.hpp"
 
 // TODO only for windows
+#ifdef CD_PLATFORM_WINDOWS
 #define GLFW_EXPOSE_NATIVE_WGL
 #include "GLFW/glfw3native.h"
+#endif
 
 #include <iostream>
 #include <fstream>
@@ -19,7 +21,7 @@
 
 void Renderer::init(int image_width, int image_height,
 		Interface* interface, PrimitiveProcessor* vertexProcessor,
-		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygons) {
+		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygon_colors) {
 	CD_INFO("Initialising renderer...");
 
 	this->image_width = image_width;
@@ -32,7 +34,7 @@ void Renderer::init(int image_width, int image_height,
 	createQueue();
 
 	createBuffers(interface->getTexTarget(), interface->getTexHandle(), vertexProcessor->getVertexBuffer(),
-		spheres, lights, polygons);
+		spheres, lights, polygon_colors);
 	createKernels();
 	setWorkGroups();
 
@@ -131,12 +133,17 @@ void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& dev
 
 void Renderer::createContext(Interface* interface) {
 	// TODO: wgl - windows; glx - mac
+#	ifdef CD_PLATFORM_WINDOWS
 	cl_context_properties contextProps[] = {
 		CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
 		CL_GL_CONTEXT_KHR,   (cl_context_properties)glfwGetWGLContext(interface->getWindow()),	// WGL Context
 		CL_WGL_HDC_KHR,      (cl_context_properties)glfwGetWGLDC(interface->getWindow()),		// WGL HDC
 		0 };
-
+#	else
+	CD_ERROR("Unsupported platform: only windows is supported at this time.");
+	throw std::runtime_error("platform error");
+#	endif // CD_PLATFORM_WINDOWS
+	
 	cl_int result;
 	context = cl::Context(device, contextProps, NULL, NULL, &result);
 	checkCLError(result, "Error during context creation");
@@ -149,10 +156,10 @@ void Renderer::createQueue() {
 }
 
 void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, cl_GLuint gl_vert_buffer,
-		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygons) {
+		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>&polygon_colors) {
 	sphere_count = spheres.size();
 	light_count = lights.size();
-	polygon_count = polygons.size();
+	polygon_count = polygon_colors.size();
 	cl_int result;
 
 	// spheres and lights
@@ -172,7 +179,7 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, 
 	cl_polygons = cl::Buffer(context, CL_MEM_READ_ONLY, polygon_count * sizeof(cl_uchar4), NULL, &result);
 	CD_INFO("polygon bytes = {}", polygon_count * sizeof(cl_uchar4));
 	checkCLError(result, "polygon buffer create");
-	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, polygon_count * sizeof(cl_uchar4), polygons.data());
+	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, polygon_count * sizeof(cl_uchar4), polygon_colors.data());
 
 	// output image
 	glBindTexture(gl_texture_target, gl_texture);

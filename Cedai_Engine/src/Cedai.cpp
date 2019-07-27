@@ -10,14 +10,18 @@
 #include <iostream>
 #include <iomanip>
 
-#define MAIZE_FILE "../assets/maize.bin"
-
 using namespace std::chrono;
+
+#define PRINT_FPS
+
+#define MAIZE_FILE "../assets/maize_v1.bin"
 
 const int screen_width = 960;
 const int screen_height = 640;
 // 640 x 480
 // 960 x 640
+
+// MAIN FUNCTIONS
 
 int main() {
 	Cedai App;
@@ -98,6 +102,8 @@ void Cedai::cleanUp() {
 	CD_INFO("Finished cleaning.");
 }
 
+// INITIALIZATION
+
 void Cedai::createPrimitives() {
 
 	// spheres
@@ -124,44 +130,24 @@ void Cedai::createPrimitives() {
 		cl_float3{ { -1, -6, -4 } },
 		cl_uchar4{ { 255, 255, 205, 255 } }));
 
-	// model loading
+	// animated model
 
-	std::vector<glm::vec4> verticesLoad;
-	std::vector<glm::uvec4> polygonsLoad;
-	
 	CD_INFO("loading model(s)...");
-	cd::LoadModel(MAIZE_FILE, verticesLoad, polygonsLoad);
 
-	// vertex positions and polygon colors
+	cd::LoadModelv1(MAIZE_FILE, maize);
+	for (int p = 0; p < maize.vertices.size() / 3; p++)
+		cl_polygonColors.push_back(cl_uchar4{ { 200, 200, 200, 255 } });
 
-	for (int p = 0; p < polygonsLoad.size(); p++) {
-		glm::vec4 vert = verticesLoad[polygonsLoad[p].x];
-		maize.vertices.push_back(cd::Vertex{
-			glm::vec4(vert.x, vert.y, vert.z, 0),
-			glm::ivec4(-1, -1, -1, -1),
-			glm::vec4(0, 0, 0, 0) });
-
-		vert = verticesLoad[polygonsLoad[p].y];
-		maize.vertices.push_back(cd::Vertex{
-			glm::vec4(vert.x, vert.y, vert.z, 0),
-			glm::ivec4(-1, -1, -1, -1),
-			glm::vec4(0, 0, 0, 0) });
-
-		vert = verticesLoad[polygonsLoad[p].z];
-		maize.vertices.push_back(cd::Vertex{
-			glm::vec4(vert.x, vert.y, vert.z, 0),
-			glm::ivec4(-1, -1, -1, -1),
-			glm::vec4(0, 0, 0, 0) });
-
-		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 0 }} );
-	}
-
-	// bones
-
-	maize.animation.keyframes.resize(1);
+	if (maize.vertices.size() * 3 != cl_polygonColors.size())
+		CD_WARN("Cedai model init warning: unequal number of vertices for the number of polygons");
 
 	CD_INFO("model(s) loaded.");
+
+	CD_INFO("number of vertices = {}", maize.vertices.size());
+	CD_INFO("number of polygons = {}", cl_polygonColors.size());
 }
+
+// GAME LOGIC
 
 void Cedai::processInputs() {
 	// get time difference
@@ -212,6 +198,20 @@ void Cedai::processInputs() {
 	updateView();
 }
 
+void Cedai::updateAnimation(double time) {
+	double relativeTime = fmod(time, maize.animation.duration);
+	
+	// figure out which frame we're on
+	for (int f = 0; f < maize.animation.keyframes.size() - 1; f++) {
+		if (maize.animation.keyframes[f].time <= relativeTime && relativeTime < maize.animation.keyframes[f + 1].time) {
+			keyFrameIndex = f;
+			break;
+		}
+	}
+}
+
+// HELPER
+
 void Cedai::updateView() {
 	view[0][0] = viewerForward[0];
 	view[0][1] = viewerForward[1];
@@ -230,11 +230,6 @@ void Cedai::updateView() {
 	view[3][2] = viewerPosition[2];
 }
 
-void Cedai::updateAnimation(double time) {
-	keyFrameIndex = 0;
-}
-
-
 void Cedai::printViewData() {
 	CD_TRACE("forward:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerForward[0], viewerForward[1], viewerForward[2]);
 	CD_TRACE("cross:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerCross[0], viewerCross[1], viewerCross[2]);
@@ -249,10 +244,14 @@ void Cedai::fpsHandle() {
 	duration<double> elapsedTime;
 	elapsedTime = system_clock::now() - prevTime;
 	if (elapsedTime.count() > 1) {
+
+#		ifdef PRINT_FPS
 		CD_TRACE("fps = {}", fps);
-#ifdef DEBUG
+#		endif
+#		ifdef DEBUG
 		interface.showFPS(fps);
-#endif
+#		endif
+
 		fpsSum += fps;
 		fpsCount++;
 		prevTime = system_clock::now();

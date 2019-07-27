@@ -166,6 +166,7 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 	float discriminant = b * b - c;
 	if (discriminant < 0) return -1;
 
+	// TODO native_sqrt
 	float t = b - half_sqrt(discriminant);
 	//return select(-1.0f, t, isless(0, t));
 	return 0 < t ? t : -1;
@@ -181,6 +182,7 @@ float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
 	float3 E2 = V2 - V0;
 	float3 P = cross(D, E2);
 
+	// TODO half_divide half_recip
 	float inv_det0 = 1 / dot(P, E1);
 	float3 T = O - V0;
 
@@ -238,9 +240,10 @@ bool shadow(float3 intersection, float3 light, int s_index, int p_index,
 }
 
 int luminance(uchar4 color) {
-	uchar r = color.x;
-	uchar g = color.y;
-	uchar b = color.z;
+	// from https://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
+	const uchar r = color.x;
+	const uchar g = color.y;
+	const uchar b = color.z;
 	return (r + r + r + g + g + g + g + b) >> 3;
 }
 

@@ -7,6 +7,9 @@
     <Filter Include="src\kernels">
       <UniqueIdentifier>{D000772D-3CB6-EF22-C5AA-E9F9315FE626}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\model">
+      <UniqueIdentifier>{4D12AFB5-B97C-632C-02BB-14D26E644181}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\shaders">
       <UniqueIdentifier>{26450F9B-92FA-8790-1BEF-816787A37E94}</UniqueIdentifier>
     </Filter>
@@ -24,9 +27,6 @@
     </Filter>
     <Filter Include="vendor\gl3w\include\GL">
       <UniqueIdentifier>{54DB1634-40D5-3F86-2942-D69615DBA5F2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\model">
-      <UniqueIdentifier>{74cd06b9-2430-42f8-a14e-e986c92cc03f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -48,14 +48,8 @@
     <ClInclude Include="src\Renderer.hpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\tools\Config.hpp">
-      <Filter>src\tools</Filter>
-    </ClInclude>
-    <ClInclude Include="src\tools\Inputs.hpp">
-      <Filter>src\tools</Filter>
-    </ClInclude>
-    <ClInclude Include="src\tools\Log.hpp">
-      <Filter>src\tools</Filter>
+    <ClInclude Include="src\model\AnimatedModel.hpp">
+      <Filter>src\model</Filter>
     </ClInclude>
     <ClInclude Include="src\model\Model_Loader.hpp">
       <Filter>src\model</Filter>
@@ -66,8 +60,14 @@
     <ClInclude Include="src\model\Vertex.hpp">
       <Filter>src\model</Filter>
     </ClInclude>
-    <ClInclude Include="src\model\AnimatedModel.hpp">
-      <Filter>src\model</Filter>
+    <ClInclude Include="src\tools\Config.hpp">
+      <Filter>src\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tools\Inputs.hpp">
+      <Filter>src\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tools\Log.hpp">
+      <Filter>src\tools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -86,11 +86,11 @@
     <ClCompile Include="src\Renderer.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\tools\Log.cpp">
-      <Filter>src\tools</Filter>
-    </ClCompile>
     <ClCompile Include="src\model\Model_Loader.cpp">
       <Filter>src\model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tools\Log.cpp">
+      <Filter>src\tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -3,6 +3,7 @@
 /*
 Engine notes...
 Coordinate system: x - forwards, y - right, z - up
+the number of polygons rendered depends on the number of polygon colors passed to the renderer
 */
 
 #include "Interface.hpp"
