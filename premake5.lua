@@ -3,8 +3,8 @@ workspace "Cedai"
 
 	configurations
 	{
-		"Debug",
-		"Release"
+		"debug",
+		"release"
 	}
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
@@ -60,10 +60,10 @@ project "Cedai_Engine" -- game engine
 			"CD_PLATFORM_WINDOWS"
 		}
 
-	filter "configurations:Debug"
+	filter "configurations:debug"
 		defines "DEBUG"
 		symbols "On"
 
-	filter "configurations:Release"
+	filter "configurations:release"
 		defines "NDEBUG"
 		optimize "On"
