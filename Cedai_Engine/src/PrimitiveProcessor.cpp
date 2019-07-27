@@ -7,18 +7,15 @@
 #define VERT_PATH "src/shaders/primitive.vert"
 #define FRAG_PATH "src/shaders/primitive.frag"
 
-#define MAX_BONES 50
-
 // PUBLIC FUNCTIONS
 
-void PrimitiveProcessor::init(Interface *interface, std::vector<glm::vec4> &positions, std::vector<glm::mat4> &bones) {
+void PrimitiveProcessor::init(Interface *interface, std::vector<cd::Vertex> &vertices, std::array<glm::mat4, MAX_BONES> &bones) {
 	CD_INFO("Initialising primitive processing program...");
-	vertexCount = positions.size();
-	int boneCount = bones.size();
+	vertexCount = vertices.size();
 
 	// create program
 	cd::createProgramGL(program, VERT_PATH, FRAG_PATH);
-	setProgramIO(positions);
+	setProgramIO(vertices);
 
 	// make dummy render target
 	createRasteriseTarget();
@@ -28,7 +25,7 @@ void PrimitiveProcessor::init(Interface *interface, std::vector<glm::vec4> &posi
 	vertexBarrier();
 }
 
-void PrimitiveProcessor::vertexProcess(std::vector<glm::mat4> &bones) {
+void PrimitiveProcessor::vertexProcess(std::array<glm::mat4, MAX_BONES> &bones) {
 
 	// setup the program
 
@@ -83,23 +80,16 @@ void PrimitiveProcessor::createRasteriseTarget() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void PrimitiveProcessor::setProgramIO(std::vector<glm::vec4> &positions) {
+void PrimitiveProcessor::setProgramIO(std::vector<cd::Vertex> &vertices) {
 
 	// vertex input
-
-	gl_vertices.resize(vertexCount);
-	for (int v = 0; v < vertexCount; v++) {
-		gl_vertices[v].position = positions[v];
-		gl_vertices[v].boneIndices = glm::ivec4(-1, -1, -1, -1);
-		gl_vertices[v].boneWeights = glm::vec4(0, 0, 0, 0);
-	}
 
 	glGenVertexArrays(1, &vertexArray);
 	glBindVertexArray(vertexArray);
 
 	glGenBuffers(1, &vertexBufferIn);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferIn);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cd::Vertex) * vertexCount, gl_vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cd::Vertex) * vertexCount, vertices.data(), GL_STATIC_DRAW);
 
 	setVertexAttributes();
 
@@ -135,12 +125,11 @@ void PrimitiveProcessor::setVertexAttributes() {
 	glEnableVertexAttribArray(weightsLocation);
 }
 
-void PrimitiveProcessor::updateUniforms(std::vector<glm::mat4> &bones) {
+void PrimitiveProcessor::updateUniforms(std::array<glm::mat4, MAX_BONES> &bones) {
 	GLint location = glGetUniformLocation(program, "bones");
-	int boneCount = bones.size();
 
-	if (location != -1 && boneCount <= MAX_BONES)
-		glUniformMatrix4fv(location, boneCount, GL_FALSE, (const GLfloat*)bones.data());
+	if (location != -1)
+		glUniformMatrix4fv(location, MAX_BONES, GL_FALSE, (const GLfloat*)bones.data());
 	else
 		CD_WARN("PrimitiveProcessor::updateUniforms invalid bone transform write");
 }

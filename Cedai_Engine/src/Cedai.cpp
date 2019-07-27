@@ -1,6 +1,6 @@
 #include "Cedai.hpp"
 #include "Interface.hpp"
-#include "tools/Model_Loader.hpp"
+#include "model/Model_Loader.hpp"
 #include "tools/Inputs.hpp"
 #include "tools/Log.hpp"
 
@@ -48,11 +48,11 @@ void Cedai::init() {
 	CD_INFO("Interface initialised.");
 	
 	createPrimitives();
-	vertexProcessor.init(&interface, vertices, bones);
+	vertexProcessor.init(&interface, maize.vertices, maize.animation.keyframes[keyFrameIndex].boneTransforms);
 	CD_INFO("Pimitive processing program initialised.");
 
 	renderer.init(screen_width, screen_height, &interface, &vertexProcessor,
-		spheres, lights, cl_vertices, cl_polygonColors);
+		spheres, lights, cl_polygonColors);
 	CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
@@ -72,12 +72,15 @@ void Cedai::loop() {
 		interface.PollEvents();
 		inputs = interface.GetKeyInputs();
 		quit = inputs & CD_INPUTS::ESC;
+
+		// game logic
 		processInputs();
-		printFPS();
+		updateAnimation(time);
+		fpsHandle();
 
 		// draw to the window
 		renderer.renderBarrier();
-		vertexProcessor.vertexProcess(bones);
+		vertexProcessor.vertexProcess(maize.animation.keyframes[keyFrameIndex].boneTransforms);
 		interface.drawRun();
 		interface.drawBarrier();
 		vertexProcessor.vertexBarrier();
@@ -99,27 +102,27 @@ void Cedai::createPrimitives() {
 
 	// spheres
 
-	spheres.push_back(cd::Sphere{ 1.0, 0, 0, 0,
-		cl_float3{{ 10, -3, 0 }},
-		cl_uchar4{{ 200, 128, 254, 0 }} });
+	spheres.push_back(cd::Sphere(1.0,
+		cl_float3{ { 10, -3, 0 } },
+		cl_uchar4{ { 200, 128, 254, 255 } }));
 
-	spheres.push_back(cd::Sphere{ 0.5, 0, 0, 0,
-		cl_float3{{ 4, 2, 2.5 }},
-		cl_uchar4{{ 128, 255, 180, 0 }} });
+	spheres.push_back(cd::Sphere(0.5,
+		cl_float3{ { 4, 2, 2.5 } },
+		cl_uchar4{ { 128, 255, 180, 255 } }));
 
-	spheres.push_back(cd::Sphere{ 0.2, 0, 0, 0,
-		cl_float3{{ 6, 0, 3 }},
-		cl_uchar4{{ 255, 200, 128, 0 }} });
+	spheres.push_back(cd::Sphere(0.2,
+		cl_float3{ { 6, 0, 3 } },
+		cl_uchar4{ { 255, 200, 128, 255 } }));
 
 	// lights
 
-	lights.push_back( cd::Sphere{ 0.1, 0, 0, 0,
-		cl_float3{{ 2, 3, 4 }},
-		cl_uchar4{{ 255, 255, 205, 0 }} });
+	lights.push_back(cd::Sphere(0.1,
+		cl_float3{ { 2, 3, 4 } },
+		cl_uchar4{ { 255, 255, 205, 255 } }));
 
-	lights.push_back(cd::Sphere{ 0.1, 0, 0, 0,
-		cl_float3{{  -1, -6, -4 }},
-		cl_uchar4{{ 255, 255, 205, 0 }} });
+	lights.push_back(cd::Sphere(0.1,
+		cl_float3{ { -1, -6, -4 } },
+		cl_uchar4{ { 255, 255, 205, 255 } }));
 
 	// model loading
 
@@ -133,23 +136,29 @@ void Cedai::createPrimitives() {
 
 	for (int p = 0; p < polygonsLoad.size(); p++) {
 		glm::vec4 vert = verticesLoad[polygonsLoad[p].x];
-		vertices.push_back(glm::vec4( vert.x, vert.y, vert.z, 0));
-		cl_vertices.push_back(cl_float3{{ vert.x, vert.y, vert.z }});
+		maize.vertices.push_back(cd::Vertex{
+			glm::vec4(vert.x, vert.y, vert.z, 0),
+			glm::ivec4(-1, -1, -1, -1),
+			glm::vec4(0, 0, 0, 0) });
 
 		vert = verticesLoad[polygonsLoad[p].y];
-		vertices.push_back(glm::vec4(vert.x, vert.y, vert.z, 0));
-		cl_vertices.push_back(cl_float3{{ vert.x, vert.y, vert.z }});
+		maize.vertices.push_back(cd::Vertex{
+			glm::vec4(vert.x, vert.y, vert.z, 0),
+			glm::ivec4(-1, -1, -1, -1),
+			glm::vec4(0, 0, 0, 0) });
 
 		vert = verticesLoad[polygonsLoad[p].z];
-		vertices.push_back(glm::vec4(vert.x, vert.y, vert.z, 0));
-		cl_vertices.push_back(cl_float3{{ vert.x, vert.y, vert.z }});
+		maize.vertices.push_back(cd::Vertex{
+			glm::vec4(vert.x, vert.y, vert.z, 0),
+			glm::ivec4(-1, -1, -1, -1),
+			glm::vec4(0, 0, 0, 0) });
 
 		cl_polygonColors.push_back( cl_uchar4{{ 200, 200, 200, 0 }} );
 	}
 
 	// bones
 
-	bones.resize(10, glm::mat4(1.0f));
+	maize.animation.keyframes.resize(1);
 
 	CD_INFO("model(s) loaded.");
 }
@@ -221,13 +230,18 @@ void Cedai::updateView() {
 	view[3][2] = viewerPosition[2];
 }
 
+void Cedai::updateAnimation(double time) {
+	keyFrameIndex = 0;
+}
+
+
 void Cedai::printViewData() {
 	CD_TRACE("forward:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerForward[0], viewerForward[1], viewerForward[2]);
 	CD_TRACE("cross:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerCross[0], viewerCross[1], viewerCross[2]);
 	CD_TRACE("up:		{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerUp[0], viewerUp[1], viewerUp[2]);
 }
 
-void Cedai::printFPS() {
+void Cedai::fpsHandle() {
 	static int fps = 0;
 	static time_point<system_clock> prevTime = system_clock::now();
 

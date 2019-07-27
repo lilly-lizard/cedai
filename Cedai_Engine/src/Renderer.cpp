@@ -19,8 +19,7 @@
 
 void Renderer::init(int image_width, int image_height,
 		Interface* interface, PrimitiveProcessor* vertexProcessor,
-		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygons) {
+		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygons) {
 	CD_INFO("Initialising renderer...");
 
 	this->image_width = image_width;
@@ -33,7 +32,7 @@ void Renderer::init(int image_width, int image_height,
 	createQueue();
 
 	createBuffers(interface->getTexTarget(), interface->getTexHandle(), vertexProcessor->getVertexBuffer(),
-		spheres, lights, vertices, polygons);
+		spheres, lights, polygons);
 	createKernels();
 	setWorkGroups();
 
@@ -58,10 +57,10 @@ void Renderer::renderQueue(const float view[4][4], float seconds) {
 
 	queue.enqueueAcquireGLObjects(&gl_objects);
 	queue.enqueueNDRangeKernel(kernel, NULL, global_work, local_work);
-	queue.enqueueReleaseGLObjects(&gl_objects);
 }
 
 void Renderer::renderBarrier() {
+	queue.enqueueReleaseGLObjects(&gl_objects);
 	queue.finish();
 }
 
@@ -150,11 +149,9 @@ void Renderer::createQueue() {
 }
 
 void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, cl_GLuint gl_vert_buffer,
-		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights,
-		std::vector<cl_float3>& vertices, std::vector<cl_uchar4>& polygons) {
+		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygons) {
 	sphere_count = spheres.size();
 	light_count = lights.size();
-	vertex_count = vertices.size();
 	polygon_count = polygons.size();
 	cl_int result;
 
@@ -164,12 +161,6 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, 
 	checkCLError(result, "sphere buffer create");
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, 0, sphere_count * sizeof(cd::Sphere), spheres.data());
 	queue.enqueueWriteBuffer(cl_spheres, CL_TRUE, sphere_count * sizeof(cd::Sphere), light_count * sizeof(cd::Sphere), lights.data());
-
-	// vertices
-	//cl_vertices = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_count * sizeof(cl_float3), NULL, &result);
-	//CD_INFO("vertex bytes = {}", vertex_count * sizeof(cl_float3));
-	//checkCLError(result, "vertex buffer create");
-	//queue.enqueueWriteBuffer(cl_vertices, CL_TRUE, 0, vertex_count * sizeof(cl_float3), vertices.data());
 
 	// gl vertices
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, gl_vert_buffer);

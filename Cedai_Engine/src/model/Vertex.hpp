@@ -3,6 +3,8 @@
 #include <glm/glm.hpp>
 #include <array>
 
+#define MAX_BONES 50
+
 namespace cd {
 	struct Vertex {
 		glm::vec4 position;
