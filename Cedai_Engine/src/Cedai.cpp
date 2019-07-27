@@ -11,10 +11,9 @@
 #include <iomanip>
 #include <math.h>
 
-#define PRINT_FPS
+//#define PRINT_FPS
 
 #define MAIZE_FILE "../assets/maize.bin"
-#define FBX_PATH "../assets/maize.fbx"
 
 using namespace std::chrono;
 
@@ -242,9 +241,9 @@ void Cedai::fpsHandle() {
 
 #		ifdef PRINT_FPS
 		CD_TRACE("fps = {}", fps);
+#		endif
 #		ifdef DEBUG
 		interface.showFPS(fps);
-#		endif
 #		endif
 
 		fpsSum += fps;

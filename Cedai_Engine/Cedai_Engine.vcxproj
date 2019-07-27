@@ -119,7 +119,6 @@
     <ClCompile Include="src\Interface.cpp" />
     <ClCompile Include="src\PrimitiveProcessor.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
-    <ClCompile Include="src\model\AnimatedModel.cpp" />
     <ClCompile Include="src\model\Model_Loader.cpp" />
     <ClCompile Include="src\tools\Log.cpp" />
   </ItemGroup>

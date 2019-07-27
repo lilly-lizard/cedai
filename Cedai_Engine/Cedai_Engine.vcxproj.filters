@@ -86,9 +86,6 @@
     <ClCompile Include="src\Renderer.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\model\AnimatedModel.cpp">
-      <Filter>src\model</Filter>
-    </ClCompile>
     <ClCompile Include="src\model\Model_Loader.cpp">
       <Filter>src\model</Filter>
     </ClCompile>

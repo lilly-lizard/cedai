@@ -15,6 +15,9 @@
 #define KERNEL_PATH "src/kernels/kernel.cl"
 #define KERNEL_ENTRY "render"
 
+#include <chrono>
+using namespace std::chrono;
+
 // PUBLIC FUNCTIONS
 
 void Renderer::init(int image_width, int image_height, Interface* interface, PrimitiveProcessor* vertexProcessor,
@@ -54,9 +57,13 @@ void Renderer::renderQueue(const float view[4][4], float seconds) {
 	kernel.setArg(1, cl_pos);
 	kernel.setArg(2, cl_time);
 
+	time_point<high_resolution_clock> debug = high_resolution_clock::now();
+
 	queue.enqueueAcquireGLObjects(&gl_objects);
 	queue.enqueueNDRangeKernel(kernel, NULL, global_work, local_work);
 	queue.enqueueReleaseGLObjects(&gl_objects);
+
+	CD_WARN("{}", duration<double, seconds::period>(high_resolution_clock::now() - debug).count());
 }
 
 void Renderer::renderBarrier() {
@@ -143,7 +150,7 @@ void Renderer::createContext(Interface* interface) {
 
 void Renderer::createQueue() {
 	cl_int res;
-	queue = cl::CommandQueue(context, device, 0, &res);
+	queue = cl::CommandQueue(context, device, 0, &res); // CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
 	checkCLError(res, "Failed openCL queue creation");
 }
 
