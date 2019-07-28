@@ -2,8 +2,8 @@
 #include "Interface.hpp"
 #include "tools/Log.hpp"
 
-#define VERT_PATH "src/shaders/primitive.vert"
-#define FRAG_PATH "src/shaders/primitive.frag"
+#define VERT_PATH "shaders/primitive.vert"
+#define FRAG_PATH "shaders/primitive.frag"
 
 // PUBLIC FUNCTIONS
 
@@ -64,10 +64,10 @@ void PrimitiveProcessor::createRasteriseTarget() {
 
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, 1, 1);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, renderbuffer);
-	
+
 	GLenum drawBuffers[] = { GL_NONE };
 	glDrawBuffers(1, drawBuffers);
-	
+
 	GLenum result = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if (result != GL_FRAMEBUFFER_COMPLETE) {
 		CD_ERROR("primitive pipeline framebuffer create error: {}", result);

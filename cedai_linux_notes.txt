@@ -1,0 +1,16 @@
+- Cedai Linux running notes -
+
+ubuntu:
+https://github.com/intel/compute-runtime/releases
+icd loader
+https://github.com/khronosgroup/opencl-icd-loader
+ubuntu opencl install
+https://software.intel.com/en-us/articles/opencl-drivers#proc-graph-section
+
+installation debugging:
+https://github.com/bashbaug/OpenCLPapers/blob/markdown/OpenCLOnLinux.md
+
+sudo apt install clinfo
+
+opengl version
+https://askubuntu.com/questions/1065852/how-to-upgrade-intel-graphics-driver

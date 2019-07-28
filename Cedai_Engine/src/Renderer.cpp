@@ -2,19 +2,21 @@
 #include "Interface.hpp"
 #include "PrimitiveProcessor.hpp"
 #include "tools/Log.hpp"
-#include "tools/config.hpp"
+#include "tools/Config.hpp"
 
-// TODO only for windows
 #ifdef CD_PLATFORM_WINDOWS
 #define GLFW_EXPOSE_NATIVE_WGL
-#include "GLFW/glfw3native.h"
 #endif
+#ifdef CD_PLATFORM_LINUX
+#define GLFW_EXPOSE_NATIVE_GLX
+#endif
+#include "GLFW/glfw3native.h"
 
 #include <iostream>
 #include <fstream>
 #include <CL/cl_gl.h>
 
-#define KERNEL_PATH "src/kernels/kernel.cl"
+#define KERNEL_PATH "kernels/kernel.cl"
 #define KERNEL_ENTRY "render"
 
 // PUBLIC FUNCTIONS
@@ -139,14 +141,14 @@ void Renderer::createContext(Interface* interface) {
 		CL_GL_CONTEXT_KHR,   (cl_context_properties)glfwGetWGLContext(interface->getWindow()),	// WGL Context
 		CL_WGL_HDC_KHR,      (cl_context_properties)glfwGetWGLDC(interface->getWindow()),		// WGL HDC
 		0 };
+
+	cl_int result;
+	context = cl::Context(device, contextProps, NULL, NULL, &result);
+	checkCLError(result, "Error during context creation");
 #	else
 	CD_ERROR("Unsupported platform: only windows is supported at this time.");
 	throw std::runtime_error("platform error");
 #	endif // CD_PLATFORM_WINDOWS
-	
-	cl_int result;
-	context = cl::Context(device, contextProps, NULL, NULL, &result);
-	checkCLError(result, "Error during context creation");
 }
 
 void Renderer::createQueue() {
