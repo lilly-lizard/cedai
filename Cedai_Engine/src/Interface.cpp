@@ -21,9 +21,13 @@ void Interface::init(int screen_width, int screen_height) {
 	glfwInit(); // initalizes the glfw library
 
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	window = glfwCreateWindow(screen_width, screen_height, WINDOW_TITLE, nullptr, nullptr); // make a window
 	if (!window) {
-		CD_ERROR("glfw window creation failed!");
+		const char *message;
+		int error = glfwGetError(&message);
+		CD_ERROR("glfw window creation failed! error: {} {}", error, message);
 		throw std::runtime_error("glfw window creation failed");
 	}
 	glfwSetWindowPos(window, 300, 100);
@@ -43,7 +47,7 @@ void Interface::init(int screen_width, int screen_height) {
 	if (majorVersion < 4 && minorVersion < 3) {
 		CD_ERROR("openGL version number less than 4.3");
 		CD_ERROR("4.3 functionality is required for this program to run"); // i.e. shader storage buffer object (used for ogl <--> ocl data transfer)
-		//throw std::runtime_error("openGL version");
+		throw std::runtime_error("openGL version");
 	}
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // disable mouse cursor
