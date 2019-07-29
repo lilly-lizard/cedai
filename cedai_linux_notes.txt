@@ -14,3 +14,7 @@ sudo apt install clinfo
 
 opengl version
 https://askubuntu.com/questions/1065852/how-to-upgrade-intel-graphics-driver
+https://stackoverflow.com/questions/47151394/how-to-tell-which-version-of-opengl-my-graphics-card-supports-on-linux
+
+impilementations:
+https://www.iwocl.org/resources/opencl-implementations/
