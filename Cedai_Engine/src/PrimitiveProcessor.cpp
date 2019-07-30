@@ -105,7 +105,7 @@ void PrimitiveProcessor::setProgramIO(std::vector<cd::Vertex> &vertices) {
 }
 
 void PrimitiveProcessor::setVertexAttributes() {
-	std::array<int, 3> offsets = cd::Vertex::getOffsets();
+	std::array<size_t, 3> offsets = cd::Vertex::getOffsets();
 	size_t stride = sizeof(glm::vec4) + sizeof(glm::ivec4) + sizeof(glm::vec4);
 
 	// position

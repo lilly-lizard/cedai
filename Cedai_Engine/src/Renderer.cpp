@@ -61,7 +61,7 @@ void Renderer::renderQueue(const float view[4][4], float seconds) {
 	kernel.setArg(2, cl_time);
 
 	queue.enqueueAcquireGLObjects(&gl_objects);
-	queue.enqueueNDRangeKernel(kernel, NULL, global_work, local_work);
+	queue.enqueueNDRangeKernel(kernel, 0, global_work, local_work);
 }
 
 void Renderer::renderBarrier() {
@@ -80,13 +80,17 @@ void Renderer::createPlatform() {
 	// Get all available OpenCL platforms (e.g. AMD OpenCL, Nvidia CUDA, Intel OpenCL)
 	std::vector<cl::Platform> platforms;
 	cl::Platform::get(&platforms);
-	std::cout << "~ " << platforms.size() << "Available OpenCL platform(s) : \n~ \n";
+	if (platforms.size() < 1) {
+		CD_ERROR("Renderer init error: no opencl implementation found");
+		throw std::runtime_error("no opencl platform");
+	}
+	std::cout << "~ " << platforms.size() << " available OpenCL platforms: \n~ \n";
 	for (int i = 0; i < platforms.size(); i++)
 		std::cout << "~ \t" << i + 1 << ": " << platforms[i].getInfo<CL_PLATFORM_NAME>() << std::endl;
 
 	// Pick one platform
 	pickPlatform(platform, platforms);
-	std::cout << "~ \n~ OpenCL using platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
+	std::cout << "~ \n~ using OpenCL platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
 }
 
 void Renderer::createDevive() {
@@ -95,7 +99,7 @@ void Renderer::createDevive() {
 	std::vector<cl::Device> devices;
 	platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
 
-	std::cout << "~ \n~ Available OpenCL devices on this platform: " << "\n~ \n";
+	std::cout << "~ \n~ " << devices.size() << " available OpenCL devices on this platform: " << "\n~ \n";
 	for (int i = 0; i < devices.size(); i++) {
 		std::cout << "~ \t" << i + 1 << ": " << devices[i].getInfo<CL_DEVICE_NAME>() << std::endl;
 		std::cout << "~ \t\tMax compute units: " << devices[i].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
@@ -123,6 +127,7 @@ void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& dev
 		bool halfFloat = extensions.find("cl_khr_fp16") != std::string::npos;
 		std::string devName = dev.getInfo<CL_DEVICE_NAME>();
 		CD_TRACE("cl device {}: is GPU = {}; gl sharing = {}; half float support = {}", devName, isGPU, glSharing, halfFloat);
+		std::cout << extensions << std::endl;
 
 		if (isGPU && glSharing && halfFloat) {
 			// CL_DEVICE_TYPE_GPU 16 x 16 x 1 = 256
@@ -132,7 +137,8 @@ void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& dev
 		}
 	}
 
-	throw std::runtime_error("no suitable opencl device found");
+	CD_ERROE("Renderer init error: no suitable opencl device found");
+	throw std::runtime_error("no suitable opencl device");
 }
 
 void Renderer::createContext(Interface* interface) {
@@ -151,7 +157,7 @@ void Renderer::createContext(Interface* interface) {
 #	ifdef CD_PLATFORM_LINUX
 	cl_context_properties contextProps[] = {
 		CL_GL_CONTEXT_KHR,   (cl_context_properties)glfwGetGLXContext(interface->getWindow()),	// GLX Context
-		CL_GLX_DISPLAY_KHR,  (cl_context_properties)glfwGetX11Display(),	// GLX Display
+		CL_GLX_DISPLAY_KHR,  (cl_context_properties)glfwGetX11Display(),						// GLX Display
 		CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
 		0 };
 

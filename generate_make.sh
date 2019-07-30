@@ -1,4 +1,5 @@
-vendor/premake/premake5 gmake2 --cc=clang
+vendor/premake/premake5 gmake2
+# --cc=clang
 make help
 
 echo run:

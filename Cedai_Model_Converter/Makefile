@@ -18,15 +18,7 @@ endif
 # Configurations
 # #############################################
 
-ifeq ($(origin CC), default)
-  CC = clang
-endif
-ifeq ($(origin CXX), default)
-  CXX = clang++
-endif
-ifeq ($(origin AR), default)
-  AR = ar
-endif
+RESCOMP = windres
 INCLUDES += -I../Cedai_Engine/src -I../vendor/glm -I"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/include"
 FORCE_INCLUDE +=
 ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
@@ -59,7 +51,7 @@ OBJDIR = bin-int/release-linux-x86_64
 DEFINES += -DFBXSDK_SHARED -DNDEBUG
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O2
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -std=c++17
-ALL_LDFLAGS += $(LDFLAGS) -L"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/release" -L/usr/lib64 -m64
+ALL_LDFLAGS += $(LDFLAGS) -L"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/release" -L/usr/lib64 -m64 -s
 define POSTBUILDCMDS
 	@echo Running postbuild commands
 	cp -rf "C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/release/libfbxsdk.dll" bin/release-linux-x86_64

@@ -18,22 +18,13 @@ endif
 # Configurations
 # #############################################
 
-ifeq ($(origin CC), default)
-  CC = clang
-endif
-ifeq ($(origin CXX), default)
-  CXX = clang++
-endif
-ifeq ($(origin AR), default)
-  AR = ar
-endif
+RESCOMP = windres
 INCLUDES += -Isrc -I../vendor/OpenCL-Headers -I../vendor/glm -I../vendor/glfw_custom/include -I../vendor/gl3w/include -I../vendor/spdlog/include
 FORCE_INCLUDE +=
 ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
 ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
 LIBS += -lglfw3 -ldl -lX11 -lpthread -lOpenCL
 LDDEPS +=
-ALL_LDFLAGS += $(LDFLAGS) -L../vendor/glfw_custom/lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib64 -m64
 LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
 define PREBUILDCMDS
 endef
@@ -49,6 +40,7 @@ OBJDIR = bin-int/debug-linux-x86_64
 DEFINES += -DCD_PLATFORM_LINUX -DDEBUG
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -g
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -g -std=c++17
+ALL_LDFLAGS += $(LDFLAGS) -L../vendor/glfw_custom/lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib64 -m64
 
 else ifeq ($(config),release)
 TARGETDIR = bin/release-linux-x86_64
@@ -57,6 +49,7 @@ OBJDIR = bin-int/release-linux-x86_64
 DEFINES += -DCD_PLATFORM_LINUX -DNDEBUG
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O2
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -std=c++17
+ALL_LDFLAGS += $(LDFLAGS) -L../vendor/glfw_custom/lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib64 -m64 -s
 
 else
   $(error "invalid configuration $(config)")
