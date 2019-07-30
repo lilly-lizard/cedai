@@ -1,6 +1,6 @@
 #pragma once
 
-#define RESOLUTION 1
+#define HALF_RESOLUTION
 #define MAX_BONES 50
 #define PRINT_FPS
 #define WINDOW_TITLE "Cedai"

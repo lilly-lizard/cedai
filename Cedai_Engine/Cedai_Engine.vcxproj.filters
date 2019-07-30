@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="kernels">
+      <UniqueIdentifier>{B9003D24-25E0-BBBF-2EF8-46969A562221}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{0F45D591-7B24-542D-843C-DF03F09ABA8E}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src">
       <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\kernels">
-      <UniqueIdentifier>{D000772D-3CB6-EF22-C5AA-E9F9315FE626}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\model">
       <UniqueIdentifier>{4D12AFB5-B97C-632C-02BB-14D26E644181}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\shaders">
-      <UniqueIdentifier>{26450F9B-92FA-8790-1BEF-816787A37E94}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\tools">
       <UniqueIdentifier>{8DED2DB6-F957-E22C-4296-93D2AE3FC081}</UniqueIdentifier>
@@ -94,20 +94,20 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\kernels\kernel.cl">
-      <Filter>src\kernels</Filter>
+    <None Include="kernels\kernel.cl">
+      <Filter>kernels</Filter>
     </None>
-    <None Include="src\shaders\draw.frag">
-      <Filter>src\shaders</Filter>
+    <None Include="shaders\draw.frag">
+      <Filter>shaders</Filter>
     </None>
-    <None Include="src\shaders\draw.vert">
-      <Filter>src\shaders</Filter>
+    <None Include="shaders\draw.vert">
+      <Filter>shaders</Filter>
     </None>
-    <None Include="src\shaders\primitive.frag">
-      <Filter>src\shaders</Filter>
+    <None Include="shaders\primitive.frag">
+      <Filter>shaders</Filter>
     </None>
-    <None Include="src\shaders\primitive.vert">
-      <Filter>src\shaders</Filter>
+    <None Include="shaders\primitive.vert">
+      <Filter>shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

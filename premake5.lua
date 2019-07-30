@@ -20,14 +20,14 @@ project "Cedai_Engine" -- game engine
 	objdir (engine_name .. "/bin-int/" .. outputdir)	-- intermediate files
 
 	files {
-		engine_name .. "/src/**.hpp",	-- headers
-		engine_name .. "/src/**.h",		-- headers
-		engine_name .. "/src/**.cpp",	-- source files
-		engine_name .. "/src/**.cl",	-- opencl kernels
-		engine_name .. "/src/**.vert",	-- vert shaders
-		engine_name .. "/src/**.frag",	-- frag shaders
-		"vendor/gl3w/include/**.c",		-- gl3w.c
-		"vendor/gl3w/include/GL/**.h"	-- gl3w.h and glcorearb.h
+		engine_name .. "/src/**.hpp",		-- headers
+		engine_name .. "/src/**.h",			-- headers
+		engine_name .. "/src/**.cpp",		-- source files
+		engine_name .. "/kernels/**.cl",	-- opencl kernels
+		engine_name .. "/shaders/**.vert",	-- vert shaders
+		engine_name .. "/shaders/**.frag",	-- frag shaders
+		"vendor/gl3w/include/**.c",			-- gl3w.c
+		"vendor/gl3w/include/GL/**.h"		-- gl3w.h and glcorearb.h
 	}
 
 	includedirs {

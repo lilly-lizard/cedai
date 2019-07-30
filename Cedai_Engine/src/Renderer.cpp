@@ -127,8 +127,7 @@ void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& dev
 		bool halfFloat = extensions.find("cl_khr_fp16") != std::string::npos;
 		std::string devName = dev.getInfo<CL_DEVICE_NAME>();
 		CD_TRACE("cl device {}: is GPU = {}; gl sharing = {}; half float support = {}", devName, isGPU, glSharing, halfFloat);
-		std::cout << extensions << std::endl;
-
+		
 		if (isGPU && glSharing && halfFloat) {
 			// CL_DEVICE_TYPE_GPU 16 x 16 x 1 = 256
 			// CL_DEVICE_TYPE_CPU 128 x 60 x 1 < 8192
@@ -137,7 +136,7 @@ void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& dev
 		}
 	}
 
-	CD_ERROE("Renderer init error: no suitable opencl device found");
+	CD_ERROR("Renderer init error: no suitable opencl device found");
 	throw std::runtime_error("no suitable opencl device");
 }
 
@@ -267,7 +266,11 @@ void Renderer::setWorkGroups() {
 	int x = 16;
 	int y = 16;
 
-	global_work = cl::NDRange(image_width / RESOLUTION, image_height / RESOLUTION);
+#	ifdef HALF_RESOLUTION
+	global_work = cl::NDRange(image_width / 2, image_height / 2);
+#	else
+	global_work = cl::NDRange(image_width, image_height);
+#	endif
 	local_work = cl::NDRange(x, y);
 }
 

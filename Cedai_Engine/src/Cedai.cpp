@@ -46,9 +46,9 @@ void Cedai::init() {
 	CD_INFO("Logger initialised");
 
 #	ifndef CD_PLATFORM_WINDOWS
-#	ifndef CD_PLATFORM_LINUX
 	CD_ERROR("Unsupported platform: only windows and linux are supported at this time.");
 	throw std::runtime_error("platform error");
+#	ifndef CD_PLATFORM_LINUX
 #	endif // CD_PLATFORM_LINUX
 #	endif // CD_PLATFORM_WINDOWS
 
@@ -83,8 +83,7 @@ void Cedai::loop() {
 
 		// game logic
 		processInputs();
-		if (inputs & CD_INPUTS::INTERACTL)
-			updateAnimation(time);
+		updateAnimation(time);
 		fpsHandle();
 
 		renderer.renderBarrier();
