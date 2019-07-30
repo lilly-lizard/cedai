@@ -1,0 +1,38 @@
+- Cedai Linux running notes -
+
+ubuntu:
+https://github.com/intel/compute-runtime/releases
+icd loader
+https://github.com/khronosgroup/opencl-icd-loader
+ubuntu opencl install
+https://software.intel.com/en-us/articles/opencl-drivers#proc-graph-section
+
+installation debugging:
+https://github.com/bashbaug/OpenCLPapers/blob/markdown/OpenCLOnLinux.md
+/etc/OpenCL/vendors
+/usr/lib/x86_64-linux-gnu/libOpenCL.so
+
+sudo apt install clinfo
+sudo apt install glinfo
+
+opengl version
+https://askubuntu.com/questions/1065852/how-to-upgrade-intel-graphics-driver
+https://stackoverflow.com/questions/47151394/how-to-tell-which-version-of-opengl-my-graphics-card-supports-on-linux
+
+impilementations:
+https://www.iwocl.org/resources/opencl-implementations/
+
+clean 19.4 install:
+<GL/gl.h>
+	sudo apt install libgl1-mesa-dev
+<X11/extensions/Xrandr.h>
+	sudo apt install libxrandr-dev
+openCL loader (lib file)
+	sudo apt install ocl-icd-opencl-dev
+openCL implementation (platform)
+	sudo apt install mesa-opencl-icd # Clover - no devices
+	sudo apt install beignet-opencl-icd # Intel Gen OCL Driver - device supports cl_khr_gl_sharing but cl_mem_new_gl_buffer function not implemented
+	sudo apt install intel-opencl-icd # Intel(R) OpenCL HD Graphics - device doesn't have gl extension
+
+conclusion:
+https://github.com/intel/compute-runtime/issues/166

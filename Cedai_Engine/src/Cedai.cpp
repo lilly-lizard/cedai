@@ -1,18 +1,24 @@
-#include "Cedai.h"
-#include "Interface.h"
-#include "tools/Log.h"
-#include "tools/Inputs.h"
+#include "Cedai.hpp"
+#include "Interface.hpp"
+#include "model/Model_Loader.hpp"
+#include "tools/Inputs.hpp"
+#include "tools/Log.hpp"
+#include "model/Model_Loader.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
 #include <iomanip>
+#include <math.h>
+
+//#define PRINT_FPS
 
 using namespace std::chrono;
 
-const int screen_width = 640;
-const int screen_height = 480;
+#define MAIZE_FILE "../assets/maize_v1.bin"
+
+// MAIN FUNCTIONS
 
 int main() {
 	Cedai App;
@@ -39,12 +45,22 @@ void Cedai::init() {
 	Log::Init();
 	CD_INFO("Logger initialised");
 
+#	ifndef CD_PLATFORM_WINDOWS
+	CD_ERROR("Unsupported platform: only windows and linux are supported at this time.");
+	throw std::runtime_error("platform error");
+#	ifndef CD_PLATFORM_LINUX
+#	endif // CD_PLATFORM_LINUX
+#	endif // CD_PLATFORM_WINDOWS
+
 	interface.init(screen_width, screen_height);
 	CD_INFO("Interface initialised.");
 
-	createEntities();
-	CD_WARN("sphere bytes: {}", spheres.size() * sizeof(Sphere));
-	renderer.init(screen_width, screen_height, &interface, spheres, lights);
+	createPrimitives();
+	vertexProcessor.init(&interface, maize.vertices, maize.animation.keyframes[keyFrameIndex].boneTransforms);
+	CD_INFO("Pimitive processing program initialised.");
+
+	renderer.init(screen_width, screen_height, &interface, &vertexProcessor,
+		spheres, lights, cl_polygonColors);
 	CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
@@ -53,66 +69,93 @@ void Cedai::init() {
 
 void Cedai::loop() {
 	bool quit = false;
-	timePrev = high_resolution_clock::now();
+	time_point<high_resolution_clock> timeStart = high_resolution_clock::now();
 
 	while (!quit && !interface.WindowCloseCheck()) {
-		// queue a render operation
-		renderer.queueRender(view);
+		// queue a render operation (opencl pipeline)
+		double time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
+		renderer.renderQueue(view, (float)time);
 
 		// input handling
 		interface.PollEvents();
 		inputs = interface.GetKeyInputs();
 		quit = inputs & CD_INPUTS::ESC;
-		processInputs();
-		printFPS();
 
-		// draw to the window
-		renderer.queueFinish();
-		interface.draw();
+		// game logic
+		processInputs();
+		updateAnimation(time);
+		fpsHandle();
+
+		renderer.renderBarrier();
+		// process vertices and draw to the window (2 opengl pipelines)
+		vertexProcessor.vertexProcess(maize.animation.keyframes[keyFrameIndex].boneTransforms);
+		interface.drawRun();
+		vertexProcessor.vertexBarrier();
+		interface.drawBarrier();
 	}
 }
 
 void Cedai::cleanUp() {
 	CD_INFO("Cleaning up...");
 	CD_INFO("Average fps = {}", fpsSum / fpsCount);
+
 	renderer.cleanUp();
+	vertexProcessor.cleanUp();
 	interface.cleanUp();
+
 	CD_INFO("Finished cleaning.");
 }
 
-void Cedai::createEntities() {
+// INITIALIZATION
 
-	spheres.push_back(Sphere{ 1.0, 0, 0, 0,
-		cl_float3{{ 10, -3, 0 }},
-		cl_uchar3{{ 230, 128, 128 }} });
+void Cedai::createPrimitives() {
 
-	spheres.push_back(Sphere{ 0.5, 0, 0, 0,
-		cl_float3{{ 4, 3, 1 }},
-		cl_uchar3{{ 255, 255, 128 }} });
+	// spheres
 
-	spheres.push_back(Sphere{ 0.2, 0, 0, 0,
-		cl_float3{{ 5, 2, -1 }},
-		cl_uchar3{{ 128, 128, 230 }} });
+	spheres.push_back(cd::Sphere(1.0,
+		cl_float3{ { 10, -3, 0 } },
+		cl_uchar4{ { 200, 128, 254, 255 } }));
 
-	for (int i = 0; i < 10; i++) {
-		for (int j = 0; j < 10; j++) {
-			spheres.push_back(Sphere{ 0.5, 0, 0, 0,
-				cl_float3{{ 10, (float)i * 1.5f - 5, (float)j * 1.5f - 5 }},
-				cl_uchar3{{ 128, 255, 255 }} });
-		}
-	}
+	spheres.push_back(cd::Sphere(0.5,
+		cl_float3{ { 4, 2, 2.5 } },
+		cl_uchar4{ { 128, 255, 180, 255 } }));
 
-	lights.push_back(Sphere{ 0.1, 0, 0, 0,
-		cl_float3{{ 5, 4, 4 }},
-		cl_uchar3{{ 255, 255, 205 }} });
+	spheres.push_back(cd::Sphere(0.2,
+		cl_float3{ { 6, 0, 3 } },
+		cl_uchar4{ { 255, 200, 128, 255 } }));
 
-	lights.push_back(Sphere{ 0.1, 0, 0, 0,
-		cl_float3{{  -1, -6, -4 }},
-		cl_uchar3{{ 255, 255, 205 }} });
+	// lights
+
+	lights.push_back(cd::Sphere(0.1,
+		cl_float3{ { 2, 3, 4 } },
+		cl_uchar4{ { 255, 255, 205, 255 } }));
+
+	lights.push_back(cd::Sphere(0.1,
+		cl_float3{ { -1, -6, -4 } },
+		cl_uchar4{ { 255, 255, 205, 255 } }));
+
+	// animated model
+
+	CD_INFO("loading model(s)...");
+
+	cd::LoadModelv1(MAIZE_FILE, maize);
+	for (int p = 0; p < maize.vertices.size() / 3; p++)
+		cl_polygonColors.push_back(cl_uchar4{ { 200, 200, 200, 255 } });
+
+	if (maize.vertices.size() != cl_polygonColors.size() * 3)
+		CD_WARN("Cedai model init warning: unequal number of vertices for the number of polygons");
+
+	CD_INFO("model(s) loaded.");
+
+	CD_INFO("number of vertices = {}", maize.vertices.size());
+	CD_INFO("number of polygons = {}", cl_polygonColors.size());
 }
+
+// GAME LOGIC
 
 void Cedai::processInputs() {
 	// get time difference
+	static time_point<high_resolution_clock> timePrev = high_resolution_clock::now();
 	double timeDif = duration<double, seconds::period>(high_resolution_clock::now() - timePrev).count();
 	timePrev = high_resolution_clock::now();
 
@@ -122,16 +165,16 @@ void Cedai::processInputs() {
 
 	// LOOK
 
-	float viewAngleHoriz = (double)mouseMovement[0] * radiansPerMousePosHoriz;
+	float viewAngleHoriz = (double)mouseMovement[0] * radiansPerMousePosYaw;
 	viewerForward = glm::rotate(viewerForward, viewAngleHoriz, viewerUp);
 	viewerCross = glm::cross(viewerUp, viewerForward);
 
-	float viewAngleVert = (double)mouseMovement[1] * radiansPerMousePosVert;
+	float viewAngleVert = (double)mouseMovement[1] * radiansPerMousePosPitch;
 	viewerForward = glm::rotate(viewerForward, viewAngleVert, viewerCross);
 	viewerUp = glm::cross(viewerForward, viewerCross);
 
 	if ((bool)(inputs & CD_INPUTS::ROTATEL) != (bool)(inputs & CD_INPUTS::ROTATER)) {
-		float viewAngleFront = radiansPerSecondFront * timeDif * (inputs & CD_INPUTS::ROTATEL ? 1 : -1);
+		float viewAngleFront = radiansPerSecondRoll * timeDif * (inputs & CD_INPUTS::ROTATEL ? 1 : -1);
 		viewerUp = glm::rotate(viewerUp, viewAngleFront, viewerForward);
 		viewerCross = glm::cross(viewerUp, viewerForward);
 	}
@@ -159,6 +202,20 @@ void Cedai::processInputs() {
 	updateView();
 }
 
+void Cedai::updateAnimation(double time) {
+	double relativeTime = fmod(time, maize.animation.duration);
+
+	// figure out which frame we're on
+	for (int f = 0; f < maize.animation.keyframes.size() - 1; f++) {
+		if (maize.animation.keyframes[f].time <= relativeTime && relativeTime < maize.animation.keyframes[f + 1].time) {
+			keyFrameIndex = f;
+			break;
+		}
+	}
+}
+
+// HELPER
+
 void Cedai::updateView() {
 	view[0][0] = viewerForward[0];
 	view[0][1] = viewerForward[1];
@@ -177,13 +234,7 @@ void Cedai::updateView() {
 	view[3][2] = viewerPosition[2];
 }
 
-void Cedai::printViewData() {
-	CD_TRACE("forward:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerForward[0], viewerForward[1], viewerForward[2]);
-	CD_TRACE("cross:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerCross[0], viewerCross[1], viewerCross[2]);
-	CD_TRACE("up:		{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerUp[0], viewerUp[1], viewerUp[2]);
-}
-
-void Cedai::printFPS() {
+void Cedai::fpsHandle() {
 	static int fps = 0;
 	static time_point<system_clock> prevTime = system_clock::now();
 
@@ -191,10 +242,23 @@ void Cedai::printFPS() {
 	duration<double> elapsedTime;
 	elapsedTime = system_clock::now() - prevTime;
 	if (elapsedTime.count() > 1) {
+
+#		ifdef PRINT_FPS
 		CD_TRACE("fps = {}", fps);
+#		endif
+#		ifdef DEBUG
+		interface.showFPS(fps);
+#		endif
+
 		fpsSum += fps;
 		fpsCount++;
 		prevTime = system_clock::now();
 		fps = 0;
 	}
+}
+
+void Cedai::printViewData() {
+	CD_TRACE("forward:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerForward[0], viewerForward[1], viewerForward[2]);
+	CD_TRACE("cross:	{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerCross[0], viewerCross[1], viewerCross[2]);
+	CD_TRACE("up:		{:+>9.6f} {:+>9.6f} {:+>9.6f}", viewerUp[0], viewerUp[1], viewerUp[2]);
 }

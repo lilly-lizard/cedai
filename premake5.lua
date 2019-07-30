@@ -1,67 +1,135 @@
 workspace "Cedai"
 	architecture "x64" -- no 32 bit support
 
-	configurations
-	{
-		"Debug",
-		"Release"
+	configurations {
+		"debug",
+		"release"
 	}
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+fbxdir = "C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/"
+
+engine_name = "Cedai_Engine"
 
 project "Cedai_Engine" -- game engine
 	location "Cedai_Engine"
 	kind "ConsoleApp"
 	language "C++"
 
-	targetdir ("Cedai_Engine/bin/" .. outputdir)	-- binaries
-	objdir ("Cedai_Engine/bin-int/" .. outputdir)	-- intermediate files
+	targetdir (engine_name .. "/bin/" .. outputdir)	-- binaries
+	objdir (engine_name .. "/bin-int/" .. outputdir)	-- intermediate files
 
-	files
-	{
-		"Cedai_Engine/src/**.h",		-- all headers
-		"Cedai_Engine/src/**.cpp",		-- all source files
-		"Cedai_Engine/src/**.cl",		-- all opencl files
-		"vendor/gl3w/include/**.c",		-- gl3w.c
-		"vendor/gl3w/include/GL/**.h"	-- gl3w.h and glcorearb.h
+	files {
+		engine_name .. "/src/**.hpp",		-- headers
+		engine_name .. "/src/**.h",			-- headers
+		engine_name .. "/src/**.cpp",		-- source files
+		engine_name .. "/kernels/**.cl",	-- opencl kernels
+		engine_name .. "/shaders/**.vert",	-- vert shaders
+		engine_name .. "/shaders/**.frag",	-- frag shaders
+		"vendor/gl3w/include/**.c",			-- gl3w.c
+		"vendor/gl3w/include/GL/**.h"		-- gl3w.h and glcorearb.h
 	}
 
-	includedirs
-	{
-		"Cedai_Engine/src",
-		"$(INTELOCLSDKROOT)/include",	-- opencl
+	includedirs {
+		engine_name .. "/src",
+		"vendor/OpenCL-Headers",		-- opencl
 		"vendor/glm",					-- glm
-		"vendor/glfw/include",			-- glfw
+		"vendor/glfw_custom/include",	-- glfw
 		"vendor/gl3w/include",			-- gl3w
 		"vendor/spdlog/include"			-- spdlog
 	}
 
-	libdirs
-	{
-		"$(INTELOCLSDKROOT)/lib/x64",	-- opencl
-		"vendor/glfw/lib-vc2017"		-- glfw
+	filter "system:windows"
+		cppdialect "C++17"
+		systemversion "latest"
+
+		defines { "CD_PLATFORM_WINDOWS" }
+
+		libdirs {
+			"vendor/glfw_custom/lib",		-- glfw
+			"$(INTELOCLSDKROOT)/lib/x64"	-- opencl
+		}
+
+		links {
+			"glfw3.lib",
+			"OpenCL.lib"
+		}
+
+	filter "system:linux"
+		cppdialect "C++17"
+
+		defines { "CD_PLATFORM_LINUX" }
+
+		libdirs {
+			"vendor/glfw_custom/lib",
+			"/usr/lib/x86_64-linux-gnu/"
+		}
+
+		links {
+			"glfw3",
+			"dl",
+			"X11",
+			"pthread",
+			"OpenCL"
+		}
+
+	filter "configurations:debug"
+		defines "DEBUG"
+		symbols "On"
+
+	filter "configurations:release"
+		defines "NDEBUG"
+		optimize "On"
+
+converter_name = "Cedai_Model_Converter"
+
+project "Cedai_Model_Converter" -- model converter
+	location "Cedai_Model_Converter"
+	kind "ConsoleApp"
+	language "C++"
+
+	targetdir (converter_name .. "/bin/" .. outputdir)	-- binaries
+	objdir (converter_name .. "/bin-int/" .. outputdir)	-- intermediate files
+
+	files {
+		converter_name .. "/src/**.hpp",	-- headers
+		converter_name .. "/src/**.h",		-- headers
+		converter_name .. "/src/**.cpp"		-- source files
 	}
 
-	links
-	{
-		"OpenCL.lib",
-		"glfw3.lib"
+	includedirs {
+		engine_name .. "/src",
+		"vendor/glm", -- glm
+		"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/include" -- fbx sdk
+	}
+
+	libdirs {
+		"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/%{cfg.buildcfg}"
+ 	}
+
+	links { "libfbxsdk.lib" }
+
+	defines { "FBXSDK_SHARED" }
+
+	postbuildcommands {
+		'{COPY} "C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/%{cfg.buildcfg}/libfbxsdk.dll" %{cfg.buildtarget.directory}'
 	}
 
 	filter "system:windows"
 		cppdialect "C++17" -- note we may need specific compile flag for other systems
 		systemversion "latest"
 
-		defines
-		{
-			"CD_PLATFORM_WINDOWS"
-		}
+	filter "system:linux"
+		cppdialect "C++17"
 
-	filter "configurations:Debug"
-		-- TODO: https://stackoverflow.com/questions/4604283/automatic-defines-according-to-debug-release-config-in-visual-studio
-		defines "CD_DEBUG"
+	filter "configurations:debug"
+		defines "DEBUG"
 		symbols "On"
 
-	filter "configurations:Release"
-		defines "CD_RELEASE"
+	filter "configurations:release"
+		defines "NDEBUG"
 		optimize "On"
+
+
+-- NOTES:
+-- linux linking: https://stackoverflow.com/questions/16710047/usr-bin-ld-cannot-find-lnameofthelibrary

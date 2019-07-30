@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="kernels">
+      <UniqueIdentifier>{B9003D24-25E0-BBBF-2EF8-46969A562221}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{0F45D591-7B24-542D-843C-DF03F09ABA8E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\model">
+      <UniqueIdentifier>{4D12AFB5-B97C-632C-02BB-14D26E644181}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\tools">
+      <UniqueIdentifier>{8DED2DB6-F957-E22C-4296-93D2AE3FC081}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vendor">
+      <UniqueIdentifier>{B3738122-9F15-ACF8-88D0-BF4C74113349}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vendor\gl3w">
+      <UniqueIdentifier>{BF8879C1-2B3E-F2B6-B432-EC8D20E7E8BA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vendor\gl3w\include">
+      <UniqueIdentifier>{32FFE629-9E60-C437-27CE-0AEA932EFBF6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vendor\gl3w\include\GL">
+      <UniqueIdentifier>{54DB1634-40D5-3F86-2942-D69615DBA5F2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\vendor\gl3w\include\GL\gl3w.h">
+      <Filter>vendor\gl3w\include\GL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vendor\gl3w\include\GL\glcorearb.h">
+      <Filter>vendor\gl3w\include\GL</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Cedai.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Interface.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PrimitiveProcessor.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Renderer.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\AnimatedModel.hpp">
+      <Filter>src\model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Model_Loader.hpp">
+      <Filter>src\model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Sphere.hpp">
+      <Filter>src\model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Vertex.hpp">
+      <Filter>src\model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tools\Config.hpp">
+      <Filter>src\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tools\Inputs.hpp">
+      <Filter>src\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tools\Log.hpp">
+      <Filter>src\tools</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\vendor\gl3w\include\gl3w.c">
+      <Filter>vendor\gl3w\include</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Cedai.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Interface.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PrimitiveProcessor.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Renderer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Model_Loader.cpp">
+      <Filter>src\model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tools\Log.cpp">
+      <Filter>src\tools</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="kernels\kernel.cl">
+      <Filter>kernels</Filter>
+    </None>
+    <None Include="shaders\draw.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\draw.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\primitive.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\primitive.vert">
+      <Filter>shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
