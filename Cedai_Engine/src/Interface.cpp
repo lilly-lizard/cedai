@@ -2,14 +2,13 @@
 
 #include "Interface.hpp"
 #include "tools/Log.hpp"
+#include "tools/Config.hpp"
 
 #include <iostream>
 #include <fstream>
 
 #define VERT_PATH "src/shaders/draw.vert"
 #define FRAG_PATH "src/shaders/draw.frag"
-
-#define WINDOW_TITLE "Cedai"
 
 // PUBLIC FUNCTIONS
 

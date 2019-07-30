@@ -67,7 +67,7 @@ void Renderer::renderBarrier() {
 }
 
 void Renderer::cleanUp() {
-	// TODO cleaning?
+	
 }
 
 // INIT FUNCTIONS
@@ -201,7 +201,6 @@ void Renderer::createKernels() {
 	kernel.setArg(5, polygon_count);
 
 	kernel.setArg(6, cl_spheres);
-	//kernel.setArg(7, cl_vertices);
 	kernel.setArg(7, cl_gl_vertices);
 	kernel.setArg(8, cl_polygons);
 

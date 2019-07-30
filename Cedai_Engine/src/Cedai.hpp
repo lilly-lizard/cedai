@@ -11,12 +11,12 @@ the number of polygons rendered depends on the number of polygon colors passed t
 #include "PrimitiveProcessor.hpp"
 #include "model/Sphere.hpp"
 #include "model/AnimatedModel.hpp"
+#include "tools/Config.hpp"
 
 #include <glm/glm.hpp>
 #include <CL/cl.h>
 #include <chrono>
 #include <vector>
-#define CD_PI 3.14159
 
 class Cedai {
 public:

@@ -16,14 +16,7 @@
 
 using namespace std::chrono;
 
-#define PRINT_FPS
-
 #define MAIZE_FILE "../assets/maize_v1.bin"
-
-const int screen_width = 960;
-const int screen_height = 640;
-// 640 x 480
-// 960 x 640
 
 // MAIN FUNCTIONS
 
@@ -83,7 +76,8 @@ void Cedai::loop() {
 
 		// game logic
 		processInputs();
-		updateAnimation(time);
+		if (inputs & CD_INPUTS::INTERACTL)
+			updateAnimation(time);
 		fpsHandle();
 
 		renderer.renderBarrier();

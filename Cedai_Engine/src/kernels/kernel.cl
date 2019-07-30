@@ -14,8 +14,8 @@ typedef struct
 
 #define PI 3.14159265359f
 
-#define HALF_RESOLUTION
-#define DITHER
+//#define HALF_RESOLUTION
+//#define DITHER
 
 #define DROP_OFF 1000
 

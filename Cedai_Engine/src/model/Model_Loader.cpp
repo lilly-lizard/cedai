@@ -5,8 +5,6 @@
 #include <iostream>
 #include <fstream>
 
-// READ CEDAI BINARY
-
 bool fileExists(const std::string& filePath) {
 	struct stat buffer;
 	return (stat(filePath.c_str(), &buffer) == 0);
