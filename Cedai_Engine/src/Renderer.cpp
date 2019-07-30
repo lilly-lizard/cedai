@@ -2,19 +2,22 @@
 #include "Interface.hpp"
 #include "PrimitiveProcessor.hpp"
 #include "tools/Log.hpp"
-#include "tools/config.hpp"
+#include "tools/Config.hpp"
 
-// TODO only for windows
 #ifdef CD_PLATFORM_WINDOWS
-#define GLFW_EXPOSE_NATIVE_WGL
-#include "GLFW/glfw3native.h"
+#	define GLFW_EXPOSE_NATIVE_WGL
 #endif
+#ifdef CD_PLATFORM_LINUX
+#	define GLFW_EXPOSE_NATIVE_GLX
+#	define GLFW_EXPOSE_NATIVE_X11
+#endif
+#include "GLFW/glfw3native.h"
 
 #include <iostream>
 #include <fstream>
 #include <CL/cl_gl.h>
 
-#define KERNEL_PATH "src/kernels/kernel.cl"
+#define KERNEL_PATH "kernels/kernel.cl"
 #define KERNEL_ENTRY "render"
 
 // PUBLIC FUNCTIONS
@@ -58,7 +61,7 @@ void Renderer::renderQueue(const float view[4][4], float seconds) {
 	kernel.setArg(2, cl_time);
 
 	queue.enqueueAcquireGLObjects(&gl_objects);
-	queue.enqueueNDRangeKernel(kernel, NULL, global_work, local_work);
+	queue.enqueueNDRangeKernel(kernel, 0, global_work, local_work);
 }
 
 void Renderer::renderBarrier() {
@@ -77,13 +80,17 @@ void Renderer::createPlatform() {
 	// Get all available OpenCL platforms (e.g. AMD OpenCL, Nvidia CUDA, Intel OpenCL)
 	std::vector<cl::Platform> platforms;
 	cl::Platform::get(&platforms);
-	std::cout << "~ Available OpenCL platforms : \n~ \n";
+	if (platforms.size() < 1) {
+		CD_ERROR("Renderer init error: no opencl implementation found");
+		throw std::runtime_error("no opencl platform");
+	}
+	std::cout << "~ " << platforms.size() << " available OpenCL platforms: \n~ \n";
 	for (int i = 0; i < platforms.size(); i++)
 		std::cout << "~ \t" << i + 1 << ": " << platforms[i].getInfo<CL_PLATFORM_NAME>() << std::endl;
 
 	// Pick one platform
 	pickPlatform(platform, platforms);
-	std::cout << "~ \n~ OpenCL using platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
+	std::cout << "~ \n~ using OpenCL platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
 }
 
 void Renderer::createDevive() {
@@ -92,7 +99,7 @@ void Renderer::createDevive() {
 	std::vector<cl::Device> devices;
 	platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
 
-	std::cout << "~ \n~ Available OpenCL devices on this platform: " << "\n~ \n";
+	std::cout << "~ \n~ " << devices.size() << " available OpenCL devices on this platform: " << "\n~ \n";
 	for (int i = 0; i < devices.size(); i++) {
 		std::cout << "~ \t" << i + 1 << ": " << devices[i].getInfo<CL_DEVICE_NAME>() << std::endl;
 		std::cout << "~ \t\tMax compute units: " << devices[i].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
@@ -113,40 +120,56 @@ void Renderer::pickPlatform(cl::Platform& platform, const std::vector<cl::Platfo
 }
 
 void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& devices) {
+	for (cl::Device dev : devices) {
+		std::string extensions = dev.getInfo<CL_DEVICE_EXTENSIONS>();
+		bool isGPU = dev.getInfo< CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU;
+		bool glSharing = extensions.find("cl_khr_gl_sharing") != std::string::npos;
+		bool halfFloat = extensions.find("cl_khr_fp16") != std::string::npos;
+		std::string devName = dev.getInfo<CL_DEVICE_NAME>();
+		CD_TRACE("cl device {}: is GPU = {}; gl sharing = {}; half float support = {}", devName, isGPU, glSharing, halfFloat);
+		std::cout << extensions << std::endl;
 
-	if (devices.size() == 1) device = devices[0];
-	else {
-		for (cl::Device dev : devices) {
-			std::string extensions = dev.getInfo<CL_DEVICE_EXTENSIONS>();
-			if (dev.getInfo< CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU &&
-					extensions.find("cl_khr_gl_sharing") != std::string::npos &&
-					extensions.find("cl_khr_fp16") != std::string::npos) {
-				// CL_DEVICE_TYPE_GPU 16 x 16 x 1 = 256
-				// CL_DEVICE_TYPE_CPU 128 x 60 x 1 < 8192
-				device = dev;
-				return;
-			}
+		if (isGPU && glSharing && halfFloat) {
+			// CL_DEVICE_TYPE_GPU 16 x 16 x 1 = 256
+			// CL_DEVICE_TYPE_CPU 128 x 60 x 1 < 8192
+			device = dev;
+			return;
 		}
-		throw std::runtime_error("error: no suitable device found");
 	}
+
+	CD_ERROE("Renderer init error: no suitable opencl device found");
+	throw std::runtime_error("no suitable opencl device");
 }
 
 void Renderer::createContext(Interface* interface) {
-	// TODO: wgl - windows; glx - mac
 #	ifdef CD_PLATFORM_WINDOWS
 	cl_context_properties contextProps[] = {
 		CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
 		CL_GL_CONTEXT_KHR,   (cl_context_properties)glfwGetWGLContext(interface->getWindow()),	// WGL Context
 		CL_WGL_HDC_KHR,      (cl_context_properties)glfwGetWGLDC(interface->getWindow()),		// WGL HDC
 		0 };
-#	else
-	CD_ERROR("Unsupported platform: only windows is supported at this time.");
-	throw std::runtime_error("platform error");
-#	endif // CD_PLATFORM_WINDOWS
-	
+
 	cl_int result;
 	context = cl::Context(device, contextProps, NULL, NULL, &result);
-	checkCLError(result, "Error during context creation");
+	checkCLError(result, "Error during windows opencl context creation");
+
+#	else
+#	ifdef CD_PLATFORM_LINUX
+	cl_context_properties contextProps[] = {
+		CL_GL_CONTEXT_KHR,   (cl_context_properties)glfwGetGLXContext(interface->getWindow()),	// GLX Context
+		CL_GLX_DISPLAY_KHR,  (cl_context_properties)glfwGetX11Display(),						// GLX Display
+		CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
+		0 };
+
+	cl_int result;
+	context = cl::Context(device, contextProps, NULL, NULL, &result);
+	checkCLError(result, "Error during linux opencl context creation");
+
+#	else
+	CD_ERROR("Unsupported platform: only windows and linux are supported at this time.");
+	throw std::runtime_error("platform error");
+#	endif // CD_PLATFORM_LINUX
+#	endif // CD_PLATFORM_WINDOWS
 }
 
 void Renderer::createQueue() {

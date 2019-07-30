@@ -1,8 +1,7 @@
 workspace "Cedai"
 	architecture "x64" -- no 32 bit support
 
-	configurations
-	{
+	configurations {
 		"debug",
 		"release"
 	}
@@ -33,30 +32,45 @@ project "Cedai_Engine" -- game engine
 
 	includedirs {
 		engine_name .. "/src",
-		"$(INTELOCLSDKROOT)/include",	-- opencl
+		"vendor/OpenCL-Headers",		-- opencl
 		"vendor/glm",					-- glm
-		"vendor/glfw/include",			-- glfw
+		"vendor/glfw_custom/include",	-- glfw
 		"vendor/gl3w/include",			-- gl3w
 		"vendor/spdlog/include"			-- spdlog
 	}
 
-	libdirs {
-		"$(INTELOCLSDKROOT)/lib/x64",	-- opencl
-		"vendor/glfw/lib-vc2017"		-- glfw
-	}
-
-	links {
-		"OpenCL.lib",
-		"glfw3.lib"
-	}
-
 	filter "system:windows"
-		cppdialect "C++17" -- note we may need specific compile flag for other systems
+		cppdialect "C++17"
 		systemversion "latest"
 
-		defines
-		{
-			"CD_PLATFORM_WINDOWS"
+		defines { "CD_PLATFORM_WINDOWS" }
+
+		libdirs {
+			"vendor/glfw_custom/lib",		-- glfw
+			"$(INTELOCLSDKROOT)/lib/x64"	-- opencl
+		}
+
+		links {
+			"glfw3.lib",
+			"OpenCL.lib"
+		}
+
+	filter "system:linux"
+		cppdialect "C++17"
+
+		defines { "CD_PLATFORM_LINUX" }
+
+		libdirs {
+			"vendor/glfw_custom/lib",
+			"/usr/lib/x86_64-linux-gnu/"
+		}
+
+		links {
+			"glfw3",
+			"dl",
+			"X11",
+			"pthread",
+			"OpenCL"
 		}
 
 	filter "configurations:debug"
@@ -76,7 +90,7 @@ project "Cedai_Model_Converter" -- model converter
 
 	targetdir (converter_name .. "/bin/" .. outputdir)	-- binaries
 	objdir (converter_name .. "/bin-int/" .. outputdir)	-- intermediate files
-	
+
 	files {
 		converter_name .. "/src/**.hpp",	-- headers
 		converter_name .. "/src/**.h",		-- headers
@@ -88,26 +102,25 @@ project "Cedai_Model_Converter" -- model converter
 		"vendor/glm", -- glm
 		"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/include" -- fbx sdk
 	}
-	
+
 	libdirs {
 		"C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/%{cfg.buildcfg}"
  	}
 
-	links {
-		"libfbxsdk.lib"	-- fbx sdk
-	}
+	links { "libfbxsdk.lib" }
 
-	defines {
-		"FBXSDK_SHARED"
-	}
+	defines { "FBXSDK_SHARED" }
 
 	postbuildcommands {
 		'{COPY} "C:/Program Files/Autodesk/FBX/FBX SDK/2019.2/lib/vs2017/x64/%{cfg.buildcfg}/libfbxsdk.dll" %{cfg.buildtarget.directory}'
 	}
-	
+
 	filter "system:windows"
 		cppdialect "C++17" -- note we may need specific compile flag for other systems
 		systemversion "latest"
+
+	filter "system:linux"
+		cppdialect "C++17"
 
 	filter "configurations:debug"
 		defines "DEBUG"
@@ -116,3 +129,7 @@ project "Cedai_Model_Converter" -- model converter
 	filter "configurations:release"
 		defines "NDEBUG"
 		optimize "On"
+
+
+-- NOTES:
+-- linux linking: https://stackoverflow.com/questions/16710047/usr-bin-ld-cannot-find-lnameofthelibrary

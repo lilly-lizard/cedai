@@ -9,10 +9,10 @@ https://github.com/fmtlib/fmt
 
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-std::shared_ptr<spdlog::logger> Log::s_PBLogger;
+std::shared_ptr<spdlog::logger> Log::s_CDLogger;
 
 void Log::Init() {
 	spdlog::set_pattern("%^[%T] %n: %v%$");
-	s_PBLogger = spdlog::stdout_color_mt("CEDAI");
-	s_PBLogger->set_level(spdlog::level::trace);
+	s_CDLogger = spdlog::stdout_color_mt("CEDAI");
+	s_CDLogger->set_level(spdlog::level::trace);
 }

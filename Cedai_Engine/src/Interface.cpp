@@ -7,8 +7,8 @@
 #include <iostream>
 #include <fstream>
 
-#define VERT_PATH "src/shaders/draw.vert"
-#define FRAG_PATH "src/shaders/draw.frag"
+#define VERT_PATH "shaders/draw.vert"
+#define FRAG_PATH "shaders/draw.frag"
 
 // PUBLIC FUNCTIONS
 
@@ -20,9 +20,13 @@ void Interface::init(int screen_width, int screen_height) {
 	glfwInit(); // initalizes the glfw library
 
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	window = glfwCreateWindow(screen_width, screen_height, WINDOW_TITLE, nullptr, nullptr); // make a window
 	if (!window) {
-		CD_ERROR("glfw window creation failed!");
+		const char *message;
+		int error = glfwGetError(&message);
+		CD_ERROR("glfw window creation failed! error: {} {}", error, message);
 		throw std::runtime_error("glfw window creation failed");
 	}
 	glfwSetWindowPos(window, 300, 100);
@@ -41,7 +45,7 @@ void Interface::init(int screen_width, int screen_height) {
 	glGetIntegerv(GL_MINOR_VERSION, &minorVersion);
 	if (majorVersion < 4 && minorVersion < 3) {
 		CD_ERROR("openGL version number less than 4.3");
-		CD_ERROR("4.3 functionality is required for this program to run"); // i.e. shader storage buffer object
+		CD_ERROR("4.3 functionality is required for this program to run"); // i.e. shader storage buffer object (used for ogl <--> ocl data transfer)
 		throw std::runtime_error("openGL version");
 	}
 
@@ -141,7 +145,12 @@ void cd::createProgramGL(GLuint &program, std::string vertPath, std::string frag
 	int rvalue;
 	glGetShaderiv(vert, GL_COMPILE_STATUS, &rvalue);
 	if (!rvalue) {
-		CD_ERROR("Error in compiling vert shader: {} error: {}", vertPath, rvalue);
+		CD_ERROR("Error in compiling vert shader: {}", vertPath);
+		int message_length = 0;
+		char message[1024];
+		glGetShaderInfoLog(vert, 1024, &message_length, message);
+		std::string str_message(message, message_length);
+		CD_WARN("compile message: {}", str_message);
 		throw std::runtime_error("opengl setup error");
 	}
 	glAttachShader(program, vert);
@@ -149,7 +158,12 @@ void cd::createProgramGL(GLuint &program, std::string vertPath, std::string frag
 	glCompileShader(frag);
 	glGetShaderiv(frag, GL_COMPILE_STATUS, &rvalue);
 	if (!rvalue) {
-		CD_ERROR("Error in compiling frag shader: {} error: {}", fragPath, rvalue);
+		CD_ERROR("Error in compiling frag shader: {}", fragPath);
+		int message_length = 0;
+		char message[128];
+		glGetShaderInfoLog(vert, 128, &message_length, message);
+		std::string str_message(message, message_length);
+		CD_WARN("compile message: {}", str_message);
 		throw std::runtime_error("opengl setup error");
 	}
 	glAttachShader(program, frag);
@@ -235,7 +249,7 @@ void Interface::createDrawTexture() {
 	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	
+
 	glTexImage2D(drawPipeline.texTarget, 0, GL_RGBA8UI, screen_width, screen_height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
 	cd::checkErrorsGL("texture gen");
 }

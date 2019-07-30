@@ -45,9 +45,16 @@ void Cedai::init() {
 	Log::Init();
 	CD_INFO("Logger initialised");
 
+#	ifndef CD_PLATFORM_WINDOWS
+#	ifndef CD_PLATFORM_LINUX
+	CD_ERROR("Unsupported platform: only windows and linux are supported at this time.");
+	throw std::runtime_error("platform error");
+#	endif // CD_PLATFORM_LINUX
+#	endif // CD_PLATFORM_WINDOWS
+
 	interface.init(screen_width, screen_height);
 	CD_INFO("Interface initialised.");
-	
+
 	createPrimitives();
 	vertexProcessor.init(&interface, maize.vertices, maize.animation.keyframes[keyFrameIndex].boneTransforms);
 	CD_INFO("Pimitive processing program initialised.");
@@ -198,7 +205,7 @@ void Cedai::processInputs() {
 
 void Cedai::updateAnimation(double time) {
 	double relativeTime = fmod(time, maize.animation.duration);
-	
+
 	// figure out which frame we're on
 	for (int f = 0; f < maize.animation.keyframes.size() - 1; f++) {
 		if (maize.animation.keyframes[f].time <= relativeTime && relativeTime < maize.animation.keyframes[f + 1].time) {

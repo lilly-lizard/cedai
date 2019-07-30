@@ -1,10 +1,12 @@
 #pragma once
 
-#include "model/Sphere.hpp"
-
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+#define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.hpp>
 #include <vector>
 #include <string>
+
+#include "model/Sphere.hpp"
 
 class Interface;
 class PrimitiveProcessor;
