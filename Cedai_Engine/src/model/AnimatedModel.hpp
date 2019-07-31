@@ -22,6 +22,11 @@ namespace cd
 }
 
 struct AnimatedModel {
+	int keyFrameIndex = 0;
 	std::vector<cd::Vertex> vertices;
 	cd::AnimationClip animation;
+
+	inline std::array<glm::mat4, MAX_BONES> GetBoneTransforms() {
+		return animation.keyframes[keyFrameIndex].boneTransforms;
+	}
 };

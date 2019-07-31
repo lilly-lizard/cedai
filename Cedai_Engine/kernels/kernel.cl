@@ -10,23 +10,26 @@ typedef struct
 	uchar4 color;
 } Sphere;
 
-// DECLARATIONS AND CONSTANTS
-
-#define PI 3.14159265359f
+// CONFIG AND CONSTANTS
 
 #define HALF_RESOLUTION
+// MUST to be the same in src/tools/config.hpp
+#ifdef HALF_RESOLUTION
 #define DITHER
+#endif
 
 #define DROP_OFF 1000
 
 #define LIGHT_RADIUS 3
-#define LIGHT_W PI / 4
+#define LIGHT_W PI / 4.37499f
 
 #define AMBIENT 0.2f
 #define LIGHT_STEP 0.2f
 
 #define BACKGROUND_OFFSET 0.3f
 #define BACKGROUND_MULTIPLIER 0.5f
+
+#define PI 3.14159265359f
 
 const sampler_t sampler = CLK_FILTER_NEAREST | CLK_ADDRESS_CLAMP | CLK_NORMALIZED_COORDS_FALSE;
 

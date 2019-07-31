@@ -1,14 +1,16 @@
 #pragma once
 
+#include "tools/Config.hpp"
 #include "tools/Inputs.hpp"
 
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
-
 #include <map>
 #include <string>
 
  // opengl functions
+
+class Cedai;
 
 namespace cd {
 	void createProgramGL(GLuint &program, std::string vertPath, std::string fragPath);
@@ -18,7 +20,7 @@ namespace cd {
 
 class Interface {
 public:
-	void init(int screen_width, int screen_height);
+	void init(Cedai *application, int screen_width, int screen_height);
 
 	GLuint getTexHandle();
 	GLenum getTexTarget();

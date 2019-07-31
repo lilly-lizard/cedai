@@ -1,8 +1,7 @@
-// using opengl code from http://wili.cc/blog/opengl-cs.html
-
 #include "Interface.hpp"
+
+#include "Cedai.hpp"
 #include "tools/Log.hpp"
-#include "tools/Config.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -12,24 +11,25 @@
 
 // PUBLIC FUNCTIONS
 
-void Interface::init(int screen_width, int screen_height) {
+void Interface::init(Cedai *application, int screen_width, int screen_height) {
 	CD_INFO("Initialising interface...");
 	this->screen_width = screen_width;
 	this->screen_height = screen_height;
 
-	glfwInit(); // initalizes the glfw library
+	// initalizes glfw
+	glfwInit();
 
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	// create window and gl context
+	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	window = glfwCreateWindow(screen_width, screen_height, WINDOW_TITLE, nullptr, nullptr); // make a window
+	window = glfwCreateWindow(screen_width, screen_height, WINDOW_TITLE, nullptr, nullptr);
 	if (!window) {
 		const char *message;
 		int error = glfwGetError(&message);
 		CD_ERROR("glfw window creation failed! error: {} {}", error, message);
 		throw std::runtime_error("glfw window creation failed");
 	}
-	glfwSetWindowPos(window, 300, 100);
 
 	// init opengl
 	glfwMakeContextCurrent(window);
@@ -38,6 +38,7 @@ void Interface::init(int screen_width, int screen_height) {
 		throw std::runtime_error("opengl init failed");
 	}
 
+	// gl version check
 	CD_INFO("OpenGL version: {}", glGetString(GL_VERSION));
 	CD_INFO("OpenGL rendering device: {}", glGetString(GL_RENDERER));
 
@@ -49,6 +50,12 @@ void Interface::init(int screen_width, int screen_height) {
 		throw std::runtime_error("openGL version");
 	}
 
+	// resize callback
+	glfwSetWindowUserPointer(window, application);
+	glfwSetFramebufferSizeCallback(window, application->windowResizeCallback);
+
+	// window init
+	glfwSetWindowPos(window, 300, 100);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // disable mouse cursor
 	glfwGetCursorPos(window, &mousePosPrev[0], &mousePosPrev[1]); // get mouse position
 

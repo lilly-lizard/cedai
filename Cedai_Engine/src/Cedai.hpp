@@ -6,21 +6,23 @@ Coordinate system: x - forwards, y - right, z - up
 the number of polygons rendered depends on the number of polygon colors passed to the renderer
 */
 
-#include "Interface.hpp"
-#include "Renderer.hpp"
-#include "PrimitiveProcessor.hpp"
-#include "model/Sphere.hpp"
-#include "model/AnimatedModel.hpp"
-#include "tools/Config.hpp"
-
 #include <glm/glm.hpp>
 #include <CL/cl.h>
 #include <chrono>
 #include <vector>
 
+#include "Interface.hpp"
+#include "Renderer.hpp"
+#include "PrimitiveProcessor.hpp"
+#include "model/AnimatedModel.hpp"
+#include "model/Sphere.hpp"
+#include "tools/Config.hpp"
+
 class Cedai {
 public:
 	void Run();
+
+	static void windowResizeCallback(GLFWwindow *window, int width, int height);
 
 private:
 	void init();
@@ -31,15 +33,18 @@ private:
 	Renderer renderer;
 	PrimitiveProcessor vertexProcessor;
 
+	bool quit = false;
+	bool windowResized = false;
+	int screenWidth = 0, screenHeight = 0;
+
+	uint32_t inputs;
+	float view[4][4] = { 0 };
+
 	AnimatedModel maize;
-	int keyFrameIndex = 0;
 
 	std::vector<cd::Sphere> spheres;
 	std::vector<cd::Sphere> lights;
 	std::vector<cl_uchar4> cl_polygonColors;
-
-	float view[4][4] = { 0 };
-	uint32_t inputs;
 
 	float strafeSpeed  = 4;
 	float forwardSpeed = 4;
