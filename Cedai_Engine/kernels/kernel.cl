@@ -15,7 +15,7 @@ typedef struct
 #define HALF_RESOLUTION
 // MUST to be the same in src/tools/config.hpp
 #ifdef HALF_RESOLUTION
-#define DITHER
+#	define DITHER
 #endif
 
 #define DROP_OFF 1000

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "model/Vertex.hpp"
 #include "tools/Config.hpp"
+#include "model/Vertex.hpp"
 
 #include <GL/gl3w.h>
 #include <glm/glm.hpp>

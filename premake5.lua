@@ -37,7 +37,7 @@ project "Cedai_Engine" -- game engine
 	}
 	
 	libdirs {
-		engine_name .. "/vendor/gl3w/lib",			-- gl3w
+		engine_name .. "/vendor/gl3w/lib/",			-- gl3w
 		engine_name .. "/vendor/glfw_custom/lib"	-- glfw
 	}
 

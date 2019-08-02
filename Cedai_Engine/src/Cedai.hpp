@@ -6,17 +6,18 @@ Coordinate system: x - forwards, y - right, z - up
 the number of polygons rendered depends on the number of polygon colors passed to the renderer
 */
 
-#include <glm/glm.hpp>
-#include <CL/cl.h>
-#include <chrono>
-#include <vector>
-
 #include "Interface.hpp"
+#include "tools/Config.hpp"
+
 #include "Renderer.hpp"
 #include "PrimitiveProcessor.hpp"
 #include "model/AnimatedModel.hpp"
 #include "model/Sphere.hpp"
-#include "tools/Config.hpp"
+
+#include <glm/glm.hpp>
+#include <CL/cl.h>
+#include <chrono>
+#include <vector>
 
 class Cedai {
 public:
@@ -35,7 +36,7 @@ private:
 
 	bool quit = false;
 	bool windowResized = false;
-	int screenWidth = 0, screenHeight = 0;
+	int windowWidth = 0, windowHeight = 0;
 
 	uint32_t inputs;
 	float view[4][4] = { 0 };
@@ -63,6 +64,7 @@ private:
 
 	void createPrimitives();
 
+	void resizeCheck();
 	void processInputs();
 	void updateAnimation(double time);
 

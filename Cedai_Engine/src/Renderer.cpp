@@ -1,8 +1,9 @@
 #include "Renderer.hpp"
+#include "tools/Config.hpp"
+
 #include "Interface.hpp"
 #include "PrimitiveProcessor.hpp"
 #include "tools/Log.hpp"
-#include "tools/Config.hpp"
 
 #ifdef CD_PLATFORM_WINDOWS
 #	define GLFW_EXPOSE_NATIVE_WGL
@@ -39,7 +40,7 @@ void Renderer::init(int image_width, int image_height,
 	createBuffers(interface->getTexTarget(), interface->getTexHandle(), vertexProcessor->getVertexBuffer(),
 		spheres, lights, polygon_colors);
 	createKernels();
-	setWorkGroups();
+	setWorkGroupSizes();
 
 	queue.finish();
 }
@@ -67,6 +68,18 @@ void Renderer::renderQueue(const float view[4][4], float seconds) {
 void Renderer::renderBarrier() {
 	queue.enqueueReleaseGLObjects(&gl_objects);
 	queue.finish();
+}
+
+void Renderer::resize(int image_width, int image_height, Interface *interface) {
+	this->image_width = image_width;
+	this->image_height = image_height;
+	setWorkGroupSizes();
+
+	// trust that OpenCL handles buffer release
+	gl_objects.clear();
+	createOutputImage(interface->getTexTarget(), interface->getTexHandle());
+	setOutArg();
+	setGLObjects();
 }
 
 void Renderer::cleanUp() {
@@ -195,7 +208,6 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, gl_vert_buffer);
 	cl_gl_vertices = cl::BufferGL(context, CL_MEM_READ_WRITE, gl_vert_buffer, &result);
 	checkCLError(result, "gl vertex buffer create");
-	gl_objects.push_back(cl_gl_vertices);
 
 	// polygons
 	cl_polygons = cl::Buffer(context, CL_MEM_READ_ONLY, polygon_count * sizeof(cl_uchar4), NULL, &result);
@@ -204,9 +216,18 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, 
 	queue.enqueueWriteBuffer(cl_polygons, CL_TRUE, 0, polygon_count * sizeof(cl_uchar4), polygon_colors.data());
 
 	// output image
+	createOutputImage(gl_texture_target, gl_texture);
+}
+
+void Renderer::createOutputImage(cl_GLenum gl_texture_target, cl_GLuint gl_texture) {
+	cl_int result;
 	glBindTexture(gl_texture_target, gl_texture);
 	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_NO_ACCESS, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
+}
+
+void Renderer::setGLObjects() {
+	gl_objects.push_back(cl_gl_vertices);
 	gl_objects.push_back(cl_output);
 }
 
@@ -226,6 +247,10 @@ void Renderer::createKernels() {
 	kernel.setArg(7, cl_gl_vertices);
 	kernel.setArg(8, cl_polygons);
 
+	setOutArg();
+}
+
+void Renderer::setOutArg() {
 	kernel.setArg(9, cl_output);
 }
 
@@ -260,7 +285,7 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	kernel = cl::Kernel(program, entryPoint);
 }
 
-void Renderer::setWorkGroups() {
+void Renderer::setWorkGroupSizes() {
 
 	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
 	int x = 16;

@@ -51,17 +51,17 @@ void Cedai::init() {
 #	endif // CD_PLATFORM_LINUX
 #	endif // CD_PLATFORM_WINDOWS
 
-	screenWidth = INIT_SCREEN_WIDTH;
-	screenHeight = INIT_SCREEN_HEIGHT;
+	windowWidth = INIT_SCREEN_WIDTH;
+	windowHeight = INIT_SCREEN_HEIGHT;
 
-	interface.init(this, screenWidth, screenHeight);
+	interface.init(this, windowWidth, windowHeight);
 	CD_INFO("Interface initialised.");
 
 	createPrimitives();
 	vertexProcessor.init(&interface, maize.vertices, maize.GetBoneTransforms());
 	CD_INFO("Pimitive processing program initialised.");
 
-	renderer.init(screenWidth, screenHeight, &interface, &vertexProcessor,
+	renderer.init(windowWidth, windowHeight, &interface, &vertexProcessor,
 		spheres, lights, cl_polygonColors);
 	CD_INFO("Renderer initialised.");
 
@@ -75,17 +75,8 @@ void Cedai::loop() {
 
 	while (!quit && !interface.WindowCloseCheck()) {
 		// window resize check
-		if (windowResized) {
-			quit = true;
-			windowResized = false;
-
-			// renderer:
-
-			// interface:
-
-			continue;
-		}
-
+		resizeCheck();
+		
 		// queue a render operation (opencl pipeline)
 		double time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
 		renderer.renderQueue(view, (float)time);
@@ -168,6 +159,19 @@ void Cedai::createPrimitives() {
 
 // GAME LOGIC
 
+void Cedai::resizeCheck() {
+	if (windowResized) {
+		CD_WARN("window resizing...");
+
+		interface.resize(windowWidth, windowHeight);
+		renderer.resize(windowWidth, windowHeight, &interface);
+
+		CD_WARN("window resized");
+		windowResized = false;
+	}
+
+}
+
 void Cedai::processInputs() {
 	// get time difference
 	static time_point<high_resolution_clock> timePrev = high_resolution_clock::now();
@@ -232,7 +236,6 @@ void Cedai::updateAnimation(double time) {
 // HELPER
 
 void Cedai::windowResizeCallback(GLFWwindow *window, int width, int height) {
-	CD_WARN("window resize callback");
 	Cedai *application = reinterpret_cast<Cedai *>(glfwGetWindowUserPointer(window));
 	application->windowResized = true;
 }

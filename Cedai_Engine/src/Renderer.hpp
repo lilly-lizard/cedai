@@ -1,12 +1,11 @@
 #pragma once
 
-#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
-#define CL_TARGET_OPENCL_VERSION 120
+#include "tools/Config.hpp"
+#include "model/Sphere.hpp"
+
 #include <CL/cl.hpp>
 #include <vector>
 #include <string>
-
-#include "model/Sphere.hpp"
 
 class Interface;
 class PrimitiveProcessor;
@@ -21,6 +20,8 @@ public:
 	void renderQueue(const float view[4][4], float seconds);
 	void renderBarrier();
 
+	void resize(int image_width, int image_height, Interface *interface);
+
 	void cleanUp();
 
 private:
@@ -32,8 +33,7 @@ private:
 
 	cl::Kernel kernel;
 
-	int image_width;
-	int image_height;
+	int image_width = 0, image_height = 0;
 	cl::NDRange global_work;
 	cl::NDRange local_work;
 
@@ -58,10 +58,13 @@ private:
 
 	void createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, cl_GLuint gl_vert_buffer,
 			std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygon_colors);
+	void createOutputImage(cl_GLenum gl_texture_target, cl_GLuint gl_texture);
+	void setGLObjects();
 
 	void createKernels();
+	void setOutArg();
 	void createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint);
-	void setWorkGroups();
+	void setWorkGroupSizes();
 
 	void checkCLError(cl_int err, std::string message);
 	void printErrorLog(const cl::Program& program, const cl::Device& device);

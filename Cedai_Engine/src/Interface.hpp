@@ -20,7 +20,7 @@ namespace cd {
 
 class Interface {
 public:
-	void init(Cedai *application, int screen_width, int screen_height);
+	void init(Cedai *application, int window_width, int window_height);
 
 	GLuint getTexHandle();
 	GLenum getTexTarget();
@@ -37,13 +37,15 @@ public:
 	unsigned int GetKeyInputs();
 	void GetMouseChange(double& mouseX, double& mouseY);
 
+	void resize(int &window_width, int &window_height);
+
 	void cleanUp();
 
 private:
 
 	GLFWwindow* window;
-	int screen_width = 0, screen_height = 0;
 	GLint majorVersion = 0, minorVersion = 0;
+	int windowWidth = 0, windowHeight = 0;
 
 	struct drawPipeline {
 		GLuint texHandle;

@@ -4,6 +4,9 @@
 // MUST be the same in kernels/kernel.cl
 #define PRINT_FPS
 
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+#define CL_TARGET_OPENCL_VERSION 120
+
 #define MAX_BONES 50
 #define WINDOW_TITLE "Cedai"
 

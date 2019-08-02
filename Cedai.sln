@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
+# Visual Studio 16
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cedai_Engine", "Cedai_Engine\Cedai_Engine.vcxproj", "{D0D8009E-BC3B-9042-65C1-C8F851035CC5}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cedai_Model_Converter", "Cedai_Model_Converter\Cedai_Model_Converter.vcxproj", "{22E6E92C-8E52-A527-5746-3D85C371C78F}"

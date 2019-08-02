@@ -11,10 +11,10 @@
 
 // PUBLIC FUNCTIONS
 
-void Interface::init(Cedai *application, int screen_width, int screen_height) {
+void Interface::init(Cedai *application, int window_width, int window_height) {
 	CD_INFO("Initialising interface...");
-	this->screen_width = screen_width;
-	this->screen_height = screen_height;
+	windowWidth = window_width;
+	windowHeight = window_height;
 
 	// initalizes glfw
 	glfwInit();
@@ -23,7 +23,7 @@ void Interface::init(Cedai *application, int screen_width, int screen_height) {
 	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	window = glfwCreateWindow(screen_width, screen_height, WINDOW_TITLE, nullptr, nullptr);
+	window = glfwCreateWindow(windowWidth, windowHeight, WINDOW_TITLE, nullptr, nullptr);
 	if (!window) {
 		const char *message;
 		int error = glfwGetError(&message);
@@ -123,6 +123,26 @@ void Interface::GetMouseChange(double& mouseX, double& mouseY) {
 	mouseX = mousePosCurrent[0] - mousePosPrev[0];
 	mouseY = mousePosCurrent[1] - mousePosPrev[1];
 	glfwGetCursorPos(window, &mousePosPrev[0], &mousePosPrev[1]); // set previous position
+}
+
+void Interface::resize(int &window_width, int &window_height) {
+	glfwGetWindowSize(window, &windowWidth, &windowHeight);
+
+#	ifdef HALF_RESOLUTION
+	windowWidth = windowWidth - windowWidth % 32;
+	windowHeight = windowHeight - windowHeight % 32;
+#	else
+	windowWidth = windowWidth - windowWidth % 16;
+	windowHeight = windowHeight - windowHeight % 16;
+#	endif
+	glfwSetWindowSize(window, windowWidth, windowHeight);
+
+	window_width = windowWidth;
+	window_height = windowHeight;
+
+	glBindTexture(drawPipeline.texTarget, drawPipeline.texHandle);
+	glDeleteTextures(1, &drawPipeline.texHandle);
+	createDrawTexture();
 }
 
 void Interface::cleanUp() {
@@ -257,7 +277,7 @@ void Interface::createDrawTexture() {
 	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexImage2D(drawPipeline.texTarget, 0, GL_RGBA8UI, screen_width, screen_height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(drawPipeline.texTarget, 0, GL_RGBA8UI, windowWidth, windowHeight, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
 	cd::checkErrorsGL("texture gen");
 }
 
