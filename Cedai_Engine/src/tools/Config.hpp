@@ -1,7 +1,6 @@
 #pragma once
 
-#define HALF_RESOLUTION
-// MUST be the same in kernels/kernel.cl
+#define HALF_RESOLUTION /* MUST be the same in kernels/kernel.cl */
 #define PRINT_FPS
 //#define RESIZABLE
 

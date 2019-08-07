@@ -10,10 +10,11 @@ typedef struct
 	uchar4 color;
 } Sphere;
 
+enum primitive_type { NONE, SPHERE, LIGHT, POLYGON };
+
 // CONFIG AND CONSTANTS
 
-#define HALF_RESOLUTION
-// MUST to be the same in src/tools/config.hpp
+#define HALF_RESOLUTION /* MUST to be the same in src/tools/config.hpp */
 #ifdef HALF_RESOLUTION
 #	define DITHER
 #endif
@@ -33,6 +34,8 @@ typedef struct
 
 const sampler_t sampler = CLK_FILTER_NEAREST | CLK_ADDRESS_CLAMP | CLK_NORMALIZED_COORDS_FALSE;
 
+// DECLARATIONS
+
 float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius);
 float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2);
 
@@ -51,11 +54,14 @@ uchar4 background_color(float3 ray_d);
 // ENTRY POINT
 
 __attribute__((work_group_size_hint(16, 16, 1)))
-__kernel void render(const float16 view, const float3 ray_o, const float time,
+__kernel void render(// inputs
+					 const float16 view, const float3 ray_o, const float time,
 					 const int sphere_count, const int light_count, const int polygon_count,
+					 // buffers
 					 __constant Sphere* __restrict spheres,
 					 __constant float3* __restrict vertices,
 					 __constant uchar4* __restrict polygon_colors,
+					 // output
 					 __write_only image2d_t output)
 {
 	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
@@ -71,7 +77,7 @@ __kernel void render(const float16 view, const float3 ray_o, const float time,
 	uchar4 color = (uchar4)(0, 0, 0, 0);
 	float min_t = DROP_OFF; // drop off distance
 	int index = 0;
-	uchar primitive_found = 0; // 1 = sphere, 2 = light, 3 = polygon
+	enum primitive_type primitive_found = NONE;
 
 	const int sphere_total = sphere_count + light_count;
 	const float3 light_offset = (float3)(LIGHT_RADIUS * cos(LIGHT_W * time), LIGHT_RADIUS * sin(LIGHT_W * time), 0);
@@ -81,7 +87,7 @@ __kernel void render(const float16 view, const float3 ray_o, const float time,
 		Sphere sphere = spheres[s];
 		float t = sphere_intersect(ray_o, ray_d, sphere.pos, sphere.radius);
 		if (0 < t && t < min_t) {
-			primitive_found = 1;
+			primitive_found = SPHERE;
 			min_t = t;
 			color = sphere.color;
 			index = s;
@@ -92,7 +98,7 @@ __kernel void render(const float16 view, const float3 ray_o, const float time,
 		Sphere light = spheres[l];
 		float t = sphere_intersect(ray_o, ray_d, light.pos + light_offset * (l % 2 * 2 - 1), light.radius);
 		if (0 < t && t < min_t) {
-			primitive_found = 2;
+			primitive_found = LIGHT;
 			min_t = t;
 			color = light.color;
 			index = l;
@@ -102,18 +108,18 @@ __kernel void render(const float16 view, const float3 ray_o, const float time,
 	for (int p = 0; p < polygon_count; p++) {
 		float t = triangle_intersect(ray_o, ray_d, vertices[p * 3], vertices[p * 3 + 1], vertices[p * 3 + 2]);
 		if (0 < t && t < min_t) {
-			primitive_found = 3;
+			primitive_found = POLYGON;
 			min_t = t;
 			color = polygon_colors[p];
 			index = p;
 	}	}
 
 	// no intersection
-	if (primitive_found == 0) {
+	if (primitive_found == NONE) {
 		color = background_color(ray_d);
 	
 	// sphere lighting
-	} else if (primitive_found == 1) {
+	} else if (primitive_found == SPHERE) {
 		float light = 0;
 		float3 intersection = mad(min_t, ray_d, ray_o);
 
@@ -128,7 +134,7 @@ __kernel void render(const float16 view, const float3 ray_o, const float time,
 		color = convert_uchar4(convert_float4(color) * light);
 
 	// polygon lighting
-	} else if (primitive_found == 3) {
+	} else if (primitive_found == POLYGON) {
 		float light = AMBIENT;
 		float3 intersection = mad(min_t, ray_d, ray_o);
 		float3 v0 = vertices[index * 3];
@@ -146,15 +152,15 @@ __kernel void render(const float16 view, const float3 ray_o, const float time,
 	}
 
 	// draw
-	#ifndef HALF_RESOLUTION
+#ifndef HALF_RESOLUTION
 	draw(output, color, ray_d, coord);
-	#else
-	#ifdef DITHER
-	draw_dither(output, color, primitive_found == 0, ray_d, coord);
-	#else
+#else
+#ifdef DITHER
+	draw_dither(output, color, primitive_found == NONE, ray_d, coord);
+#else
 	draw_half_res(output, color, ray_d, coord);
-	#endif
-	#endif
+#endif
+#endif
 }
 
 // INTERSECTION FUNCTIONS
@@ -164,14 +170,12 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 	// a = P1 . P1 = 1 (assuming ray_d is normalized)
 	float3 d = center - ray_o;
 	float b = dot(d, ray_d);
-	float c = dot(d, d) - radius * radius;
+	float c = dot(d, d) - native_powr(radius, 2);
 
-	float discriminant = b * b - c;
+	float discriminant = native_powr(b, 2) - c;
 	if (discriminant < 0) return -1;
 
-	// TODO native_sqrt
-	float t = b - half_sqrt(discriminant);
-	//return select(-1.0f, t, isless(0, t));
+	float t = b - native_sqrt(discriminant);
 	return 0 < t ? t : -1;
 }
 
@@ -185,8 +189,7 @@ float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
 	float3 E2 = V2 - V0;
 	float3 P = cross(D, E2);
 
-	// TODO half_divide half_recip
-	float inv_det0 = 1 / dot(P, E1);
+	float inv_det0 = native_recip(dot(P, E1));
 	float3 T = O - V0;
 
 	float u = dot(T, P) * inv_det0;
@@ -195,7 +198,6 @@ float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
 	float3 Q = cross(T, E1);
 	float v = dot(Q, D) * inv_det0;
 	
-	//return select(dot(Q, E2) * inv_det0, -1.0f, isless(v, 0) | isless(1, u + v));
 	return v < 0 || 1 < u + v ? -1 : dot(Q, E2) * inv_det0;
 }
 
