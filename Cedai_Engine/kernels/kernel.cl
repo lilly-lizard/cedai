@@ -40,7 +40,7 @@ float diffuse_sphere(float3 normal, float3 intersection, float3 light);
 float diffuse_polygon(float3 normal, float3 intersection, float3 light_pos, float3 ray_d);
 float ceiling(float value, float multiple);
 bool shadow(float3 intersection, float3 light, int s_index, int p_index, const int sphere_count, const int polygon_count,
-			__constant Sphere* spheres, __constant float3* vertices);
+			__constant Sphere* __restrict spheres, __constant float3* __restrict vertices);
 int luminance(uchar4 color);
 
 void draw(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord);
@@ -220,7 +220,7 @@ float ceiling(float value, float multiple)
 
 bool shadow(float3 intersection, float3 light, int s_index, int p_index,
 			const int sphere_count, const int polygon_count,
-			__constant Sphere* spheres, __constant float3* vertices) {
+			__constant Sphere* __restrict spheres, __constant float3* __restrict vertices) {
 	float3 ray_d = fast_normalize(light - intersection);
 	float3 ray_o = intersection;
 

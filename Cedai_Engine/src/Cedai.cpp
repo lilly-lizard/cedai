@@ -162,12 +162,10 @@ void Cedai::createPrimitives() {
 void Cedai::resizeCheck() {
 	if (windowResized) {
 		CD_WARN("window resizing...");
+		windowResized = false;
 
 		interface.resize(windowWidth, windowHeight);
 		renderer.resize(windowWidth, windowHeight, &interface);
-
-		CD_WARN("window resized");
-		windowResized = false;
 	}
 
 }

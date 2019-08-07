@@ -48,7 +48,7 @@ private:
 	int windowWidth = 0, windowHeight = 0;
 
 	struct drawPipeline {
-		GLuint texHandle;
+		GLuint texHandle = -1;
 		GLenum texTarget;
 		GLuint programHandle;
 	} drawPipeline;

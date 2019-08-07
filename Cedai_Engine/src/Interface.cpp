@@ -20,7 +20,11 @@ void Interface::init(Cedai *application, int window_width, int window_height) {
 	glfwInit();
 
 	// create window and gl context
+#ifdef RESIZABLE
 	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+#else
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+#endif
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	window = glfwCreateWindow(windowWidth, windowHeight, WINDOW_TITLE, nullptr, nullptr);
@@ -140,8 +144,9 @@ void Interface::resize(int &window_width, int &window_height) {
 	window_width = windowWidth;
 	window_height = windowHeight;
 
-	glBindTexture(drawPipeline.texTarget, drawPipeline.texHandle);
+	//glBindTexture(drawPipeline.texTarget, drawPipeline.texHandle);
 	glDeleteTextures(1, &drawPipeline.texHandle);
+	drawPipeline.texHandle = -1;
 	createDrawTexture();
 }
 
@@ -212,7 +217,7 @@ void cd::checkErrorsGL(std::string desc) {
 	int e = glGetError();
 	while (e != GL_NO_ERROR) {
 		error_found = true;
-		CD_ERROR("OpenGL error in '{}': {} - {:#x}", desc, e, e);
+		CD_ERROR("OpenGL error with '{}': {:#x}", desc, e);
 		e = glGetError();
 	}
 	if (error_found)
@@ -278,6 +283,7 @@ void Interface::createDrawTexture() {
 	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glTexImage2D(drawPipeline.texTarget, 0, GL_RGBA8UI, windowWidth, windowHeight, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
+	glUniform1i(glGetUniformLocation(drawPipeline.programHandle, "srcTex"), 0);
 	cd::checkErrorsGL("texture gen");
 }
 
@@ -303,7 +309,7 @@ void Interface::setProgramIO() {
 	glEnableVertexAttribArray(vertexLocation);
 
 	glBindFragDataLocation(drawPipeline.programHandle, 0, "color");
-	glUniform1i(glGetUniformLocation(drawPipeline.programHandle, "srcTex"), 0);
+	//glUniform1i(glGetUniformLocation(drawPipeline.programHandle, "srcTex"), 0);
 }
 
 /*

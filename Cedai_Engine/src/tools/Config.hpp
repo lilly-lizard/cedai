@@ -3,6 +3,7 @@
 #define HALF_RESOLUTION
 // MUST be the same in kernels/kernel.cl
 #define PRINT_FPS
+//#define RESIZABLE
 
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #define CL_TARGET_OPENCL_VERSION 120
