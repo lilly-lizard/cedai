@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Vertex.hpp"
 #include "tools/Config.hpp"
+#include "Vertex.hpp"
 
 #include <glm/glm.hpp>
 #include <vector>
@@ -22,6 +22,11 @@ namespace cd
 }
 
 struct AnimatedModel {
+	int keyFrameIndex = 0;
 	std::vector<cd::Vertex> vertices;
 	cd::AnimationClip animation;
+
+	inline std::array<glm::mat4, MAX_BONES> GetBoneTransforms() {
+		return animation.keyframes[keyFrameIndex].boneTransforms;
+	}
 };

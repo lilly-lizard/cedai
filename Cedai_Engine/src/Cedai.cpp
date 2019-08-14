@@ -1,9 +1,4 @@
 #include "Cedai.hpp"
-#include "Interface.hpp"
-#include "model/Model_Loader.hpp"
-#include "tools/Inputs.hpp"
-#include "tools/Log.hpp"
-#include "model/Model_Loader.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -11,6 +6,10 @@
 #include <iostream>
 #include <iomanip>
 #include <math.h>
+
+#include "model/Model_Loader.hpp"
+#include "tools/Inputs.hpp"
+#include "tools/Log.hpp"
 
 //#define PRINT_FPS
 
@@ -46,32 +45,38 @@ void Cedai::init() {
 	CD_INFO("Logger initialised");
 
 #	ifndef CD_PLATFORM_WINDOWS
+#	ifndef CD_PLATFORM_LINUX
 	CD_ERROR("Unsupported platform: only windows and linux are supported at this time.");
 	throw std::runtime_error("platform error");
-#	ifndef CD_PLATFORM_LINUX
 #	endif // CD_PLATFORM_LINUX
 #	endif // CD_PLATFORM_WINDOWS
 
-	interface.init(screen_width, screen_height);
+	windowWidth = INIT_SCREEN_WIDTH;
+	windowHeight = INIT_SCREEN_HEIGHT;
+
+	interface.init(this, windowWidth, windowHeight);
 	CD_INFO("Interface initialised.");
 
 	createPrimitives();
-	vertexProcessor.init(&interface, maize.vertices, maize.animation.keyframes[keyFrameIndex].boneTransforms);
+	vertexProcessor.init(&interface, maize.vertices, maize.GetBoneTransforms());
 	CD_INFO("Pimitive processing program initialised.");
 
-	renderer.init(screen_width, screen_height, &interface, &vertexProcessor,
+	renderer.init(windowWidth, windowHeight, &interface, &vertexProcessor,
 		spheres, lights, cl_polygonColors);
 	CD_INFO("Renderer initialised.");
 
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
 	CD_INFO("Engine initialised.");
+	quit = false;
 }
 
 void Cedai::loop() {
-	bool quit = false;
 	time_point<high_resolution_clock> timeStart = high_resolution_clock::now();
 
 	while (!quit && !interface.WindowCloseCheck()) {
+		// window resize check
+		resizeCheck();
+		
 		// queue a render operation (opencl pipeline)
 		double time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
 		renderer.renderQueue(view, (float)time);
@@ -79,7 +84,7 @@ void Cedai::loop() {
 		// input handling
 		interface.PollEvents();
 		inputs = interface.GetKeyInputs();
-		quit = inputs & CD_INPUTS::ESC;
+		quit |= (bool)(inputs & CD_INPUTS::ESC);
 
 		// game logic
 		processInputs();
@@ -88,7 +93,7 @@ void Cedai::loop() {
 
 		renderer.renderBarrier();
 		// process vertices and draw to the window (2 opengl pipelines)
-		vertexProcessor.vertexProcess(maize.animation.keyframes[keyFrameIndex].boneTransforms);
+		vertexProcessor.vertexProcess(maize.GetBoneTransforms());
 		interface.drawRun();
 		vertexProcessor.vertexBarrier();
 		interface.drawBarrier();
@@ -113,15 +118,15 @@ void Cedai::createPrimitives() {
 	// spheres
 
 	spheres.push_back(cd::Sphere(1.0,
-		cl_float3{ { 10, -3, 0 } },
+		cl_float3{ { 3, 2, -4 } },
 		cl_uchar4{ { 200, 128, 254, 255 } }));
 
 	spheres.push_back(cd::Sphere(0.5,
-		cl_float3{ { 4, 2, 2.5 } },
+		cl_float3{ { -2, 2, 2.5 } },
 		cl_uchar4{ { 128, 255, 180, 255 } }));
 
 	spheres.push_back(cd::Sphere(0.2,
-		cl_float3{ { 6, 0, 3 } },
+		cl_float3{ { 6, 3, 3 } },
 		cl_uchar4{ { 255, 200, 128, 255 } }));
 
 	// lights
@@ -149,9 +154,21 @@ void Cedai::createPrimitives() {
 
 	CD_INFO("number of vertices = {}", maize.vertices.size());
 	CD_INFO("number of polygons = {}", cl_polygonColors.size());
+	CD_INFO("animation period = {}", maize.animation.duration);
 }
 
 // GAME LOGIC
+
+void Cedai::resizeCheck() {
+	if (windowResized) {
+		CD_WARN("window resizing...");
+		windowResized = false;
+
+		interface.resize(windowWidth, windowHeight);
+		renderer.resize(windowWidth, windowHeight, &interface);
+	}
+
+}
 
 void Cedai::processInputs() {
 	// get time difference
@@ -208,13 +225,18 @@ void Cedai::updateAnimation(double time) {
 	// figure out which frame we're on
 	for (int f = 0; f < maize.animation.keyframes.size() - 1; f++) {
 		if (maize.animation.keyframes[f].time <= relativeTime && relativeTime < maize.animation.keyframes[f + 1].time) {
-			keyFrameIndex = f;
+			maize.keyFrameIndex = f;
 			break;
 		}
 	}
 }
 
 // HELPER
+
+void Cedai::windowResizeCallback(GLFWwindow *window, int width, int height) {
+	Cedai *application = reinterpret_cast<Cedai *>(glfwGetWindowUserPointer(window));
+	application->windowResized = true;
+}
 
 void Cedai::updateView() {
 	view[0][0] = viewerForward[0];

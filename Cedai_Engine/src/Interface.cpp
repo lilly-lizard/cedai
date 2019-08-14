@@ -1,8 +1,7 @@
-// using opengl code from http://wili.cc/blog/opengl-cs.html
-
 #include "Interface.hpp"
+
+#include "Cedai.hpp"
 #include "tools/Log.hpp"
-#include "tools/Config.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -12,24 +11,29 @@
 
 // PUBLIC FUNCTIONS
 
-void Interface::init(int screen_width, int screen_height) {
+void Interface::init(Cedai *application, int window_width, int window_height) {
 	CD_INFO("Initialising interface...");
-	this->screen_width = screen_width;
-	this->screen_height = screen_height;
+	windowWidth = window_width;
+	windowHeight = window_height;
 
-	glfwInit(); // initalizes the glfw library
+	// initalizes glfw
+	glfwInit();
 
+	// create window and gl context
+#ifdef RESIZABLE
+	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+#else
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+#endif
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	window = glfwCreateWindow(screen_width, screen_height, WINDOW_TITLE, nullptr, nullptr); // make a window
+	window = glfwCreateWindow(windowWidth, windowHeight, WINDOW_TITLE, nullptr, nullptr);
 	if (!window) {
 		const char *message;
 		int error = glfwGetError(&message);
 		CD_ERROR("glfw window creation failed! error: {} {}", error, message);
 		throw std::runtime_error("glfw window creation failed");
 	}
-	glfwSetWindowPos(window, 300, 100);
 
 	// init opengl
 	glfwMakeContextCurrent(window);
@@ -38,6 +42,7 @@ void Interface::init(int screen_width, int screen_height) {
 		throw std::runtime_error("opengl init failed");
 	}
 
+	// gl version check
 	CD_INFO("OpenGL version: {}", glGetString(GL_VERSION));
 	CD_INFO("OpenGL rendering device: {}", glGetString(GL_RENDERER));
 
@@ -49,6 +54,12 @@ void Interface::init(int screen_width, int screen_height) {
 		throw std::runtime_error("openGL version");
 	}
 
+	// resize callback
+	glfwSetWindowUserPointer(window, application);
+	glfwSetFramebufferSizeCallback(window, application->windowResizeCallback);
+
+	// window init
+	glfwSetWindowPos(window, 300, 100);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // disable mouse cursor
 	glfwGetCursorPos(window, &mousePosPrev[0], &mousePosPrev[1]); // get mouse position
 
@@ -118,6 +129,27 @@ void Interface::GetMouseChange(double& mouseX, double& mouseY) {
 	glfwGetCursorPos(window, &mousePosPrev[0], &mousePosPrev[1]); // set previous position
 }
 
+void Interface::resize(int &window_width, int &window_height) {
+	glfwGetWindowSize(window, &windowWidth, &windowHeight);
+
+#	ifdef HALF_RESOLUTION
+	windowWidth = windowWidth - windowWidth % 32;
+	windowHeight = windowHeight - windowHeight % 32;
+#	else
+	windowWidth = windowWidth - windowWidth % 16;
+	windowHeight = windowHeight - windowHeight % 16;
+#	endif
+	glfwSetWindowSize(window, windowWidth, windowHeight);
+
+	window_width = windowWidth;
+	window_height = windowHeight;
+
+	//glBindTexture(drawPipeline.texTarget, drawPipeline.texHandle);
+	glDeleteTextures(1, &drawPipeline.texHandle);
+	drawPipeline.texHandle = -1;
+	createDrawTexture();
+}
+
 void Interface::cleanUp() {
 	glDeleteTextures(1, &drawPipeline.texHandle);
 	glfwDestroyWindow(window);
@@ -185,7 +217,7 @@ void cd::checkErrorsGL(std::string desc) {
 	int e = glGetError();
 	while (e != GL_NO_ERROR) {
 		error_found = true;
-		CD_ERROR("OpenGL error in '{}': {} - {:#x}", desc, e, e);
+		CD_ERROR("OpenGL error with '{}': {:#x}", desc, e);
 		e = glGetError();
 	}
 	if (error_found)
@@ -250,7 +282,8 @@ void Interface::createDrawTexture() {
 	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(drawPipeline.texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexImage2D(drawPipeline.texTarget, 0, GL_RGBA8UI, screen_width, screen_height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(drawPipeline.texTarget, 0, GL_RGBA8UI, windowWidth, windowHeight, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
+	glUniform1i(glGetUniformLocation(drawPipeline.programHandle, "srcTex"), 0);
 	cd::checkErrorsGL("texture gen");
 }
 
@@ -276,7 +309,7 @@ void Interface::setProgramIO() {
 	glEnableVertexAttribArray(vertexLocation);
 
 	glBindFragDataLocation(drawPipeline.programHandle, 0, "color");
-	glUniform1i(glGetUniformLocation(drawPipeline.programHandle, "srcTex"), 0);
+	//glUniform1i(glGetUniformLocation(drawPipeline.programHandle, "srcTex"), 0);
 }
 
 /*

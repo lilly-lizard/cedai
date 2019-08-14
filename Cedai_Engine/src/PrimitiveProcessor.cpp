@@ -7,7 +7,7 @@
 
 // PUBLIC FUNCTIONS
 
-void PrimitiveProcessor::init(Interface *interface, std::vector<cd::Vertex> &vertices, std::array<glm::mat4, MAX_BONES> &bones) {
+void PrimitiveProcessor::init(Interface *interface, std::vector<cd::Vertex> &vertices, std::array<glm::mat4, MAX_BONES> bones) {
 	CD_INFO("Initialising primitive processing program...");
 	vertexCount = vertices.size();
 
@@ -23,7 +23,7 @@ void PrimitiveProcessor::init(Interface *interface, std::vector<cd::Vertex> &ver
 	vertexBarrier();
 }
 
-void PrimitiveProcessor::vertexProcess(std::array<glm::mat4, MAX_BONES> &bones) {
+void PrimitiveProcessor::vertexProcess(std::array<glm::mat4, MAX_BONES> bones) {
 
 	// setup the program
 
@@ -124,7 +124,7 @@ void PrimitiveProcessor::setVertexAttributes() {
 	glEnableVertexAttribArray(weightsLocation);
 }
 
-void PrimitiveProcessor::updateUniforms(std::array<glm::mat4, MAX_BONES> &bones) {
+void PrimitiveProcessor::updateUniforms(std::array<glm::mat4, MAX_BONES> bones) {
 	GLint location = glGetUniformLocation(program, "bones");
 
 	if (location != -1)

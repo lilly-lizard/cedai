@@ -1,7 +1,7 @@
 #pragma once
 
-#include "model/Vertex.hpp"
 #include "tools/Config.hpp"
+#include "model/Vertex.hpp"
 
 #include <GL/gl3w.h>
 #include <glm/glm.hpp>
@@ -13,11 +13,11 @@ class Interface;
 
 class PrimitiveProcessor {
 public:
-	void init(Interface *interface, std::vector<cd::Vertex> &vertices, std::array<glm::mat4, MAX_BONES> &bones);
+	void init(Interface *interface, std::vector<cd::Vertex> &vertices, std::array<glm::mat4, MAX_BONES> bones);
 
 	inline GLuint getVertexBuffer() { return vertexBufferOut; }
 
-	void vertexProcess(std::array<glm::mat4, MAX_BONES> &bones);
+	void vertexProcess(std::array<glm::mat4, MAX_BONES> bones);
 	void vertexBarrier();
 
 	void cleanUp();
@@ -35,5 +35,5 @@ private:
 	void setProgramIO(std::vector<cd::Vertex> &vertices);
 
 	void setVertexAttributes();
-	void updateUniforms(std::array<glm::mat4, MAX_BONES> &bones);
+	void updateUniforms(std::array<glm::mat4, MAX_BONES> bones);
 };
