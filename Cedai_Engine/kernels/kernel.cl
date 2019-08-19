@@ -66,9 +66,9 @@ __kernel void render(// inputs
 {
 	const int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	const int2 dim = (int2)(get_global_size(0), get_global_size(1));
-	
+
 	// create a camera ray
-	const float3 uv = (float3)(dim.x, (float)coord.x - (float)dim.x / 2, (float)(dim.y - coord.y) - (float)dim.y / 2);
+	const float3 uv = (float3)(dim.x, (float)coord.x - (float)dim.x / 2, (float)dim.y / 2 - coord.y);
 	const float3 ray_d = fast_normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
 												 uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
 												 uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
@@ -117,7 +117,7 @@ __kernel void render(// inputs
 	// no intersection
 	if (primitive_found == NONE) {
 		color = background_color(ray_d);
-	
+
 	// sphere lighting
 	} else if (primitive_found == SPHERE) {
 		float light = 0;
@@ -140,7 +140,7 @@ __kernel void render(// inputs
 		float3 v0 = vertices[index * 3];
 		float3 v1 = vertices[index * 3 + 1];
 		float3 v2 = vertices[index * 3 + 2];
-		
+
 		for (int l = sphere_count; l < sphere_total; l++) {
 			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
 			bool in_shadow = shadow(intersection, light_pos, -1, index, sphere_count, polygon_count, spheres, vertices);
@@ -166,7 +166,7 @@ __kernel void render(// inputs
 // INTERSECTION FUNCTIONS
 
 float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
-{ 
+{
 	// a = P1 . P1 = 1 (assuming ray_d is normalized)
 	float3 d = center - ray_o;
 	float b = dot(d, ray_d);
@@ -181,10 +181,10 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 
 float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
 {
-	// Möller-Trumbore algorithm. we use Cramer's rule to find [t,u,v]
+	// Mï¿½ller-Trumbore algorithm. we use Cramer's rule to find [t,u,v]
 	// https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
 	// returns -1 for no intersection, otherwise returns t (where intersection = O + tD)
-	
+
 	float3 E1 = V1 - V0;
 	float3 E2 = V2 - V0;
 	float3 P = cross(D, E2);
@@ -197,7 +197,7 @@ float triangle_intersect(float3 O, float3 D, float3 V0, float3 V1, float3 V2)
 
 	float3 Q = cross(T, E1);
 	float v = dot(Q, D) * inv_det0;
-	
+
 	return v < 0 || 1 < u + v ? -1 : dot(Q, E2) * inv_det0;
 }
 
@@ -275,17 +275,17 @@ void draw_dither(__write_only image2d_t output, uchar4 color, bool no_color_foun
 	if (no_color_found) dither = 2;
 	else dither = luminance(color) / 64;
 	//int dither = select(luminance(color) / 64, 2, (int)no_color_found);
-	
+
 	// write
 	uint4 color_out = convert_uint4(color);
 	write_imageui(output, (int2)(coord.x * 2, coord.y * 2), color_out);
-	
+
 	if (dither < 1) color_out = (uint4)(0,0,0,0);
 	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2 + 1), color_out);
-	
+
 	if (dither < 2) color_out = (uint4)(0,0,0,0);
 	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2), color_out);
-	
+
 	if (dither < 3) color_out = (uint4)(0,0,0,0);
 	write_imageui(output, (int2)(coord.x * 2, coord.y * 2 + 1), color_out);
 }
