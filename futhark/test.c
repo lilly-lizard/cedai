@@ -1135,17 +1135,27 @@ const char *opencl_program[] =
             " int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    \n    ALIGNED_LOCAL_MEMORY(block_11_backing_0, 1088);\n    \n    __local char *block_11;\n    \n    block_11 = (__local char *) block_11_backing_0;\n    \n    int32_t get_global_id_0_37;\n    \n    get_global_id_0_37 = get_global_id(0);\n    \n    int32_t get_local_id_0_38;\n    \n    get_local_id_0_38 = get_local_id(0);\n    \n    int32_t get_local_id_1_39;\n    \n    get_local_id_1_39 = get_local_id(1);\n    \n    int32_t get_group_id_0_40;\n    \n    get_group_id_0_40 = get_group_id(0);\n    \n    int32_t get_group_id_1_41;\n    \n    get_group_id_1_41 = get_group_id(1);\n    \n    int32_t get_group_id_2_42;\n    \n    get_group_id_2_42 = get_group_id(2);\n    \n    int32_t our_array_offset_30 = get_group_id_2_42 * x_elems_5 * y_elems_6;\n    int32_t odata_offset_33 = squot32(destoffset_1, 4) + our_array_offset_30;\n    int32_t idata_offset_34 = squot32(srcoffset_3, 4) + our_array_offset_30;\n    int32_t x_index_31 = get_group_id_0_40 * 16 * mulx_9 + get_local_id_0_38 +\n            srem32(get_local_id_1_39, mulx_9) * 16;\n    int32_t y_index_32 = get_group_id_1_41 * 16 + squot32(get_local_id_1_39,\n                                                          mulx_9);\n    int32_t index_in_35 = y_index_32 * x_elems_5 + x_index_31;\n    \n    if (slt32(x_index_31, x_elems_5) && (slt32(y_index_32, y_elems_6) &&\n                                         slt32(index_in_35, in_elems_7))) {\n        ((__local float *) block_11)[get_local_id_1_39 * 17 +\n                                     get_local_id_0_38] = ((__global\n                                                            float *) srcmem_2)[idata_offset_34 +\n                                                                               index_in_35];\n    }\n    barrier(CLK_LOCAL_MEM_FENCE);\n    x_index_31 = get_group_id_1_41 * 16 + squot32(get_local_id_0_38, mulx_9);\n    y_index_32 = get_group_id_0_40 * 16 * mulx_9 + get_local_id_1_39 +\n        srem32(get_local_id_0_38, mulx",
             "_9) * 16;\n    \n    int32_t index_out_36 = y_index_32 * y_elems_6 + x_index_31;\n    \n    if (slt32(x_index_31, y_elems_6) && (slt32(y_index_32, x_elems_5) &&\n                                         slt32(index_out_36, out_elems_8))) {\n        ((__global float *) destmem_0)[odata_offset_33 + index_out_36] =\n            ((__local float *) block_11)[get_local_id_0_38 * 17 +\n                                         get_local_id_1_39];\n    }\n}\n__kernel void map_transpose_f32_low_width(int32_t destoffset_1,\n                                          int32_t srcoffset_3,\n                                          int32_t num_arrays_4,\n                                          int32_t x_elems_5, int32_t y_elems_6,\n                                          int32_t in_elems_7,\n                                          int32_t out_elems_8, int32_t mulx_9,\n                                          int32_t muly_10, __global\n                                          unsigned char *destmem_0, __global\n                                          unsigned char *srcmem_2)\n{\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    \n    ALIGNED_LOCAL_MEMORY(block_11_backing_0, 1088);\n    \n    __local char *block_11;\n    \n    block_11 = (__local char *) block_11_backing_0;\n    \n    int32_t get_global_id_0_37;\n    \n    get_global_id_0_37 = get_global_id(0);\n    \n    int32_t get_local_id_0_38;\n    \n    get_local_id_0_38 = get_local_id(0);\n    \n    int32_t get_local_id_1_39;\n    \n    get_local_id_1_39 = get_local_id(1);\n    \n    int32_t get_group_id_0_40;\n    \n    get_group_id_0_40 = get_group_id(0);\n    \n    int32_t get_group_id_1_41;\n    \n    get_group_id_1_41 = get_group_id(1);\n    \n    int32_t get_group_id_2_42;\n    \n    get_group_id_2_42 = get_group_id(2);\n    \n    int32_t our_array_offset_30 = get_group_id_2_42 * x_elems_5 * y_elems_6;\n    int32_t odata_offset_33 = squot32(destoffset_1, 4) + our_array_offset_30;\n    int32_t idata_offset_34 = squot32(s",
             "rcoffset_3, 4) + our_array_offset_30;\n    int32_t x_index_31 = get_group_id_0_40 * 16 + squot32(get_local_id_0_38,\n                                                          muly_10);\n    int32_t y_index_32 = get_group_id_1_41 * 16 * muly_10 + get_local_id_1_39 +\n            srem32(get_local_id_0_38, muly_10) * 16;\n    int32_t index_in_35 = y_index_32 * x_elems_5 + x_index_31;\n    \n    if (slt32(x_index_31, x_elems_5) && (slt32(y_index_32, y_elems_6) &&\n                                         slt32(index_in_35, in_elems_7))) {\n        ((__local float *) block_11)[get_local_id_1_39 * 17 +\n                                     get_local_id_0_38] = ((__global\n                                                            float *) srcmem_2)[idata_offset_34 +\n                                                                               index_in_35];\n    }\n    barrier(CLK_LOCAL_MEM_FENCE);\n    x_index_31 = get_group_id_1_41 * 16 * muly_10 + get_local_id_0_38 +\n        srem32(get_local_id_1_39, muly_10) * 16;\n    y_index_32 = get_group_id_0_40 * 16 + squot32(get_local_id_1_39, muly_10);\n    \n    int32_t index_out_36 = y_index_32 * y_elems_6 + x_index_31;\n    \n    if (slt32(x_index_31, y_elems_6) && (slt32(y_index_32, x_elems_5) &&\n                                         slt32(index_out_36, out_elems_8))) {\n        ((__global float *) destmem_0)[odata_offset_33 + index_out_36] =\n            ((__local float *) block_11)[get_local_id_0_38 * 17 +\n                                         get_local_id_1_39];\n    }\n}\n__kernel void map_transpose_f32_small(int32_t destoffset_1, int32_t srcoffset_3,\n                                      int32_t num_arrays_4, int32_t x_elems_5,\n                                      int32_t y_elems_6, int32_t in_elems_7,\n                                      int32_t out_elems_8, int32_t mulx_9,\n                                      int32_t muly_10, __global\n                                      unsigned char *destmem_0, __global\n                        ",
-            "              unsigned char *srcmem_2)\n{\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    \n    ALIGNED_LOCAL_MEMORY(block_11_backing_0, 1);\n    \n    __local char *block_11;\n    \n    block_11 = (__local char *) block_11_backing_0;\n    \n    int32_t get_global_id_0_37;\n    \n    get_global_id_0_37 = get_global_id(0);\n    \n    int32_t get_local_id_0_38;\n    \n    get_local_id_0_38 = get_local_id(0);\n    \n    int32_t get_local_id_1_39;\n    \n    get_local_id_1_39 = get_local_id(1);\n    \n    int32_t get_group_id_0_40;\n    \n    get_group_id_0_40 = get_group_id(0);\n    \n    int32_t get_group_id_1_41;\n    \n    get_group_id_1_41 = get_group_id(1);\n    \n    int32_t get_group_id_2_42;\n    \n    get_group_id_2_42 = get_group_id(2);\n    \n    int32_t our_array_offset_30 = squot32(get_global_id_0_37, y_elems_6 *\n                                          x_elems_5) * (y_elems_6 * x_elems_5);\n    int32_t x_index_31 = squot32(srem32(get_global_id_0_37, y_elems_6 *\n                                        x_elems_5), y_elems_6);\n    int32_t y_index_32 = srem32(get_global_id_0_37, y_elems_6);\n    int32_t odata_offset_33 = squot32(destoffset_1, 4) + our_array_offset_30;\n    int32_t idata_offset_34 = squot32(srcoffset_3, 4) + our_array_offset_30;\n    int32_t index_in_35 = y_index_32 * x_elems_5 + x_index_31;\n    int32_t index_out_36 = x_index_31 * y_elems_6 + y_index_32;\n    \n    if (slt32(get_global_id_0_37, in_elems_7)) {\n        ((__global float *) destmem_0)[odata_offset_33 + index_out_36] =\n            ((__global float *) srcmem_2)[idata_offset_34 + index_in_35];\n    }\n}\n__kernel void replicate_12957(int32_t sizze_12582, __global\n                              unsigned char *mem_12893)\n{\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    int32_t replicate_gtid_12957;\n    int32_t replicate_ltid_12958;\n    int32_t replicate_gid_12959;\n    \n    replicate_gtid_12957 = get_global_id(0);\n    replicate_ltid_12",
-            "958 = get_local_id(0);\n    replicate_gid_12959 = get_group_id(0);\n    if (slt32(replicate_gtid_12957, sizze_12582 * 4)) {\n        ((__global int8_t *) mem_12893)[squot32(replicate_gtid_12957, 4) * 4 +\n                                        (replicate_gtid_12957 -\n                                         squot32(replicate_gtid_12957, 4) *\n                                         4)] = 0;\n    }\n}\n__kernel void segmap_12725(int32_t s_12545, int32_t sizze_12548,\n                           int32_t sizze_12549, int32_t numS_12552,\n                           int32_t iota_arg_12581, int32_t num_groups_12740,\n                           __global unsigned char *sPositions_mem_12887,\n                           __global unsigned char *sRadii_mem_12888, __global\n                           unsigned char *sColors_mem_12889, __global\n                           unsigned char *mem_12916, __global\n                           unsigned char *mem_12936, __global\n                           unsigned char *mem_12939, __global\n                           unsigned char *mem_12943)\n{\n    const int32_t segmap_group_sizze_12728 = mainzisegmap_group_sizze_12727;\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    int32_t global_tid_12977;\n    int32_t local_tid_12978;\n    int32_t group_sizze_12981;\n    int32_t wave_sizze_12980;\n    int32_t group_tid_12979;\n    \n    global_tid_12977 = get_global_id(0);\n    local_tid_12978 = get_local_id(0);\n    group_sizze_12981 = get_local_size(0);\n    wave_sizze_12980 = LOCKSTEP_WIDTH;\n    group_tid_12979 = get_group_id(0);\n    \n    int32_t phys_tid_12725 = global_tid_12977;\n    int32_t phys_group_id_12982;\n    \n    phys_group_id_12982 = get_group_id(0);\n    for (int32_t i_12983 = 0; i_12983 < squot32(squot32(iota_arg_12581 +\n                                                        segmap_group_sizze_12728 -\n                                                        1,\n                                                        seg",
-            "map_group_sizze_12728) -\n                                                phys_group_id_12982 +\n                                                num_groups_12740 - 1,\n                                                num_groups_12740); i_12983++) {\n        int32_t virt_group_id_12984 = phys_group_id_12982 + i_12983 *\n                num_groups_12740;\n        int32_t gtid_12724 = virt_group_id_12984 * segmap_group_sizze_12728 +\n                local_tid_12978;\n        \n        if (slt32(gtid_12724, iota_arg_12581)) {\n            int32_t res_12742;\n            int8_t res_12743;\n            float res_12744;\n            int32_t redout_12853;\n            int8_t redout_12854;\n            float redout_12855;\n            \n            redout_12853 = 0;\n            redout_12854 = 0;\n            redout_12855 = 100.0F;\n            for (int32_t i_12856 = 0; i_12856 < s_12545; i_12856++) {\n                float x_12756 = ((__global float *) sRadii_mem_12888)[i_12856];\n                int32_t x_12757 = i_12856;\n                bool index_concat_cmp_12873 = sle32(numS_12552, i_12856);\n                int8_t index_concat_branch_12877;\n                \n                if (index_concat_cmp_12873) {\n                    int8_t index_concat_12875 = 2;\n                    \n                    index_concat_branch_12877 = index_concat_12875;\n                } else {\n                    int8_t index_concat_12876 = 1;\n                    \n                    index_concat_branch_12877 = index_concat_12876;\n                }\n                \n                int8_t x_12758 = index_concat_branch_12877;\n                float res_12759;\n                float res_12760;\n                float redout_12857;\n                float redout_12858;\n                \n                redout_12857 = 0.0F;\n                redout_12858 = 0.0F;\n                for (int32_t i_12859 = 0; i_12859 < 3; i_12859++) {\n                    float x_12767 = ((__global\n                                      float *) sPositions_mem",
-            "_12887)[i_12856 *\n                                                                     sizze_12548 +\n                                                                     i_12859];\n                    float x_12768 = ((__global float *) mem_12916)[i_12859 *\n                                                                   iota_arg_12581 +\n                                                                   gtid_12724];\n                    float res_12769 = x_12767 * x_12768;\n                    float res_12770 = x_12767 * x_12767;\n                    float res_12763 = res_12769 + redout_12857;\n                    float res_12766 = res_12770 + redout_12858;\n                    float redout_tmp_12988 = res_12763;\n                    float redout_tmp_12989;\n                    \n                    redout_tmp_12989 = res_12766;\n                    redout_12857 = redout_tmp_12988;\n                    redout_12858 = redout_tmp_12989;\n                }\n                res_12759 = redout_12857;\n                res_12760 = redout_12858;\n                \n                float y_12771 = x_12756 * x_12756;\n                float c_12772 = res_12760 - y_12771;\n                float x_12773 = res_12759 * res_12759;\n                float disc_12774 = x_12773 - c_12772;\n                bool cond_12775 = disc_12774 < 0.0F;\n                float res_12776;\n                \n                if (cond_12775) {\n                    res_12776 = 100.0F;\n                } else {\n                    float res_12777;\n                    \n                    res_12777 = futrts_sqrt32(disc_12774);\n                    \n                    float t_12778 = res_12759 - res_12777;\n                    bool cond_12779 = 0.0F < t_12778;\n                    float res_12780;\n                    \n                    if (cond_12779) {\n                        res_12780 = t_12778;\n                    } else {\n                        res_12780 = 100.0F;\n                    }\n                    res_12776 = res_127",
-            "80;\n                }\n                \n                bool cond_12751 = res_12776 < redout_12855;\n                int32_t res_12752;\n                \n                if (cond_12751) {\n                    res_12752 = x_12757;\n                } else {\n                    res_12752 = redout_12853;\n                }\n                \n                int8_t res_12753;\n                \n                if (cond_12751) {\n                    res_12753 = x_12758;\n                } else {\n                    res_12753 = redout_12854;\n                }\n                \n                float res_12754;\n                \n                if (cond_12751) {\n                    res_12754 = res_12776;\n                } else {\n                    res_12754 = redout_12855;\n                }\n                \n                int32_t redout_tmp_12985 = res_12752;\n                int8_t redout_tmp_12986 = res_12753;\n                float redout_tmp_12987;\n                \n                redout_tmp_12987 = res_12754;\n                redout_12853 = redout_tmp_12985;\n                redout_12854 = redout_tmp_12986;\n                redout_12855 = redout_tmp_12987;\n            }\n            res_12742 = redout_12853;\n            res_12743 = redout_12854;\n            res_12744 = redout_12855;\n            \n            bool cond_12781 = res_12743 == 1;\n            bool cond_12782 = res_12743 == 2;\n            __private char *mem_12925;\n            __private char mem_12925_backing_0[12];\n            \n            mem_12925 = mem_12925_backing_0;\n            \n            __private char *mem_12927;\n            __private char mem_12927_backing_1[4];\n            \n            mem_12927 = mem_12927_backing_1;\n            if (cond_12781) {\n                for (int32_t i_12990 = 0; i_12990 < 4; i_12990++) {\n                    ((__global int8_t *) mem_12943)[phys_tid_12725 + i_12990 *\n                                                    (num_groups_12740 *\n                                                     s",
-            "egmap_group_sizze_12728)] =\n                        ((__global int8_t *) sColors_mem_12889)[res_12742 *\n                                                                sizze_12549 +\n                                                                i_12990];\n                }\n            } else {\n                if (cond_12782) {\n                    for (int32_t i_12991 = 0; i_12991 < 4; i_12991++) {\n                        ((__global int8_t *) mem_12939)[phys_tid_12725 +\n                                                        i_12991 *\n                                                        (num_groups_12740 *\n                                                         segmap_group_sizze_12728)] =\n                            ((__global int8_t *) sColors_mem_12889)[res_12742 *\n                                                                    sizze_12549 +\n                                                                    i_12991];\n                    }\n                } else {\n                    for (int32_t i_12862 = 0; i_12862 < 3; i_12862++) {\n                        float x_12788 = ((__global float *) mem_12916)[i_12862 *\n                                                                       iota_arg_12581 +\n                                                                       gtid_12724];\n                        float res_12789 = (float) fabs(x_12788);\n                        float x_12790 = 0.5F * res_12789;\n                        float res_12791 = 0.3F + x_12790;\n                        \n                        ((__private float *) mem_12925)[i_12862] = res_12791;\n                    }\n                    for (int32_t i_12866 = 0; i_12866 < 4; i_12866++) {\n                        bool index_concat_cmp_12882 = sle32(3, i_12866);\n                        float index_concat_branch_12886;\n                        \n                        if (index_concat_cmp_12882) {\n                            index_concat_branch_12886 = 1.0F;\n                        } else {\n    ",
-            "                        float index_concat_12885 = ((__private\n                                                         float *) mem_12925)[i_12866];\n                            \n                            index_concat_branch_12886 = index_concat_12885;\n                        }\n                        \n                        float f32_arg_12796 = 255.0F *\n                              index_concat_branch_12886;\n                        int8_t unsign_arg_12797 = fptoui_f32_i8(f32_arg_12796);\n                        \n                        ((__private int8_t *) mem_12927)[i_12866] =\n                            unsign_arg_12797;\n                    }\n                    for (int32_t i_12994 = 0; i_12994 < 4; i_12994++) {\n                        ((__global int8_t *) mem_12939)[phys_tid_12725 +\n                                                        i_12994 *\n                                                        (num_groups_12740 *\n                                                         segmap_group_sizze_12728)] =\n                            ((__private int8_t *) mem_12927)[i_12994];\n                    }\n                }\n                for (int32_t i_12995 = 0; i_12995 < 4; i_12995++) {\n                    ((__global int8_t *) mem_12943)[phys_tid_12725 + i_12995 *\n                                                    (num_groups_12740 *\n                                                     segmap_group_sizze_12728)] =\n                        ((__global int8_t *) mem_12939)[phys_tid_12725 +\n                                                        i_12995 *\n                                                        (num_groups_12740 *\n                                                         segmap_group_sizze_12728)];\n                }\n            }\n            for (int32_t i_12996 = 0; i_12996 < 4; i_12996++) {\n                ((__global int8_t *) mem_12936)[gtid_12724 * 4 + i_12996] =\n                    ((__global int8_t *) mem_12943)[phys_tid_12725 + i_12996 *\n     ",
-            "                                               (num_groups_12740 *\n                                                     segmap_group_sizze_12728)];\n            }\n        }\n    }\n}\n__kernel void segmap_12802(int32_t iota_arg_12581, __global\n                           unsigned char *mem_12903, __global\n                           unsigned char *mem_12907, __global\n                           unsigned char *mem_12912)\n{\n    const int32_t segmap_group_sizze_12806 = mainzisegmap_group_sizze_12805;\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    int32_t global_tid_12972;\n    int32_t local_tid_12973;\n    int32_t group_sizze_12976;\n    int32_t wave_sizze_12975;\n    int32_t group_tid_12974;\n    \n    global_tid_12972 = get_global_id(0);\n    local_tid_12973 = get_local_id(0);\n    group_sizze_12976 = get_local_size(0);\n    wave_sizze_12975 = LOCKSTEP_WIDTH;\n    group_tid_12974 = get_group_id(0);\n    \n    int32_t phys_tid_12802 = global_tid_12972;\n    int32_t gtid_12800 = squot32(group_tid_12974 * segmap_group_sizze_12806 +\n                                 local_tid_12973, 3);\n    int32_t gtid_12801;\n    \n    gtid_12801 = group_tid_12974 * segmap_group_sizze_12806 + local_tid_12973 -\n        squot32(group_tid_12974 * segmap_group_sizze_12806 + local_tid_12973,\n                3) * 3;\n    if (slt32(gtid_12800, iota_arg_12581) && slt32(gtid_12801, 3)) {\n        float res_12810 = ((__global float *) mem_12903)[gtid_12800];\n        float x_12811 = ((__global float *) mem_12907)[gtid_12800 * 3 +\n                                                       gtid_12801];\n        float res_12812 = x_12811 / res_12810;\n        \n        ((__global float *) mem_12912)[gtid_12800 * 3 + gtid_12801] = res_12812;\n    }\n}\n__kernel void segmap_12814(int32_t width_12550, int32_t iota_arg_12581,\n                           float res_12633, int32_t y_12634, int32_t x_12635,\n                           int32_t num_groups_12829, __global\n                           u",
-            "nsigned char *mem_12900, __global\n                           unsigned char *mem_12903)\n{\n    const int32_t segmap_group_sizze_12817 = mainzisegmap_group_sizze_12816;\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    int32_t global_tid_12962;\n    int32_t local_tid_12963;\n    int32_t group_sizze_12966;\n    int32_t wave_sizze_12965;\n    int32_t group_tid_12964;\n    \n    global_tid_12962 = get_global_id(0);\n    local_tid_12963 = get_local_id(0);\n    group_sizze_12966 = get_local_size(0);\n    wave_sizze_12965 = LOCKSTEP_WIDTH;\n    group_tid_12964 = get_group_id(0);\n    \n    int32_t phys_tid_12814 = global_tid_12962;\n    int32_t phys_group_id_12967;\n    \n    phys_group_id_12967 = get_group_id(0);\n    for (int32_t i_12968 = 0; i_12968 < squot32(squot32(iota_arg_12581 +\n                                                        segmap_group_sizze_12817 -\n                                                        1,\n                                                        segmap_group_sizze_12817) -\n                                                phys_group_id_12967 +\n                                                num_groups_12829 - 1,\n                                                num_groups_12829); i_12968++) {\n        int32_t virt_group_id_12969 = phys_group_id_12967 + i_12968 *\n                num_groups_12829;\n        int32_t gtid_12813 = virt_group_id_12969 * segmap_group_sizze_12817 +\n                local_tid_12963;\n        \n        if (slt32(gtid_12813, iota_arg_12581)) {\n            int32_t arr_elem_12831 = srem32(gtid_12813, width_12550);\n            int32_t arr_elem_12832 = squot32(gtid_12813, width_12550);\n            int32_t r32_arg_12833 = arr_elem_12831 - y_12634;\n            float res_12834 = sitofp_i32_f32(r32_arg_12833);\n            int32_t r32_arg_12835 = x_12635 - arr_elem_12832;\n            float res_12836 = sitofp_i32_f32(r32_arg_12835);\n            __private char *mem_12896;\n            __private char mem_12896_b",
-            "acking_0[12];\n            \n            mem_12896 = mem_12896_backing_0;\n            ((__private float *) mem_12896)[0] = res_12633;\n            ((__private float *) mem_12896)[1] = res_12834;\n            ((__private float *) mem_12896)[2] = res_12836;\n            \n            float res_12838;\n            float redout_12851 = 0.0F;\n            \n            for (int32_t i_12852 = 0; i_12852 < 3; i_12852++) {\n                float x_12842 = ((__private float *) mem_12896)[i_12852];\n                float res_12843 = x_12842 * x_12842;\n                float res_12841 = res_12843 + redout_12851;\n                float redout_tmp_12970 = res_12841;\n                \n                redout_12851 = redout_tmp_12970;\n            }\n            res_12838 = redout_12851;\n            \n            float res_12844;\n            \n            res_12844 = futrts_sqrt32(res_12838);\n            for (int32_t i_12971 = 0; i_12971 < 3; i_12971++) {\n                ((__global float *) mem_12900)[gtid_12813 + i_12971 *\n                                               iota_arg_12581] = ((__private\n                                                                   float *) mem_12896)[i_12971];\n            }\n            ((__global float *) mem_12903)[gtid_12813] = res_12844;\n        }\n    }\n}\n",
+            "              unsigned char *srcmem_2)\n{\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    \n    ALIGNED_LOCAL_MEMORY(block_11_backing_0, 1);\n    \n    __local char *block_11;\n    \n    block_11 = (__local char *) block_11_backing_0;\n    \n    int32_t get_global_id_0_37;\n    \n    get_global_id_0_37 = get_global_id(0);\n    \n    int32_t get_local_id_0_38;\n    \n    get_local_id_0_38 = get_local_id(0);\n    \n    int32_t get_local_id_1_39;\n    \n    get_local_id_1_39 = get_local_id(1);\n    \n    int32_t get_group_id_0_40;\n    \n    get_group_id_0_40 = get_group_id(0);\n    \n    int32_t get_group_id_1_41;\n    \n    get_group_id_1_41 = get_group_id(1);\n    \n    int32_t get_group_id_2_42;\n    \n    get_group_id_2_42 = get_group_id(2);\n    \n    int32_t our_array_offset_30 = squot32(get_global_id_0_37, y_elems_6 *\n                                          x_elems_5) * (y_elems_6 * x_elems_5);\n    int32_t x_index_31 = squot32(srem32(get_global_id_0_37, y_elems_6 *\n                                        x_elems_5), y_elems_6);\n    int32_t y_index_32 = srem32(get_global_id_0_37, y_elems_6);\n    int32_t odata_offset_33 = squot32(destoffset_1, 4) + our_array_offset_30;\n    int32_t idata_offset_34 = squot32(srcoffset_3, 4) + our_array_offset_30;\n    int32_t index_in_35 = y_index_32 * x_elems_5 + x_index_31;\n    int32_t index_out_36 = x_index_31 * y_elems_6 + y_index_32;\n    \n    if (slt32(get_global_id_0_37, in_elems_7)) {\n        ((__global float *) destmem_0)[odata_offset_33 + index_out_36] =\n            ((__global float *) srcmem_2)[idata_offset_34 + index_in_35];\n    }\n}\n__kernel void replicate_14945(__global unsigned char *mem_14872)\n{\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    int32_t replicate_gtid_14945;\n    int32_t replicate_ltid_14946;\n    int32_t replicate_gid_14947;\n    \n    replicate_gtid_14945 = get_global_id(0);\n    replicate_ltid_14946 = get_local_id(0);\n    replicate_gid_14947 = ge",
+            "t_group_id(0);\n    if (slt32(replicate_gtid_14945, 4)) {\n        ((__global int8_t *) mem_14872)[replicate_gtid_14945] = 0;\n    }\n}\n__kernel void replicate_14950(int32_t iota_arg_14637, __global\n                              unsigned char *res_mem_14874, __global\n                              unsigned char *mem_14878)\n{\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    int32_t replicate_gtid_14950;\n    int32_t replicate_ltid_14951;\n    int32_t replicate_gid_14952;\n    \n    replicate_gtid_14950 = get_global_id(0);\n    replicate_ltid_14951 = get_local_id(0);\n    replicate_gid_14952 = get_group_id(0);\n    if (slt32(replicate_gtid_14950, iota_arg_14637 * 4)) {\n        ((__global int8_t *) mem_14878)[squot32(replicate_gtid_14950, 4) * 4 +\n                                        (replicate_gtid_14950 -\n                                         squot32(replicate_gtid_14950, 4) *\n                                         4)] = ((__global\n                                                 int8_t *) res_mem_14874)[replicate_gtid_14950 -\n                                                                          squot32(replicate_gtid_14950,\n                                                                                  4) *\n                                                                          4];\n    }\n}\n__kernel void segmap_14729(int32_t s_14578, int32_t numS_14585, __global\n                           unsigned char *sRadii_mem_14844, __global\n                           unsigned char *mem_14849, __global\n                           unsigned char *mem_14852)\n{\n    const int32_t segmap_group_sizze_14732 = mainzisegmap_group_sizze_14731;\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    int32_t global_tid_14888;\n    int32_t local_tid_14889;\n    int32_t group_sizze_14892;\n    int32_t wave_sizze_14891;\n    int32_t group_tid_14890;\n    \n    global_tid_14888 = get_global_id(0);\n    local_tid_14889",
+            " = get_local_id(0);\n    group_sizze_14892 = get_local_size(0);\n    wave_sizze_14891 = LOCKSTEP_WIDTH;\n    group_tid_14890 = get_group_id(0);\n    \n    int32_t phys_tid_14729 = global_tid_14888;\n    int32_t gtid_14728 = group_tid_14890 * segmap_group_sizze_14732 +\n            local_tid_14889;\n    \n    if (slt32(gtid_14728, numS_14585)) {\n        float x_14737 = ((__global float *) sRadii_mem_14844)[gtid_14728];\n        float res_14738;\n        float redout_14835 = 0.0F;\n        \n        for (int32_t i_14836 = 0; i_14836 < 3; i_14836++) {\n            float x_14742 = ((__global float *) mem_14849)[i_14836 * s_14578 +\n                                                           gtid_14728];\n            float res_14743 = x_14742 * x_14742;\n            float res_14741 = res_14743 + redout_14835;\n            float redout_tmp_14893 = res_14741;\n            \n            redout_14835 = redout_tmp_14893;\n        }\n        res_14738 = redout_14835;\n        \n        float y_14744 = x_14737 * x_14737;\n        float c_14745 = res_14738 - y_14744;\n        float disc_14746 = 0.0F - c_14745;\n        bool cond_14747 = disc_14746 < 0.0F;\n        float res_14748;\n        \n        if (cond_14747) {\n            res_14748 = 100.0F;\n        } else {\n            float res_14749;\n            \n            res_14749 = futrts_sqrt32(disc_14746);\n            \n            float t_14750 = 0.0F - res_14749;\n            bool cond_14751 = 0.0F < t_14750;\n            float res_14752;\n            \n            if (cond_14751) {\n                res_14752 = t_14750;\n            } else {\n                res_14752 = 100.0F;\n            }\n            res_14748 = res_14752;\n        }\n        ((__global float *) mem_14852)[gtid_14728] = res_14748;\n    }\n}\n__kernel void segmap_14754(int32_t sizze_14581, int32_t numS_14585,\n                           int32_t numL_14586, __global\n                           unsigned char *sPositions_mem_14843, __global\n                           unsigned char *sRadii_mem_14844, __glob",
+            "al\n                           unsigned char *mem_14855)\n{\n    const int32_t segmap_group_sizze_14757 = mainzisegmap_group_sizze_14756;\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    int32_t global_tid_14894;\n    int32_t local_tid_14895;\n    int32_t group_sizze_14898;\n    int32_t wave_sizze_14897;\n    int32_t group_tid_14896;\n    \n    global_tid_14894 = get_global_id(0);\n    local_tid_14895 = get_local_id(0);\n    group_sizze_14898 = get_local_size(0);\n    wave_sizze_14897 = LOCKSTEP_WIDTH;\n    group_tid_14896 = get_group_id(0);\n    \n    int32_t phys_tid_14754 = global_tid_14894;\n    int32_t gtid_14753 = group_tid_14896 * segmap_group_sizze_14757 +\n            local_tid_14895;\n    \n    if (slt32(gtid_14753, numL_14586)) {\n        int32_t j_p_i_t_s_14808 = numS_14585 + gtid_14753;\n        float x_14762 = ((__global float *) sRadii_mem_14844)[j_p_i_t_s_14808];\n        float res_14763;\n        float redout_14837 = 0.0F;\n        \n        for (int32_t i_14838 = 0; i_14838 < 3; i_14838++) {\n            float x_14767 = ((__global\n                              float *) sPositions_mem_14843)[j_p_i_t_s_14808 *\n                                                             sizze_14581 +\n                                                             i_14838];\n            float res_14768 = x_14767 * x_14767;\n            float res_14766 = res_14768 + redout_14837;\n            float redout_tmp_14899 = res_14766;\n            \n            redout_14837 = redout_tmp_14899;\n        }\n        res_14763 = redout_14837;\n        \n        float y_14769 = x_14762 * x_14762;\n        float c_14770 = res_14763 - y_14769;\n        float disc_14771 = 0.0F - c_14770;\n        bool cond_14772 = disc_14771 < 0.0F;\n        float res_14773;\n        \n        if (cond_14772) {\n            res_14773 = 100.0F;\n        } else {\n            float res_14774;\n            \n            res_14774 = futrts_sqrt32(disc_14771);\n            \n            float t_14775 = 0.0F - r",
+            "es_14774;\n            bool cond_14776 = 0.0F < t_14775;\n            float res_14777;\n            \n            if (cond_14776) {\n                res_14777 = t_14775;\n            } else {\n                res_14777 = 100.0F;\n            }\n            res_14773 = res_14777;\n        }\n        ((__global float *) mem_14855)[gtid_14753] = res_14773;\n    }\n}\n__kernel void segred_nonseg_14798(int32_t numS_14585, int32_t totalS_14611,\n                                  int32_t num_groups_14792, __global\n                                  unsigned char *mem_14852, __global\n                                  unsigned char *mem_14855, __global\n                                  unsigned char *mem_14859, __global\n                                  unsigned char *mem_14861, __global\n                                  unsigned char *mem_14864, __global\n                                  unsigned char *counter_mem_14900, __global\n                                  unsigned char *group_res_arr_mem_14902,\n                                  __global\n                                  unsigned char *group_res_arr_mem_14904,\n                                  __global\n                                  unsigned char *group_res_arr_mem_14906)\n{\n    const int32_t segred_group_sizze_14780 = mainzisegred_group_sizze_14779;\n    const int block_dim0 = 0;\n    const int block_dim1 = 1;\n    const int block_dim2 = 2;\n    \n    ALIGNED_LOCAL_MEMORY(sync_arr_mem_14914_backing_0, 1);\n    ALIGNED_LOCAL_MEMORY(red_arr_mem_14916_backing_1, 4 *\n                         mainzisegred_group_sizze_14779);\n    ALIGNED_LOCAL_MEMORY(red_arr_mem_14918_backing_2,\n                         mainzisegred_group_sizze_14779);\n    ALIGNED_LOCAL_MEMORY(red_arr_mem_14920_backing_3, 4 *\n                         mainzisegred_group_sizze_14779);\n    \n    int32_t global_tid_14909;\n    int32_t local_tid_14910;\n    int32_t group_sizze_14913;\n    int32_t wave_sizze_14912;\n    int32_t group_tid_14911;\n    \n    global_tid_14909 = get_global_id",
+            "(0);\n    local_tid_14910 = get_local_id(0);\n    group_sizze_14913 = get_local_size(0);\n    wave_sizze_14912 = LOCKSTEP_WIDTH;\n    group_tid_14911 = get_group_id(0);\n    \n    int32_t phys_tid_14798 = global_tid_14909;\n    __local char *sync_arr_mem_14914;\n    \n    sync_arr_mem_14914 = (__local char *) sync_arr_mem_14914_backing_0;\n    \n    __local char *red_arr_mem_14916;\n    \n    red_arr_mem_14916 = (__local char *) red_arr_mem_14916_backing_1;\n    \n    __local char *red_arr_mem_14918;\n    \n    red_arr_mem_14918 = (__local char *) red_arr_mem_14918_backing_2;\n    \n    __local char *red_arr_mem_14920;\n    \n    red_arr_mem_14920 = (__local char *) red_arr_mem_14920_backing_3;\n    \n    int32_t dummy_14796 = 0;\n    int32_t gtid_14797;\n    \n    gtid_14797 = 0;\n    \n    int32_t x_acc_14922;\n    int8_t x_acc_14923;\n    float x_acc_14924;\n    int32_t chunk_sizze_14925;\n    int32_t starting_point_14926 = phys_tid_14798 * squot32(totalS_14611 +\n                                                            segred_group_sizze_14780 *\n                                                            num_groups_14792 -\n                                                            1,\n                                                            segred_group_sizze_14780 *\n                                                            num_groups_14792);\n    int32_t remaining_elements_14927 = totalS_14611 - starting_point_14926;\n    \n    if (sle32(remaining_elements_14927, 0) || sle32(totalS_14611,\n                                                    starting_point_14926)) {\n        chunk_sizze_14925 = 0;\n    } else {\n        if (slt32(totalS_14611, (phys_tid_14798 + 1) * squot32(totalS_14611 +\n                                                               segred_group_sizze_14780 *\n                                                               num_groups_14792 -\n                                                               1,\n                                                               segred_gr",
+            "oup_sizze_14780 *\n                                                               num_groups_14792))) {\n            chunk_sizze_14925 = totalS_14611 - phys_tid_14798 *\n                squot32(totalS_14611 + segred_group_sizze_14780 *\n                        num_groups_14792 - 1, segred_group_sizze_14780 *\n                        num_groups_14792);\n        } else {\n            chunk_sizze_14925 = squot32(totalS_14611 +\n                                        segred_group_sizze_14780 *\n                                        num_groups_14792 - 1,\n                                        segred_group_sizze_14780 *\n                                        num_groups_14792);\n        }\n    }\n    \n    int32_t x_14706;\n    int8_t x_14707;\n    float x_14708;\n    int32_t x_14709;\n    int8_t x_14710;\n    float x_14711;\n    \n    // neutral-initialise the accumulators\n    {\n        x_acc_14922 = 0;\n        x_acc_14923 = 0;\n        x_acc_14924 = 100.0F;\n    }\n    for (int32_t i_14938 = 0; i_14938 < squot32(totalS_14611 +\n                                                segred_group_sizze_14780 *\n                                                num_groups_14792 - 1,\n                                                segred_group_sizze_14780 *\n                                                num_groups_14792); i_14938++) {\n        gtid_14797 = local_tid_14910 + (squot32(phys_tid_14798,\n                                                segred_group_sizze_14780) *\n                                        squot32(totalS_14611 +\n                                                segred_group_sizze_14780 *\n                                                num_groups_14792 - 1,\n                                                segred_group_sizze_14780 *\n                                                num_groups_14792) + i_14938) *\n            segred_group_sizze_14780;\n        if (slt32(gtid_14797, totalS_14611)) {\n            // apply map function\n            {\n                bool index_concat_cmp_14824 =",
+            " sle32(numS_14585, gtid_14797);\n                int32_t index_concat_branch_14828;\n                \n                if (index_concat_cmp_14824) {\n                    int32_t index_concat_i_14825 = gtid_14797 - numS_14585;\n                    \n                    index_concat_branch_14828 = index_concat_i_14825;\n                } else {\n                    index_concat_branch_14828 = gtid_14797;\n                }\n                \n                int8_t index_concat_branch_14822;\n                \n                if (index_concat_cmp_14824) {\n                    index_concat_branch_14822 = 2;\n                } else {\n                    index_concat_branch_14822 = 1;\n                }\n                \n                float index_concat_branch_14816;\n                \n                if (index_concat_cmp_14824) {\n                    int32_t index_concat_i_14813 = gtid_14797 - numS_14585;\n                    float index_concat_14814 = ((__global\n                                                 float *) mem_14855)[index_concat_i_14813];\n                    \n                    index_concat_branch_14816 = index_concat_14814;\n                } else {\n                    float index_concat_14815 = ((__global\n                                                 float *) mem_14852)[gtid_14797];\n                    \n                    index_concat_branch_14816 = index_concat_14815;\n                }\n                // save map-out results\n                { }\n                // load accumulator\n                {\n                    x_14706 = x_acc_14922;\n                    x_14707 = x_acc_14923;\n                    x_14708 = x_acc_14924;\n                }\n                // load new values\n                {\n                    x_14709 = index_concat_branch_14828;\n                    x_14710 = index_concat_branch_14822;\n                    x_14711 = index_concat_branch_14816;\n                }\n                // apply reduction operator\n                {\n                    bool con",
+            "d_14712 = x_14711 < x_14708;\n                    int32_t res_14713;\n                    \n                    if (cond_14712) {\n                        res_14713 = x_14709;\n                    } else {\n                        res_14713 = x_14706;\n                    }\n                    \n                    int8_t res_14714;\n                    \n                    if (cond_14712) {\n                        res_14714 = x_14710;\n                    } else {\n                        res_14714 = x_14707;\n                    }\n                    \n                    float res_14715;\n                    \n                    if (cond_14712) {\n                        res_14715 = x_14711;\n                    } else {\n                        res_14715 = x_14708;\n                    }\n                    // store in accumulator\n                    {\n                        x_acc_14922 = res_14713;\n                        x_acc_14923 = res_14714;\n                        x_acc_14924 = res_14715;\n                    }\n                }\n            }\n        }\n        // to reduce current chunk, first store our result in memory\n        {\n            x_14706 = x_acc_14922;\n            x_14707 = x_acc_14923;\n            x_14708 = x_acc_14924;\n            ((__local int32_t *) red_arr_mem_14916)[local_tid_14910] = x_14706;\n            ((__local int8_t *) red_arr_mem_14918)[local_tid_14910] = x_14707;\n            ((__local float *) red_arr_mem_14920)[local_tid_14910] = x_14708;\n        }\n        barrier(CLK_LOCAL_MEM_FENCE);\n        \n        int32_t offset_14939;\n        int32_t skip_waves_14940;\n        int32_t x_14928;\n        int8_t x_14929;\n        float x_14930;\n        int32_t x_14931;\n        int8_t x_14932;\n        float x_14933;\n        \n        offset_14939 = 0;\n        // participating threads read initial accumulator\n        {\n            if (slt32(local_tid_14910, segred_group_sizze_14780)) {\n                x_14928 = ((__local\n                            int32_t *) red_ar",
+            "r_mem_14916)[local_tid_14910 +\n                                                          offset_14939];\n                x_14929 = ((__local\n                            int8_t *) red_arr_mem_14918)[local_tid_14910 +\n                                                         offset_14939];\n                x_14930 = ((__local\n                            float *) red_arr_mem_14920)[local_tid_14910 +\n                                                        offset_14939];\n            }\n        }\n        offset_14939 = 1;\n        while (slt32(offset_14939, wave_sizze_14912)) {\n            if (slt32(local_tid_14910 + offset_14939,\n                      segred_group_sizze_14780) && ((local_tid_14910 -\n                                                     squot32(local_tid_14910,\n                                                             wave_sizze_14912) *\n                                                     wave_sizze_14912) & (2 *\n                                                                          offset_14939 -\n                                                                          1)) ==\n                0) {\n                // read array element\n                {\n                    x_14931 = ((volatile __local\n                                int32_t *) red_arr_mem_14916)[local_tid_14910 +\n                                                              offset_14939];\n                    x_14932 = ((volatile __local\n                                int8_t *) red_arr_mem_14918)[local_tid_14910 +\n                                                             offset_14939];\n                    x_14933 = ((volatile __local\n                                float *) red_arr_mem_14920)[local_tid_14910 +\n                                                            offset_14939];\n                }\n                // apply reduction operation\n                {\n                    bool cond_14934 = x_14933 < x_14930;\n                    int32_t res_14935;\n                    \n       ",
+            "             if (cond_14934) {\n                        res_14935 = x_14931;\n                    } else {\n                        res_14935 = x_14928;\n                    }\n                    \n                    int8_t res_14936;\n                    \n                    if (cond_14934) {\n                        res_14936 = x_14932;\n                    } else {\n                        res_14936 = x_14929;\n                    }\n                    \n                    float res_14937;\n                    \n                    if (cond_14934) {\n                        res_14937 = x_14933;\n                    } else {\n                        res_14937 = x_14930;\n                    }\n                    x_14928 = res_14935;\n                    x_14929 = res_14936;\n                    x_14930 = res_14937;\n                }\n                // write result of operation\n                {\n                    ((volatile __local\n                      int32_t *) red_arr_mem_14916)[local_tid_14910] = x_14928;\n                    ((volatile __local\n                      int8_t *) red_arr_mem_14918)[local_tid_14910] = x_14929;\n                    ((volatile __local\n                      float *) red_arr_mem_14920)[local_tid_14910] = x_14930;\n                }\n            }\n            offset_14939 *= 2;\n        }\n        skip_waves_14940 = 1;\n        while (slt32(skip_waves_14940, squot32(segred_group_sizze_14780 +\n                                               wave_sizze_14912 - 1,\n                                               wave_sizze_14912))) {\n            barrier(CLK_LOCAL_MEM_FENCE);\n            offset_14939 = skip_waves_14940 * wave_sizze_14912;\n            if (slt32(local_tid_14910 + offset_14939,\n                      segred_group_sizze_14780) && ((local_tid_14910 -\n                                                     squot32(local_tid_14910,\n                                                             wave_sizze_14912) *\n                                                ",
+            "     wave_sizze_14912) == 0 &&\n                                                    (squot32(local_tid_14910,\n                                                             wave_sizze_14912) &\n                                                     (2 * skip_waves_14940 -\n                                                      1)) == 0)) {\n                // read array element\n                {\n                    x_14931 = ((__local\n                                int32_t *) red_arr_mem_14916)[local_tid_14910 +\n                                                              offset_14939];\n                    x_14932 = ((__local\n                                int8_t *) red_arr_mem_14918)[local_tid_14910 +\n                                                             offset_14939];\n                    x_14933 = ((__local\n                                float *) red_arr_mem_14920)[local_tid_14910 +\n                                                            offset_14939];\n                }\n                // apply reduction operation\n                {\n                    bool cond_14934 = x_14933 < x_14930;\n                    int32_t res_14935;\n                    \n                    if (cond_14934) {\n                        res_14935 = x_14931;\n                    } else {\n                        res_14935 = x_14928;\n                    }\n                    \n                    int8_t res_14936;\n                    \n                    if (cond_14934) {\n                        res_14936 = x_14932;\n                    } else {\n                        res_14936 = x_14929;\n                    }\n                    \n                    float res_14937;\n                    \n                    if (cond_14934) {\n                        res_14937 = x_14933;\n                    } else {\n                        res_14937 = x_14930;\n                    }\n                    x_14928 = res_14935;\n                    x_14929 = res_14936;\n                    x_14930 = res_14937;\n        ",
+            "        }\n                // write result of operation\n                {\n                    ((__local int32_t *) red_arr_mem_14916)[local_tid_14910] =\n                        x_14928;\n                    ((__local int8_t *) red_arr_mem_14918)[local_tid_14910] =\n                        x_14929;\n                    ((__local float *) red_arr_mem_14920)[local_tid_14910] =\n                        x_14930;\n                }\n            }\n            skip_waves_14940 *= 2;\n        }\n        barrier(CLK_LOCAL_MEM_FENCE);\n        // first thread saves the result in accumulator\n        {\n            if (local_tid_14910 == 0) {\n                x_acc_14922 = x_14928;\n                x_acc_14923 = x_14929;\n                x_acc_14924 = x_14930;\n            }\n        }\n        // first thread keeps accumulator; others reset to neutral element\n        {\n            if (!(local_tid_14910 == 0)) {\n                x_acc_14922 = 0;\n                x_acc_14923 = 0;\n                x_acc_14924 = 100.0F;\n            }\n        }\n    }\n    x_14706 = x_acc_14922;\n    x_14707 = x_acc_14923;\n    x_14708 = x_acc_14924;\n    \n    int32_t old_counter_14941;\n    \n    // first thread in group saves group result to global memory\n    {\n        if (local_tid_14910 == 0) {\n            ((__global int32_t *) group_res_arr_mem_14902)[group_tid_14911 *\n                                                           segred_group_sizze_14780] =\n                x_acc_14922;\n            ((__global int8_t *) group_res_arr_mem_14904)[group_tid_14911 *\n                                                          segred_group_sizze_14780] =\n                x_acc_14923;\n            ((__global float *) group_res_arr_mem_14906)[group_tid_14911 *\n                                                         segred_group_sizze_14780] =\n                x_acc_14924;\n            mem_fence_global();\n            old_counter_14941 = atomic_add(&((volatile __global\n                                              int *) counter_mem_14900)[",
+            "0],\n                                           (int) 1);\n            ((__local bool *) sync_arr_mem_14914)[0] = old_counter_14941 ==\n                num_groups_14792 - 1;\n        }\n    }\n    barrier(CLK_LOCAL_MEM_FENCE);\n    barrier(CLK_GLOBAL_MEM_FENCE);\n    \n    bool is_last_group_14942 = ((__local bool *) sync_arr_mem_14914)[0];\n    \n    if (is_last_group_14942) {\n        if (local_tid_14910 == 0) {\n            old_counter_14941 = atomic_add(&((volatile __global\n                                              int *) counter_mem_14900)[0],\n                                           (int) (0 - num_groups_14792));\n        }\n        // read in the per-group-results\n        {\n            if (slt32(local_tid_14910, num_groups_14792)) {\n                x_14706 = ((__global\n                            int32_t *) group_res_arr_mem_14902)[local_tid_14910 *\n                                                                segred_group_sizze_14780];\n            } else {\n                x_14706 = 0;\n            }\n            ((__local int32_t *) red_arr_mem_14916)[local_tid_14910] = x_14706;\n            if (slt32(local_tid_14910, num_groups_14792)) {\n                x_14707 = ((__global\n                            int8_t *) group_res_arr_mem_14904)[local_tid_14910 *\n                                                               segred_group_sizze_14780];\n            } else {\n                x_14707 = 0;\n            }\n            ((__local int8_t *) red_arr_mem_14918)[local_tid_14910] = x_14707;\n            if (slt32(local_tid_14910, num_groups_14792)) {\n                x_14708 = ((__global\n                            float *) group_res_arr_mem_14906)[local_tid_14910 *\n                                                              segred_group_sizze_14780];\n            } else {\n                x_14708 = 100.0F;\n            }\n            ((__local float *) red_arr_mem_14920)[local_tid_14910] = x_14708;\n        }\n        barrier(CLK_LOCAL_MEM_FENCE);\n        // reduce the per-group r",
+            "esults\n        {\n            int32_t offset_14943;\n            int32_t skip_waves_14944;\n            int32_t x_14928;\n            int8_t x_14929;\n            float x_14930;\n            int32_t x_14931;\n            int8_t x_14932;\n            float x_14933;\n            \n            offset_14943 = 0;\n            // participating threads read initial accumulator\n            {\n                if (slt32(local_tid_14910, segred_group_sizze_14780)) {\n                    x_14928 = ((__local\n                                int32_t *) red_arr_mem_14916)[local_tid_14910 +\n                                                              offset_14943];\n                    x_14929 = ((__local\n                                int8_t *) red_arr_mem_14918)[local_tid_14910 +\n                                                             offset_14943];\n                    x_14930 = ((__local\n                                float *) red_arr_mem_14920)[local_tid_14910 +\n                                                            offset_14943];\n                }\n            }\n            offset_14943 = 1;\n            while (slt32(offset_14943, wave_sizze_14912)) {\n                if (slt32(local_tid_14910 + offset_14943,\n                          segred_group_sizze_14780) && ((local_tid_14910 -\n                                                         squot32(local_tid_14910,\n                                                                 wave_sizze_14912) *\n                                                         wave_sizze_14912) &\n                                                        (2 * offset_14943 -\n                                                         1)) == 0) {\n                    // read array element\n                    {\n                        x_14931 = ((volatile __local\n                                    int32_t *) red_arr_mem_14916)[local_tid_14910 +\n                                                                  offset_14943];\n                        x_14932 = ((volat",
+            "ile __local\n                                    int8_t *) red_arr_mem_14918)[local_tid_14910 +\n                                                                 offset_14943];\n                        x_14933 = ((volatile __local\n                                    float *) red_arr_mem_14920)[local_tid_14910 +\n                                                                offset_14943];\n                    }\n                    // apply reduction operation\n                    {\n                        bool cond_14934 = x_14933 < x_14930;\n                        int32_t res_14935;\n                        \n                        if (cond_14934) {\n                            res_14935 = x_14931;\n                        } else {\n                            res_14935 = x_14928;\n                        }\n                        \n                        int8_t res_14936;\n                        \n                        if (cond_14934) {\n                            res_14936 = x_14932;\n                        } else {\n                            res_14936 = x_14929;\n                        }\n                        \n                        float res_14937;\n                        \n                        if (cond_14934) {\n                            res_14937 = x_14933;\n                        } else {\n                            res_14937 = x_14930;\n                        }\n                        x_14928 = res_14935;\n                        x_14929 = res_14936;\n                        x_14930 = res_14937;\n                    }\n                    // write result of operation\n                    {\n                        ((volatile __local\n                          int32_t *) red_arr_mem_14916)[local_tid_14910] =\n                            x_14928;\n                        ((volatile __local\n                          int8_t *) red_arr_mem_14918)[local_tid_14910] =\n                            x_14929;\n                        ((volatile __local\n                          flo",
+            "at *) red_arr_mem_14920)[local_tid_14910] =\n                            x_14930;\n                    }\n                }\n                offset_14943 *= 2;\n            }\n            skip_waves_14944 = 1;\n            while (slt32(skip_waves_14944, squot32(segred_group_sizze_14780 +\n                                                   wave_sizze_14912 - 1,\n                                                   wave_sizze_14912))) {\n                barrier(CLK_LOCAL_MEM_FENCE);\n                offset_14943 = skip_waves_14944 * wave_sizze_14912;\n                if (slt32(local_tid_14910 + offset_14943,\n                          segred_group_sizze_14780) && ((local_tid_14910 -\n                                                         squot32(local_tid_14910,\n                                                                 wave_sizze_14912) *\n                                                         wave_sizze_14912) ==\n                                                        0 &&\n                                                        (squot32(local_tid_14910,\n                                                                 wave_sizze_14912) &\n                                                         (2 * skip_waves_14944 -\n                                                          1)) == 0)) {\n                    // read array element\n                    {\n                        x_14931 = ((__local\n                                    int32_t *) red_arr_mem_14916)[local_tid_14910 +\n                                                                  offset_14943];\n                        x_14932 = ((__local\n                                    int8_t *) red_arr_mem_14918)[local_tid_14910 +\n                                                                 offset_14943];\n                        x_14933 = ((__local\n                                    float *) red_arr_mem_14920)[local_tid_14910 +\n                                                                offset_14943];\n               ",
+            "     }\n                    // apply reduction operation\n                    {\n                        bool cond_14934 = x_14933 < x_14930;\n                        int32_t res_14935;\n                        \n                        if (cond_14934) {\n                            res_14935 = x_14931;\n                        } else {\n                            res_14935 = x_14928;\n                        }\n                        \n                        int8_t res_14936;\n                        \n                        if (cond_14934) {\n                            res_14936 = x_14932;\n                        } else {\n                            res_14936 = x_14929;\n                        }\n                        \n                        float res_14937;\n                        \n                        if (cond_14934) {\n                            res_14937 = x_14933;\n                        } else {\n                            res_14937 = x_14930;\n                        }\n                        x_14928 = res_14935;\n                        x_14929 = res_14936;\n                        x_14930 = res_14937;\n                    }\n                    // write result of operation\n                    {\n                        ((__local\n                          int32_t *) red_arr_mem_14916)[local_tid_14910] =\n                            x_14928;\n                        ((__local\n                          int8_t *) red_arr_mem_14918)[local_tid_14910] =\n                            x_14929;\n                        ((__local float *) red_arr_mem_14920)[local_tid_14910] =\n                            x_14930;\n                    }\n                }\n                skip_waves_14944 *= 2;\n            }\n            // and back to memory with the final result\n            {\n                if (local_tid_14910 == 0) {\n                    ((__global int32_t *) mem_14859)[0] = x_14928;\n                    ((__global int8_t *) mem_14861)[0] = x_14929;\n                    ((__global float",
+            " *) mem_14864)[0] = x_14930;\n                }\n            }\n        }\n    }\n}\n",
             NULL};
+static int32_t counter_mem_realtype_14969[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 struct memblock_device {
     int *references;
     cl_mem mem;
@@ -1158,20 +1168,20 @@ struct memblock {
     int64_t size;
     const char *desc;
 } ;
-static const char *size_names[] = {"main.group_size_12960",
-                                   "main.segmap_group_size_12727",
-                                   "main.segmap_group_size_12805",
-                                   "main.segmap_group_size_12816",
-                                   "main.segmap_max_num_groups_12730",
-                                   "main.segmap_max_num_groups_12819"};
-static const char *size_vars[] = {"mainzigroup_sizze_12960",
-                                  "mainzisegmap_group_sizze_12727",
-                                  "mainzisegmap_group_sizze_12805",
-                                  "mainzisegmap_group_sizze_12816",
-                                  "mainzisegmap_max_num_groups_12730",
-                                  "mainzisegmap_max_num_groups_12819"};
+static const char *size_names[] = {"main.group_size_14948",
+                                   "main.group_size_14953",
+                                   "main.segmap_group_size_14731",
+                                   "main.segmap_group_size_14756",
+                                   "main.segred_group_size_14779",
+                                   "main.segred_max_num_groups_14782"};
+static const char *size_vars[] = {"mainzigroup_sizze_14948",
+                                  "mainzigroup_sizze_14953",
+                                  "mainzisegmap_group_sizze_14731",
+                                  "mainzisegmap_group_sizze_14756",
+                                  "mainzisegred_group_sizze_14779",
+                                  "mainzisegred_max_num_groups_14782"};
 static const char *size_classes[] = {"group_size", "group_size", "group_size",
-                                     "group_size", "num_groups", "num_groups"};
+                                     "group_size", "group_size", "num_groups"};
 int futhark_get_num_sizes(void)
 {
     return 6;
@@ -1185,12 +1195,12 @@ const char *futhark_get_size_class(int i)
     return size_classes[i];
 }
 struct sizes {
-    size_t mainzigroup_sizze_12960;
-    size_t mainzisegmap_group_sizze_12727;
-    size_t mainzisegmap_group_sizze_12805;
-    size_t mainzisegmap_group_sizze_12816;
-    size_t mainzisegmap_max_num_groups_12730;
-    size_t mainzisegmap_max_num_groups_12819;
+    size_t mainzigroup_sizze_14948;
+    size_t mainzigroup_sizze_14953;
+    size_t mainzisegmap_group_sizze_14731;
+    size_t mainzisegmap_group_sizze_14756;
+    size_t mainzisegred_group_sizze_14779;
+    size_t mainzisegred_max_num_groups_14782;
 } ;
 struct futhark_context_config {
     struct opencl_config opencl;
@@ -1336,6 +1346,7 @@ struct futhark_context {
     int64_t cur_mem_usage_device;
     int64_t peak_mem_usage_default;
     int64_t cur_mem_usage_default;
+    struct memblock_device counter_mem_14900;
     int total_runs;
     long total_runtime;
     cl_kernel map_transpose_f32;
@@ -1350,18 +1361,21 @@ struct futhark_context {
     cl_kernel map_transpose_f32_small;
     int map_transpose_f32_small_total_runtime;
     int map_transpose_f32_small_runs;
-    cl_kernel replicate_12957;
-    int replicate_12957_total_runtime;
-    int replicate_12957_runs;
-    cl_kernel segmap_12725;
-    int segmap_12725_total_runtime;
-    int segmap_12725_runs;
-    cl_kernel segmap_12802;
-    int segmap_12802_total_runtime;
-    int segmap_12802_runs;
-    cl_kernel segmap_12814;
-    int segmap_12814_total_runtime;
-    int segmap_12814_runs;
+    cl_kernel replicate_14945;
+    int replicate_14945_total_runtime;
+    int replicate_14945_runs;
+    cl_kernel replicate_14950;
+    int replicate_14950_total_runtime;
+    int replicate_14950_runs;
+    cl_kernel segmap_14729;
+    int segmap_14729_total_runtime;
+    int segmap_14729_runs;
+    cl_kernel segmap_14754;
+    int segmap_14754_total_runtime;
+    int segmap_14754_runs;
+    cl_kernel segred_nonseg_14798;
+    int segred_nonseg_14798_total_runtime;
+    int segred_nonseg_14798_runs;
     struct opencl_context opencl;
     struct sizes sizes;
 } ;
@@ -1445,14 +1459,16 @@ static void init_context_early(struct futhark_context_config *cfg,
     ctx->map_transpose_f32_low_width_runs = 0;
     ctx->map_transpose_f32_small_total_runtime = 0;
     ctx->map_transpose_f32_small_runs = 0;
-    ctx->replicate_12957_total_runtime = 0;
-    ctx->replicate_12957_runs = 0;
-    ctx->segmap_12725_total_runtime = 0;
-    ctx->segmap_12725_runs = 0;
-    ctx->segmap_12802_total_runtime = 0;
-    ctx->segmap_12802_runs = 0;
-    ctx->segmap_12814_total_runtime = 0;
-    ctx->segmap_12814_runs = 0;
+    ctx->replicate_14945_total_runtime = 0;
+    ctx->replicate_14945_runs = 0;
+    ctx->replicate_14950_total_runtime = 0;
+    ctx->replicate_14950_runs = 0;
+    ctx->segmap_14729_total_runtime = 0;
+    ctx->segmap_14729_runs = 0;
+    ctx->segmap_14754_total_runtime = 0;
+    ctx->segmap_14754_runs = 0;
+    ctx->segred_nonseg_14798_total_runtime = 0;
+    ctx->segred_nonseg_14798_runs = 0;
 }
 static int init_context_late(struct futhark_context_config *cfg,
                              struct futhark_context *ctx, cl_program prog)
@@ -1493,35 +1509,61 @@ static int init_context_late(struct futhark_context_config *cfg,
             fprintf(stderr, "Created kernel %s.\n", "map_transpose_f32_small");
     }
     {
-        ctx->replicate_12957 = clCreateKernel(prog, "replicate_12957", &error);
+        ctx->replicate_14945 = clCreateKernel(prog, "replicate_14945", &error);
         OPENCL_SUCCEED_FATAL(error);
         if (ctx->debugging)
-            fprintf(stderr, "Created kernel %s.\n", "replicate_12957");
+            fprintf(stderr, "Created kernel %s.\n", "replicate_14945");
     }
     {
-        ctx->segmap_12725 = clCreateKernel(prog, "segmap_12725", &error);
+        ctx->replicate_14950 = clCreateKernel(prog, "replicate_14950", &error);
         OPENCL_SUCCEED_FATAL(error);
         if (ctx->debugging)
-            fprintf(stderr, "Created kernel %s.\n", "segmap_12725");
+            fprintf(stderr, "Created kernel %s.\n", "replicate_14950");
     }
     {
-        ctx->segmap_12802 = clCreateKernel(prog, "segmap_12802", &error);
+        ctx->segmap_14729 = clCreateKernel(prog, "segmap_14729", &error);
         OPENCL_SUCCEED_FATAL(error);
         if (ctx->debugging)
-            fprintf(stderr, "Created kernel %s.\n", "segmap_12802");
+            fprintf(stderr, "Created kernel %s.\n", "segmap_14729");
     }
     {
-        ctx->segmap_12814 = clCreateKernel(prog, "segmap_12814", &error);
+        ctx->segmap_14754 = clCreateKernel(prog, "segmap_14754", &error);
         OPENCL_SUCCEED_FATAL(error);
         if (ctx->debugging)
-            fprintf(stderr, "Created kernel %s.\n", "segmap_12814");
+            fprintf(stderr, "Created kernel %s.\n", "segmap_14754");
     }
-    ctx->sizes.mainzigroup_sizze_12960 = cfg->sizes[0];
-    ctx->sizes.mainzisegmap_group_sizze_12727 = cfg->sizes[1];
-    ctx->sizes.mainzisegmap_group_sizze_12805 = cfg->sizes[2];
-    ctx->sizes.mainzisegmap_group_sizze_12816 = cfg->sizes[3];
-    ctx->sizes.mainzisegmap_max_num_groups_12730 = cfg->sizes[4];
-    ctx->sizes.mainzisegmap_max_num_groups_12819 = cfg->sizes[5];
+    {
+        ctx->segred_nonseg_14798 = clCreateKernel(prog, "segred_nonseg_14798",
+                                                  &error);
+        OPENCL_SUCCEED_FATAL(error);
+        if (ctx->debugging)
+            fprintf(stderr, "Created kernel %s.\n", "segred_nonseg_14798");
+    }
+    {
+        cl_int success;
+        
+        ctx->counter_mem_14900.references = NULL;
+        ctx->counter_mem_14900.size = 0;
+        ctx->counter_mem_14900.mem = clCreateBuffer(ctx->opencl.ctx,
+                                                    CL_MEM_READ_WRITE, (10 >
+                                                                        0 ? 10 : 1) *
+                                                    sizeof(int32_t), NULL,
+                                                    &success);
+        OPENCL_SUCCEED_OR_RETURN(success);
+        if (10 > 0)
+            OPENCL_SUCCEED_OR_RETURN(clEnqueueWriteBuffer(ctx->opencl.queue,
+                                                          ctx->counter_mem_14900.mem,
+                                                          CL_TRUE, 0, 10 *
+                                                          sizeof(int32_t),
+                                                          counter_mem_realtype_14969,
+                                                          0, NULL, NULL));
+    }
+    ctx->sizes.mainzigroup_sizze_14948 = cfg->sizes[0];
+    ctx->sizes.mainzigroup_sizze_14953 = cfg->sizes[1];
+    ctx->sizes.mainzisegmap_group_sizze_14731 = cfg->sizes[2];
+    ctx->sizes.mainzisegmap_group_sizze_14756 = cfg->sizes[3];
+    ctx->sizes.mainzisegred_group_sizze_14779 = cfg->sizes[4];
+    ctx->sizes.mainzisegred_max_num_groups_14782 = cfg->sizes[5];
     return 0;
 }
 struct futhark_context *futhark_context_new(struct futhark_context_config *cfg)
@@ -1763,51 +1805,62 @@ void futhark_debugging_report(struct futhark_context *ctx)
         ctx->total_runtime += ctx->map_transpose_f32_small_total_runtime;
         ctx->total_runs += ctx->map_transpose_f32_small_runs;
         fprintf(stderr,
-                "Kernel replicate_12957              executed %6d times, with average runtime: %6ldus\tand total runtime: %6ldus\n",
-                ctx->replicate_12957_runs,
-                (long) ctx->replicate_12957_total_runtime /
-                (ctx->replicate_12957_runs !=
-                 0 ? ctx->replicate_12957_runs : 1),
-                (long) ctx->replicate_12957_total_runtime);
-        ctx->total_runtime += ctx->replicate_12957_total_runtime;
-        ctx->total_runs += ctx->replicate_12957_runs;
+                "Kernel replicate_14945              executed %6d times, with average runtime: %6ldus\tand total runtime: %6ldus\n",
+                ctx->replicate_14945_runs,
+                (long) ctx->replicate_14945_total_runtime /
+                (ctx->replicate_14945_runs !=
+                 0 ? ctx->replicate_14945_runs : 1),
+                (long) ctx->replicate_14945_total_runtime);
+        ctx->total_runtime += ctx->replicate_14945_total_runtime;
+        ctx->total_runs += ctx->replicate_14945_runs;
         fprintf(stderr,
-                "Kernel segmap_12725                 executed %6d times, with average runtime: %6ldus\tand total runtime: %6ldus\n",
-                ctx->segmap_12725_runs, (long) ctx->segmap_12725_total_runtime /
-                (ctx->segmap_12725_runs != 0 ? ctx->segmap_12725_runs : 1),
-                (long) ctx->segmap_12725_total_runtime);
-        ctx->total_runtime += ctx->segmap_12725_total_runtime;
-        ctx->total_runs += ctx->segmap_12725_runs;
+                "Kernel replicate_14950              executed %6d times, with average runtime: %6ldus\tand total runtime: %6ldus\n",
+                ctx->replicate_14950_runs,
+                (long) ctx->replicate_14950_total_runtime /
+                (ctx->replicate_14950_runs !=
+                 0 ? ctx->replicate_14950_runs : 1),
+                (long) ctx->replicate_14950_total_runtime);
+        ctx->total_runtime += ctx->replicate_14950_total_runtime;
+        ctx->total_runs += ctx->replicate_14950_runs;
         fprintf(stderr,
-                "Kernel segmap_12802                 executed %6d times, with average runtime: %6ldus\tand total runtime: %6ldus\n",
-                ctx->segmap_12802_runs, (long) ctx->segmap_12802_total_runtime /
-                (ctx->segmap_12802_runs != 0 ? ctx->segmap_12802_runs : 1),
-                (long) ctx->segmap_12802_total_runtime);
-        ctx->total_runtime += ctx->segmap_12802_total_runtime;
-        ctx->total_runs += ctx->segmap_12802_runs;
+                "Kernel segmap_14729                 executed %6d times, with average runtime: %6ldus\tand total runtime: %6ldus\n",
+                ctx->segmap_14729_runs, (long) ctx->segmap_14729_total_runtime /
+                (ctx->segmap_14729_runs != 0 ? ctx->segmap_14729_runs : 1),
+                (long) ctx->segmap_14729_total_runtime);
+        ctx->total_runtime += ctx->segmap_14729_total_runtime;
+        ctx->total_runs += ctx->segmap_14729_runs;
         fprintf(stderr,
-                "Kernel segmap_12814                 executed %6d times, with average runtime: %6ldus\tand total runtime: %6ldus\n",
-                ctx->segmap_12814_runs, (long) ctx->segmap_12814_total_runtime /
-                (ctx->segmap_12814_runs != 0 ? ctx->segmap_12814_runs : 1),
-                (long) ctx->segmap_12814_total_runtime);
-        ctx->total_runtime += ctx->segmap_12814_total_runtime;
-        ctx->total_runs += ctx->segmap_12814_runs;
+                "Kernel segmap_14754                 executed %6d times, with average runtime: %6ldus\tand total runtime: %6ldus\n",
+                ctx->segmap_14754_runs, (long) ctx->segmap_14754_total_runtime /
+                (ctx->segmap_14754_runs != 0 ? ctx->segmap_14754_runs : 1),
+                (long) ctx->segmap_14754_total_runtime);
+        ctx->total_runtime += ctx->segmap_14754_total_runtime;
+        ctx->total_runs += ctx->segmap_14754_runs;
+        fprintf(stderr,
+                "Kernel segred_nonseg_14798          executed %6d times, with average runtime: %6ldus\tand total runtime: %6ldus\n",
+                ctx->segred_nonseg_14798_runs,
+                (long) ctx->segred_nonseg_14798_total_runtime /
+                (ctx->segred_nonseg_14798_runs !=
+                 0 ? ctx->segred_nonseg_14798_runs : 1),
+                (long) ctx->segred_nonseg_14798_total_runtime);
+        ctx->total_runtime += ctx->segred_nonseg_14798_total_runtime;
+        ctx->total_runs += ctx->segred_nonseg_14798_runs;
         if (ctx->debugging)
             fprintf(stderr, "Ran %d kernels with cumulative runtime: %6ldus\n",
                     ctx->total_runs, ctx->total_runtime);
     }
 }
 static int futrts_main(struct futhark_context *ctx,
-                       struct memblock_device *out_mem_p_12997,
-                       int32_t *out_out_arrsizze_12998,
-                       int32_t *out_out_arrsizze_12999,
-                       struct memblock_device sPositions_mem_12887,
-                       struct memblock_device sRadii_mem_12888,
-                       struct memblock_device sColors_mem_12889,
-                       int32_t s_12545, int32_t s_12546, int32_t s_12547,
-                       int32_t sizze_12548, int32_t sizze_12549,
-                       int32_t width_12550, int32_t height_12551,
-                       int32_t numS_12552, int32_t numL_12553);
+                       struct memblock_device *out_mem_p_14955,
+                       int32_t *out_out_arrsizze_14956,
+                       int32_t *out_out_arrsizze_14957,
+                       struct memblock_device sPositions_mem_14843,
+                       struct memblock_device sRadii_mem_14844,
+                       struct memblock_device sColors_mem_14845,
+                       int32_t s_14578, int32_t s_14579, int32_t s_14580,
+                       int32_t sizze_14581, int32_t sizze_14582,
+                       int32_t width_14583, int32_t height_14584,
+                       int32_t numS_14585, int32_t numL_14586);
 static int futrts__map_transpose_f32(struct futhark_context *ctx,
                                      struct memblock_device destmem_0,
                                      int32_t destoffset_1,
@@ -2708,609 +2761,645 @@ static inline double futrts_from_bits64(int64_t x)
     return p.t;
 }
 static int futrts_main(struct futhark_context *ctx,
-                       struct memblock_device *out_mem_p_12997,
-                       int32_t *out_out_arrsizze_12998,
-                       int32_t *out_out_arrsizze_12999,
-                       struct memblock_device sPositions_mem_12887,
-                       struct memblock_device sRadii_mem_12888,
-                       struct memblock_device sColors_mem_12889,
-                       int32_t s_12545, int32_t s_12546, int32_t s_12547,
-                       int32_t sizze_12548, int32_t sizze_12549,
-                       int32_t width_12550, int32_t height_12551,
-                       int32_t numS_12552, int32_t numL_12553)
+                       struct memblock_device *out_mem_p_14955,
+                       int32_t *out_out_arrsizze_14956,
+                       int32_t *out_out_arrsizze_14957,
+                       struct memblock_device sPositions_mem_14843,
+                       struct memblock_device sRadii_mem_14844,
+                       struct memblock_device sColors_mem_14845,
+                       int32_t s_14578, int32_t s_14579, int32_t s_14580,
+                       int32_t sizze_14581, int32_t sizze_14582,
+                       int32_t width_14583, int32_t height_14584,
+                       int32_t numS_14585, int32_t numL_14586)
 {
-    struct memblock_device out_mem_12954;
+    struct memblock_device out_mem_14885;
     
-    out_mem_12954.references = NULL;
+    out_mem_14885.references = NULL;
     
-    int32_t out_arrsizze_12955;
-    int32_t out_arrsizze_12956;
-    bool dim_zzero_12557 = 0 == s_12545;
-    bool dim_zzero_12558 = 0 == sizze_12548;
-    bool old_empty_12559 = dim_zzero_12557 || dim_zzero_12558;
-    bool both_empty_12560 = dim_zzero_12557 && old_empty_12559;
-    bool dim_match_12561 = 3 == sizze_12548;
-    bool empty_or_match_12562 = both_empty_12560 || dim_match_12561;
-    bool empty_or_match_cert_12563;
+    int32_t out_arrsizze_14886;
+    int32_t out_arrsizze_14887;
+    bool dim_zzero_14590 = 0 == s_14578;
+    bool dim_zzero_14591 = 0 == sizze_14581;
+    bool old_empty_14592 = dim_zzero_14590 || dim_zzero_14591;
+    bool both_empty_14593 = dim_zzero_14590 && old_empty_14592;
+    bool dim_match_14594 = 3 == sizze_14581;
+    bool empty_or_match_14595 = both_empty_14593 || dim_match_14594;
+    bool empty_or_match_cert_14596;
     
-    if (!empty_or_match_12562) {
-        ctx->error = msgprintf("Error at %s:\n%s\n", "render.fut:93:1-111:53",
+    if (!empty_or_match_14595) {
+        ctx->error = msgprintf("Error at %s:\n%s\n", "test.fut:69:1-85:44",
                                "function arguments of wrong shape");
-        if (memblock_unref_device(ctx, &out_mem_12954, "out_mem_12954") != 0)
+        if (memblock_unref_device(ctx, &out_mem_14885, "out_mem_14885") != 0)
             return 1;
         return 1;
     }
     
-    bool dim_zzero_12564 = 0 == s_12546;
-    bool both_empty_12565 = dim_zzero_12557 && dim_zzero_12564;
-    bool dim_match_12566 = s_12545 == s_12546;
-    bool empty_or_match_12567 = both_empty_12565 || dim_match_12566;
-    bool empty_or_match_cert_12568;
+    bool dim_zzero_14597 = 0 == s_14579;
+    bool both_empty_14598 = dim_zzero_14590 && dim_zzero_14597;
+    bool dim_match_14599 = s_14578 == s_14579;
+    bool empty_or_match_14600 = both_empty_14598 || dim_match_14599;
+    bool empty_or_match_cert_14601;
     
-    if (!empty_or_match_12567) {
-        ctx->error = msgprintf("Error at %s:\n%s\n", "render.fut:93:1-111:53",
+    if (!empty_or_match_14600) {
+        ctx->error = msgprintf("Error at %s:\n%s\n", "test.fut:69:1-85:44",
                                "function arguments of wrong shape");
-        if (memblock_unref_device(ctx, &out_mem_12954, "out_mem_12954") != 0)
+        if (memblock_unref_device(ctx, &out_mem_14885, "out_mem_14885") != 0)
             return 1;
         return 1;
     }
     
-    bool dim_zzero_12569 = 0 == s_12547;
-    bool dim_zzero_12570 = 0 == sizze_12549;
-    bool old_empty_12571 = dim_zzero_12569 || dim_zzero_12570;
-    bool both_empty_12572 = dim_zzero_12557 && old_empty_12571;
-    bool dim_match_12573 = s_12545 == s_12547;
-    bool dim_match_12574 = 4 == sizze_12549;
-    bool match_12575 = dim_match_12573 && dim_match_12574;
-    bool empty_or_match_12576 = both_empty_12572 || match_12575;
-    bool empty_or_match_cert_12577;
+    bool dim_zzero_14602 = 0 == s_14580;
+    bool dim_zzero_14603 = 0 == sizze_14582;
+    bool old_empty_14604 = dim_zzero_14602 || dim_zzero_14603;
+    bool both_empty_14605 = dim_zzero_14590 && old_empty_14604;
+    bool dim_match_14606 = s_14578 == s_14580;
+    bool dim_match_14607 = 4 == sizze_14582;
+    bool match_14608 = dim_match_14606 && dim_match_14607;
+    bool empty_or_match_14609 = both_empty_14605 || match_14608;
+    bool empty_or_match_cert_14610;
     
-    if (!empty_or_match_12576) {
-        ctx->error = msgprintf("Error at %s:\n%s\n", "render.fut:93:1-111:53",
+    if (!empty_or_match_14609) {
+        ctx->error = msgprintf("Error at %s:\n%s\n", "test.fut:69:1-85:44",
                                "function arguments of wrong shape");
-        if (memblock_unref_device(ctx, &out_mem_12954, "out_mem_12954") != 0)
+        if (memblock_unref_device(ctx, &out_mem_14885, "out_mem_14885") != 0)
             return 1;
         return 1;
     }
     
-    int32_t y_12578 = numS_12552 + numL_12553;
-    bool validInputs_12579 = s_12545 == y_12578;
-    bool cond_12580 = !validInputs_12579;
-    int32_t iota_arg_12581 = width_12550 * height_12551;
-    int32_t sizze_12582;
+    int32_t totalS_14611 = numS_14585 + numL_14586;
+    bool empty_slice_14612 = numS_14585 == 0;
+    int32_t m_14613 = numS_14585 - 1;
+    bool zzero_leq_i_p_m_t_s_14614 = sle32(0, m_14613);
+    bool i_p_m_t_s_leq_w_14615 = slt32(m_14613, s_14578);
+    bool i_lte_j_14616 = sle32(0, numS_14585);
+    bool y_14617 = zzero_leq_i_p_m_t_s_14614 && i_p_m_t_s_leq_w_14615;
+    bool y_14618 = i_lte_j_14616 && y_14617;
+    bool ok_or_empty_14619 = empty_slice_14612 || y_14618;
+    bool index_certs_14620;
     
-    if (cond_12580) {
-        sizze_12582 = 1;
-    } else {
-        sizze_12582 = iota_arg_12581;
+    if (!ok_or_empty_14619) {
+        ctx->error = msgprintf("Error at %s:\n%s%d%s%d%s%d%s\n",
+                               "test.fut:69:1-85:44 -> test.fut:82:9-28",
+                               "Index [", 0, ":", numS_14585,
+                               "] out of bounds for array of shape [", s_14578,
+                               "].");
+        if (memblock_unref_device(ctx, &out_mem_14885, "out_mem_14885") != 0)
+            return 1;
+        return 1;
     }
     
-    int64_t binop_x_12891 = sext_i32_i64(sizze_12582);
-    int64_t bytes_12890 = 4 * binop_x_12891;
-    int32_t convop_x_12898 = 3 * iota_arg_12581;
-    int64_t binop_x_12899 = sext_i32_i64(convop_x_12898);
-    int64_t bytes_12897 = 4 * binop_x_12899;
-    int64_t binop_x_12902 = sext_i32_i64(iota_arg_12581);
-    int64_t bytes_12901 = 4 * binop_x_12902;
-    int64_t binop_x_12911 = 3 * binop_x_12902;
-    int64_t bytes_12908 = 4 * binop_x_12911;
-    int32_t segmap_group_sizze_12728;
+    bool empty_slice_14623 = numL_14586 == 0;
+    int32_t m_14624 = numL_14586 - 1;
+    int32_t i_p_m_t_s_14625 = numS_14585 + m_14624;
+    bool zzero_leq_i_p_m_t_s_14626 = sle32(0, i_p_m_t_s_14625);
+    bool i_p_m_t_s_leq_w_14627 = slt32(i_p_m_t_s_14625, s_14578);
+    bool i_lte_j_14628 = sle32(numS_14585, totalS_14611);
+    bool y_14629 = i_lte_j_14616 && i_p_m_t_s_leq_w_14627;
+    bool y_14630 = zzero_leq_i_p_m_t_s_14626 && y_14629;
+    bool y_14631 = i_lte_j_14628 && y_14630;
+    bool forwards_ok_14632 = i_lte_j_14616 && y_14631;
+    bool ok_or_empty_14633 = empty_slice_14623 || forwards_ok_14632;
+    bool index_certs_14634;
     
-    segmap_group_sizze_12728 = ctx->sizes.mainzisegmap_group_sizze_12727;
-    
-    int64_t segmap_group_sizze_12729 = sext_i32_i64(segmap_group_sizze_12728);
-    int32_t segmap_max_num_groups_12731;
-    
-    segmap_max_num_groups_12731 = ctx->sizes.mainzisegmap_max_num_groups_12730;
-    
-    int64_t segmap_max_num_groups_12732 =
-            sext_i32_i64(segmap_max_num_groups_12731);
-    int64_t y_12734 = segmap_group_sizze_12729 - 1;
-    int64_t x_12735 = y_12734 + binop_x_12902;
-    struct memblock_device res_mem_12937;
-    
-    res_mem_12937.references = NULL;
-    if (cond_12580) {
-        struct memblock_device mem_12893;
-        
-        mem_12893.references = NULL;
-        if (memblock_alloc_device(ctx, &mem_12893, bytes_12890, "mem_12893"))
+    if (!ok_or_empty_14633) {
+        ctx->error = msgprintf("Error at %s:\n%s%d%s%d%s%d%s\n",
+                               "test.fut:69:1-85:44 -> test.fut:84:9-33",
+                               "Index [", numS_14585, ":", totalS_14611,
+                               "] out of bounds for array of shape [", s_14578,
+                               "].");
+        if (memblock_unref_device(ctx, &out_mem_14885, "out_mem_14885") != 0)
             return 1;
+        return 1;
+    }
+    
+    int32_t iota_arg_14637 = width_14583 * height_14584;
+    int32_t segmap_group_sizze_14732;
+    
+    segmap_group_sizze_14732 = ctx->sizes.mainzisegmap_group_sizze_14731;
+    
+    int32_t y_14733 = segmap_group_sizze_14732 - 1;
+    int32_t x_14734 = numS_14585 + y_14733;
+    int32_t segmap_usable_groups_14735 = squot32(x_14734,
+                                                 segmap_group_sizze_14732);
+    int32_t convop_x_14847 = s_14578 * sizze_14581;
+    int64_t binop_x_14848 = sext_i32_i64(convop_x_14847);
+    int64_t bytes_14846 = 4 * binop_x_14848;
+    struct memblock_device mem_14849;
+    
+    mem_14849.references = NULL;
+    if (memblock_alloc_device(ctx, &mem_14849, bytes_14846, "mem_14849"))
+        return 1;
+    
+    int call_ret_14958 = futrts__map_transpose_f32(ctx, mem_14849, 0,
+                                                   sPositions_mem_14843, 0, 1,
+                                                   sizze_14581, s_14578,
+                                                   s_14578 * sizze_14581,
+                                                   s_14578 * sizze_14581);
+    
+    assert(call_ret_14958 == 0);
+    
+    int64_t binop_x_14851 = sext_i32_i64(numS_14585);
+    int64_t bytes_14850 = 4 * binop_x_14851;
+    struct memblock_device mem_14852;
+    
+    mem_14852.references = NULL;
+    if (memblock_alloc_device(ctx, &mem_14852, bytes_14850, "mem_14852"))
+        return 1;
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14729, 0,
+                                            sizeof(s_14578), &s_14578));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14729, 1,
+                                            sizeof(numS_14585), &numS_14585));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14729, 2,
+                                            sizeof(sRadii_mem_14844.mem),
+                                            &sRadii_mem_14844.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14729, 3,
+                                            sizeof(mem_14849.mem),
+                                            &mem_14849.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14729, 4,
+                                            sizeof(mem_14852.mem),
+                                            &mem_14852.mem));
+    if (1 * (segmap_usable_groups_14735 * segmap_group_sizze_14732) != 0) {
+        const size_t global_work_sizze_14959[1] = {segmap_usable_groups_14735 *
+                     segmap_group_sizze_14732};
+        const size_t local_work_sizze_14963[1] = {segmap_group_sizze_14732};
+        int64_t time_start_14960 = 0, time_end_14961 = 0;
         
-        int32_t group_sizze_12960;
-        
-        group_sizze_12960 = ctx->sizes.mainzigroup_sizze_12960;
-        
-        int32_t num_groups_12961;
-        
-        num_groups_12961 = squot32(sizze_12582 * 4 +
-                                   sext_i32_i32(group_sizze_12960) - 1,
-                                   sext_i32_i32(group_sizze_12960));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->replicate_12957, 0,
-                                                sizeof(sizze_12582),
-                                                &sizze_12582));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->replicate_12957, 1,
-                                                sizeof(mem_12893.mem),
-                                                &mem_12893.mem));
-        if (1 * (num_groups_12961 * group_sizze_12960) != 0) {
-            const size_t global_work_sizze_13000[1] = {num_groups_12961 *
-                         group_sizze_12960};
-            const size_t local_work_sizze_13004[1] = {group_sizze_12960};
-            int64_t time_start_13001 = 0, time_end_13002 = 0;
-            
-            if (ctx->debugging) {
-                fprintf(stderr, "Launching %s with global work size [",
-                        "replicate_12957");
-                fprintf(stderr, "%zu", global_work_sizze_13000[0]);
-                fprintf(stderr, "] and local work size [");
-                fprintf(stderr, "%zu", local_work_sizze_13004[0]);
-                fprintf(stderr, "].\n");
-                time_start_13001 = get_wall_time();
-            }
-            OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
-                                                            ctx->replicate_12957,
-                                                            1, NULL,
-                                                            global_work_sizze_13000,
-                                                            local_work_sizze_13004,
-                                                            0, NULL, NULL));
-            if (ctx->debugging) {
-                OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
-                time_end_13002 = get_wall_time();
-                
-                long time_diff_13003 = time_end_13002 - time_start_13001;
-                
-                ctx->replicate_12957_total_runtime += time_diff_13003;
-                ctx->replicate_12957_runs++;
-                fprintf(stderr, "kernel %s runtime: %ldus\n", "replicate_12957",
-                        time_diff_13003);
-            }
+        if (ctx->debugging) {
+            fprintf(stderr, "Launching %s with global work size [",
+                    "segmap_14729");
+            fprintf(stderr, "%zu", global_work_sizze_14959[0]);
+            fprintf(stderr, "] and local work size [");
+            fprintf(stderr, "%zu", local_work_sizze_14963[0]);
+            fprintf(stderr, "].\n");
+            time_start_14960 = get_wall_time();
         }
-        if (memblock_set_device(ctx, &res_mem_12937, &mem_12893, "mem_12893") !=
+        OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
+                                                        ctx->segmap_14729, 1,
+                                                        NULL,
+                                                        global_work_sizze_14959,
+                                                        local_work_sizze_14963,
+                                                        0, NULL, NULL));
+        if (ctx->debugging) {
+            OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
+            time_end_14961 = get_wall_time();
+            
+            long time_diff_14962 = time_end_14961 - time_start_14960;
+            
+            ctx->segmap_14729_total_runtime += time_diff_14962;
+            ctx->segmap_14729_runs++;
+            fprintf(stderr, "kernel %s runtime: %ldus\n", "segmap_14729",
+                    time_diff_14962);
+        }
+    }
+    if (memblock_unref_device(ctx, &mem_14849, "mem_14849") != 0)
+        return 1;
+    
+    int32_t segmap_group_sizze_14757;
+    
+    segmap_group_sizze_14757 = ctx->sizes.mainzisegmap_group_sizze_14756;
+    
+    int32_t y_14758 = segmap_group_sizze_14757 - 1;
+    int32_t x_14759 = numL_14586 + y_14758;
+    int32_t segmap_usable_groups_14760 = squot32(x_14759,
+                                                 segmap_group_sizze_14757);
+    int64_t binop_x_14854 = sext_i32_i64(numL_14586);
+    int64_t bytes_14853 = 4 * binop_x_14854;
+    struct memblock_device mem_14855;
+    
+    mem_14855.references = NULL;
+    if (memblock_alloc_device(ctx, &mem_14855, bytes_14853, "mem_14855"))
+        return 1;
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14754, 0,
+                                            sizeof(sizze_14581), &sizze_14581));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14754, 1,
+                                            sizeof(numS_14585), &numS_14585));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14754, 2,
+                                            sizeof(numL_14586), &numL_14586));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14754, 3,
+                                            sizeof(sPositions_mem_14843.mem),
+                                            &sPositions_mem_14843.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14754, 4,
+                                            sizeof(sRadii_mem_14844.mem),
+                                            &sRadii_mem_14844.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_14754, 5,
+                                            sizeof(mem_14855.mem),
+                                            &mem_14855.mem));
+    if (1 * (segmap_usable_groups_14760 * segmap_group_sizze_14757) != 0) {
+        const size_t global_work_sizze_14964[1] = {segmap_usable_groups_14760 *
+                     segmap_group_sizze_14757};
+        const size_t local_work_sizze_14968[1] = {segmap_group_sizze_14757};
+        int64_t time_start_14965 = 0, time_end_14966 = 0;
+        
+        if (ctx->debugging) {
+            fprintf(stderr, "Launching %s with global work size [",
+                    "segmap_14754");
+            fprintf(stderr, "%zu", global_work_sizze_14964[0]);
+            fprintf(stderr, "] and local work size [");
+            fprintf(stderr, "%zu", local_work_sizze_14968[0]);
+            fprintf(stderr, "].\n");
+            time_start_14965 = get_wall_time();
+        }
+        OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
+                                                        ctx->segmap_14754, 1,
+                                                        NULL,
+                                                        global_work_sizze_14964,
+                                                        local_work_sizze_14968,
+                                                        0, NULL, NULL));
+        if (ctx->debugging) {
+            OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
+            time_end_14966 = get_wall_time();
+            
+            long time_diff_14967 = time_end_14966 - time_start_14965;
+            
+            ctx->segmap_14754_total_runtime += time_diff_14967;
+            ctx->segmap_14754_runs++;
+            fprintf(stderr, "kernel %s runtime: %ldus\n", "segmap_14754",
+                    time_diff_14967);
+        }
+    }
+    
+    int32_t segred_group_sizze_14780;
+    
+    segred_group_sizze_14780 = ctx->sizes.mainzisegred_group_sizze_14779;
+    
+    int64_t segred_group_sizze_14781 = sext_i32_i64(segred_group_sizze_14780);
+    int32_t segred_max_num_groups_14783;
+    
+    segred_max_num_groups_14783 = ctx->sizes.mainzisegred_max_num_groups_14782;
+    
+    int64_t segred_max_num_groups_14784 =
+            sext_i32_i64(segred_max_num_groups_14783);
+    int64_t nest_sizze_14785 = sext_i32_i64(totalS_14611);
+    int64_t y_14786 = segred_group_sizze_14781 - 1;
+    int64_t x_14787 = nest_sizze_14785 + y_14786;
+    int64_t w_div_group_sizze_14788 = squot64(x_14787,
+                                              segred_group_sizze_14781);
+    int64_t num_groups_maybe_zzero_14789 = smin64(segred_max_num_groups_14784,
+                                                  w_div_group_sizze_14788);
+    int64_t num_groups_14790 = smax64(1, num_groups_maybe_zzero_14789);
+    int32_t num_groups_14792 = sext_i64_i32(num_groups_14790);
+    struct memblock_device mem_14859;
+    
+    mem_14859.references = NULL;
+    if (memblock_alloc_device(ctx, &mem_14859, 4, "mem_14859"))
+        return 1;
+    
+    struct memblock_device mem_14861;
+    
+    mem_14861.references = NULL;
+    if (memblock_alloc_device(ctx, &mem_14861, 1, "mem_14861"))
+        return 1;
+    
+    struct memblock_device mem_14864;
+    
+    mem_14864.references = NULL;
+    if (memblock_alloc_device(ctx, &mem_14864, 4, "mem_14864"))
+        return 1;
+    
+    struct memblock_device counter_mem_14900 = ctx->counter_mem_14900;
+    struct memblock_device group_res_arr_mem_14902;
+    
+    group_res_arr_mem_14902.references = NULL;
+    if (memblock_alloc_device(ctx, &group_res_arr_mem_14902, sizeof(int32_t) *
+                              (segred_group_sizze_14780 * num_groups_14792),
+                              "group_res_arr_mem_14902"))
+        return 1;
+    
+    struct memblock_device group_res_arr_mem_14904;
+    
+    group_res_arr_mem_14904.references = NULL;
+    if (memblock_alloc_device(ctx, &group_res_arr_mem_14904, sizeof(int8_t) *
+                              (segred_group_sizze_14780 * num_groups_14792),
+                              "group_res_arr_mem_14904"))
+        return 1;
+    
+    struct memblock_device group_res_arr_mem_14906;
+    
+    group_res_arr_mem_14906.references = NULL;
+    if (memblock_alloc_device(ctx, &group_res_arr_mem_14906, sizeof(float) *
+                              (segred_group_sizze_14780 * num_groups_14792),
+                              "group_res_arr_mem_14906"))
+        return 1;
+    
+    int32_t num_threads_14908 = num_groups_14792 * segred_group_sizze_14780;
+    
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 0,
+                                            sizeof(numS_14585), &numS_14585));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 1,
+                                            sizeof(totalS_14611),
+                                            &totalS_14611));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 2,
+                                            sizeof(num_groups_14792),
+                                            &num_groups_14792));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 3,
+                                            sizeof(mem_14852.mem),
+                                            &mem_14852.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 4,
+                                            sizeof(mem_14855.mem),
+                                            &mem_14855.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 5,
+                                            sizeof(mem_14859.mem),
+                                            &mem_14859.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 6,
+                                            sizeof(mem_14861.mem),
+                                            &mem_14861.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 7,
+                                            sizeof(mem_14864.mem),
+                                            &mem_14864.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 8,
+                                            sizeof(counter_mem_14900.mem),
+                                            &counter_mem_14900.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 9,
+                                            sizeof(group_res_arr_mem_14902.mem),
+                                            &group_res_arr_mem_14902.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 10,
+                                            sizeof(group_res_arr_mem_14904.mem),
+                                            &group_res_arr_mem_14904.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segred_nonseg_14798, 11,
+                                            sizeof(group_res_arr_mem_14906.mem),
+                                            &group_res_arr_mem_14906.mem));
+    if (1 * (num_groups_14792 * segred_group_sizze_14780) != 0) {
+        const size_t global_work_sizze_14970[1] = {num_groups_14792 *
+                     segred_group_sizze_14780};
+        const size_t local_work_sizze_14974[1] = {segred_group_sizze_14780};
+        int64_t time_start_14971 = 0, time_end_14972 = 0;
+        
+        if (ctx->debugging) {
+            fprintf(stderr, "Launching %s with global work size [",
+                    "segred_nonseg_14798");
+            fprintf(stderr, "%zu", global_work_sizze_14970[0]);
+            fprintf(stderr, "] and local work size [");
+            fprintf(stderr, "%zu", local_work_sizze_14974[0]);
+            fprintf(stderr, "].\n");
+            time_start_14971 = get_wall_time();
+        }
+        OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
+                                                        ctx->segred_nonseg_14798,
+                                                        1, NULL,
+                                                        global_work_sizze_14970,
+                                                        local_work_sizze_14974,
+                                                        0, NULL, NULL));
+        if (ctx->debugging) {
+            OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
+            time_end_14972 = get_wall_time();
+            
+            long time_diff_14973 = time_end_14972 - time_start_14971;
+            
+            ctx->segred_nonseg_14798_total_runtime += time_diff_14973;
+            ctx->segred_nonseg_14798_runs++;
+            fprintf(stderr, "kernel %s runtime: %ldus\n", "segred_nonseg_14798",
+                    time_diff_14973);
+        }
+    }
+    if (memblock_unref_device(ctx, &mem_14852, "mem_14852") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &mem_14855, "mem_14855") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &mem_14864, "mem_14864") != 0)
+        return 1;
+    
+    int32_t read_res_14975;
+    
+    OPENCL_SUCCEED_OR_RETURN(clEnqueueReadBuffer(ctx->opencl.queue,
+                                                 mem_14859.mem, CL_TRUE, 0 *
+                                                 sizeof(int32_t),
+                                                 sizeof(int32_t),
+                                                 &read_res_14975, 0, NULL,
+                                                 NULL));
+    
+    int32_t res_14703 = read_res_14975;
+    
+    if (memblock_unref_device(ctx, &mem_14859, "mem_14859") != 0)
+        return 1;
+    
+    int8_t read_res_14976;
+    
+    OPENCL_SUCCEED_OR_RETURN(clEnqueueReadBuffer(ctx->opencl.queue,
+                                                 mem_14861.mem, CL_TRUE, 0 *
+                                                 sizeof(int8_t), sizeof(int8_t),
+                                                 &read_res_14976, 0, NULL,
+                                                 NULL));
+    
+    int8_t res_14704 = read_res_14976;
+    
+    if (memblock_unref_device(ctx, &mem_14861, "mem_14861") != 0)
+        return 1;
+    
+    bool cond_14719 = res_14704 == 1;
+    bool cond_14720 = res_14704 == 2;
+    struct memblock_device res_mem_14874;
+    
+    res_mem_14874.references = NULL;
+    if (cond_14719) {
+        struct memblock_device mem_14866;
+        
+        mem_14866.references = NULL;
+        if (memblock_alloc_device(ctx, &mem_14866, 4, "mem_14866"))
+            return 1;
+        if (4 * sizeof(int8_t) > 0) {
+            OPENCL_SUCCEED_OR_RETURN(clEnqueueCopyBuffer(ctx->opencl.queue,
+                                                         sColors_mem_14845.mem,
+                                                         mem_14866.mem,
+                                                         res_14703 *
+                                                         sizze_14582, 0, 4 *
+                                                         sizeof(int8_t), 0,
+                                                         NULL, NULL));
+            if (ctx->debugging)
+                OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
+        }
+        if (memblock_set_device(ctx, &res_mem_14874, &mem_14866, "mem_14866") !=
             0)
             return 1;
-        if (memblock_unref_device(ctx, &mem_12893, "mem_12893") != 0)
+        if (memblock_unref_device(ctx, &mem_14866, "mem_14866") != 0)
             return 1;
     } else {
-        bool bounds_invalid_upwards_12585 = slt32(iota_arg_12581, 0);
-        bool eq_x_zz_12586 = 0 == iota_arg_12581;
-        bool not_p_12587 = !bounds_invalid_upwards_12585;
-        bool p_and_eq_x_y_12588 = eq_x_zz_12586 && not_p_12587;
-        bool dim_zzero_12589 = bounds_invalid_upwards_12585 ||
-             p_and_eq_x_y_12588;
-        bool both_empty_12590 = eq_x_zz_12586 && dim_zzero_12589;
-        bool empty_or_match_12594 = not_p_12587 || both_empty_12590;
-        bool empty_or_match_cert_12595;
+        struct memblock_device res_mem_14873;
         
-        if (!empty_or_match_12594) {
-            ctx->error = msgprintf("Error at %s:\n%s%s%s%d%s%s\n",
-                                   "render.fut:93:1-111:53 -> render.fut:111:14-53 -> render.fut:59:24-45 -> /futlib/array.fut:61:1-62:12",
-                                   "Function return value does not match shape of type ",
-                                   "*", "[", iota_arg_12581, "]",
-                                   "intrinsics.i32");
-            if (memblock_unref_device(ctx, &res_mem_12937, "res_mem_12937") !=
-                0)
-                return 1;
-            if (memblock_unref_device(ctx, &out_mem_12954, "out_mem_12954") !=
-                0)
-                return 1;
-            return 1;
-        }
-        
-        bool bounds_invalid_upwards_12597 = slt32(y_12578, 0);
-        bool eq_x_zz_12598 = 0 == y_12578;
-        bool not_p_12599 = !bounds_invalid_upwards_12597;
-        bool p_and_eq_x_y_12600 = eq_x_zz_12598 && not_p_12599;
-        bool dim_zzero_12601 = bounds_invalid_upwards_12597 ||
-             p_and_eq_x_y_12600;
-        bool both_empty_12602 = eq_x_zz_12598 && dim_zzero_12601;
-        bool empty_or_match_12606 = not_p_12599 || both_empty_12602;
-        bool empty_or_match_cert_12607;
-        
-        if (!empty_or_match_12606) {
-            ctx->error = msgprintf("Error at %s:\n%s%s%s%d%s%s\n",
-                                   "render.fut:93:1-111:53 -> render.fut:111:14-53 -> render.fut:62:20-37 -> /futlib/array.fut:61:1-62:12",
-                                   "Function return value does not match shape of type ",
-                                   "*", "[", y_12578, "]", "intrinsics.i32");
-            if (memblock_unref_device(ctx, &res_mem_12937, "res_mem_12937") !=
-                0)
-                return 1;
-            if (memblock_unref_device(ctx, &out_mem_12954, "out_mem_12954") !=
-                0)
-                return 1;
-            return 1;
-        }
-        
-        bool bounds_invalid_upwards_12608 = slt32(numS_12552, 0);
-        bool eq_x_zz_12609 = 0 == numS_12552;
-        bool not_p_12610 = !bounds_invalid_upwards_12608;
-        bool p_and_eq_x_y_12611 = eq_x_zz_12609 && not_p_12610;
-        bool dim_zzero_12612 = bounds_invalid_upwards_12608 ||
-             p_and_eq_x_y_12611;
-        bool both_empty_12613 = eq_x_zz_12609 && dim_zzero_12612;
-        bool empty_or_match_12617 = not_p_12610 || both_empty_12613;
-        bool empty_or_match_cert_12618;
-        
-        if (!empty_or_match_12617) {
-            ctx->error = msgprintf("Error at %s:\n%s%s%s%d%s%s\n",
-                                   "render.fut:93:1-111:53 -> render.fut:111:14-53 -> render.fut:63:19-41 -> /futlib/array.fut:66:1-67:19",
-                                   "Function return value does not match shape of type ",
-                                   "*", "[", numS_12552, "]", "t");
-            if (memblock_unref_device(ctx, &res_mem_12937, "res_mem_12937") !=
-                0)
-                return 1;
-            if (memblock_unref_device(ctx, &out_mem_12954, "out_mem_12954") !=
-                0)
-                return 1;
-            return 1;
-        }
-        
-        bool bounds_invalid_upwards_12620 = slt32(numL_12553, 0);
-        bool eq_x_zz_12621 = 0 == numL_12553;
-        bool not_p_12622 = !bounds_invalid_upwards_12620;
-        bool p_and_eq_x_y_12623 = eq_x_zz_12621 && not_p_12622;
-        bool dim_zzero_12624 = bounds_invalid_upwards_12620 ||
-             p_and_eq_x_y_12623;
-        bool both_empty_12625 = eq_x_zz_12621 && dim_zzero_12624;
-        bool empty_or_match_12629 = not_p_12622 || both_empty_12625;
-        bool empty_or_match_cert_12630;
-        
-        if (!empty_or_match_12629) {
-            ctx->error = msgprintf("Error at %s:\n%s%s%s%d%s%s\n",
-                                   "render.fut:93:1-111:53 -> render.fut:111:14-53 -> render.fut:63:48-69 -> /futlib/array.fut:66:1-67:19",
-                                   "Function return value does not match shape of type ",
-                                   "*", "[", numL_12553, "]", "t");
-            if (memblock_unref_device(ctx, &res_mem_12937, "res_mem_12937") !=
-                0)
-                return 1;
-            if (memblock_unref_device(ctx, &out_mem_12954, "out_mem_12954") !=
-                0)
-                return 1;
-            return 1;
-        }
-        
-        float res_12633 = sitofp_i32_f32(width_12550);
-        int32_t y_12634 = sdiv32(width_12550, 2);
-        int32_t x_12635 = sdiv32(height_12551, 2);
-        bool both_empty_12636 = dim_zzero_12557 && eq_x_zz_12598;
-        bool empty_or_match_12637 = validInputs_12579 || both_empty_12636;
-        bool empty_or_match_cert_12638;
-        
-        if (!empty_or_match_12637) {
-            ctx->error = msgprintf("Error at %s:\n%s\n",
-                                   "render.fut:93:1-111:53 -> render.fut:111:14-53 -> render.fut:65:8-90:22 -> render.fut:72:49-76:24",
-                                   "function arguments of wrong shape");
-            if (memblock_unref_device(ctx, &res_mem_12937, "res_mem_12937") !=
-                0)
-                return 1;
-            if (memblock_unref_device(ctx, &out_mem_12954, "out_mem_12954") !=
-                0)
-                return 1;
-            return 1;
-        }
-        
-        int32_t segmap_group_sizze_12817;
-        
-        segmap_group_sizze_12817 = ctx->sizes.mainzisegmap_group_sizze_12816;
-        
-        int64_t segmap_group_sizze_12818 =
-                sext_i32_i64(segmap_group_sizze_12817);
-        int32_t segmap_max_num_groups_12820;
-        
-        segmap_max_num_groups_12820 =
-            ctx->sizes.mainzisegmap_max_num_groups_12819;
-        
-        int64_t segmap_max_num_groups_12821 =
-                sext_i32_i64(segmap_max_num_groups_12820);
-        int64_t y_12823 = segmap_group_sizze_12818 - 1;
-        int64_t x_12824 = y_12823 + binop_x_12902;
-        int64_t w_div_group_sizze_12825 = squot64(x_12824,
-                                                  segmap_group_sizze_12818);
-        int64_t num_groups_maybe_zzero_12826 =
-                smin64(segmap_max_num_groups_12821, w_div_group_sizze_12825);
-        int64_t num_groups_12827 = smax64(1, num_groups_maybe_zzero_12826);
-        int32_t num_groups_12829 = sext_i64_i32(num_groups_12827);
-        struct memblock_device mem_12900;
-        
-        mem_12900.references = NULL;
-        if (memblock_alloc_device(ctx, &mem_12900, bytes_12897, "mem_12900"))
-            return 1;
-        
-        struct memblock_device mem_12903;
-        
-        mem_12903.references = NULL;
-        if (memblock_alloc_device(ctx, &mem_12903, bytes_12901, "mem_12903"))
-            return 1;
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12814, 0,
-                                                sizeof(width_12550),
-                                                &width_12550));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12814, 1,
-                                                sizeof(iota_arg_12581),
-                                                &iota_arg_12581));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12814, 2,
-                                                sizeof(res_12633), &res_12633));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12814, 3,
-                                                sizeof(y_12634), &y_12634));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12814, 4,
-                                                sizeof(x_12635), &x_12635));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12814, 5,
-                                                sizeof(num_groups_12829),
-                                                &num_groups_12829));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12814, 6,
-                                                sizeof(mem_12900.mem),
-                                                &mem_12900.mem));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12814, 7,
-                                                sizeof(mem_12903.mem),
-                                                &mem_12903.mem));
-        if (1 * (num_groups_12829 * segmap_group_sizze_12817) != 0) {
-            const size_t global_work_sizze_13005[1] = {num_groups_12829 *
-                         segmap_group_sizze_12817};
-            const size_t local_work_sizze_13009[1] = {segmap_group_sizze_12817};
-            int64_t time_start_13006 = 0, time_end_13007 = 0;
+        res_mem_14873.references = NULL;
+        if (cond_14720) {
+            int32_t j_p_i_t_s_14724 = numS_14585 + res_14703;
+            struct memblock_device mem_14869;
             
-            if (ctx->debugging) {
-                fprintf(stderr, "Launching %s with global work size [",
-                        "segmap_12814");
-                fprintf(stderr, "%zu", global_work_sizze_13005[0]);
-                fprintf(stderr, "] and local work size [");
-                fprintf(stderr, "%zu", local_work_sizze_13009[0]);
-                fprintf(stderr, "].\n");
-                time_start_13006 = get_wall_time();
+            mem_14869.references = NULL;
+            if (memblock_alloc_device(ctx, &mem_14869, 4, "mem_14869"))
+                return 1;
+            if (4 * sizeof(int8_t) > 0) {
+                OPENCL_SUCCEED_OR_RETURN(clEnqueueCopyBuffer(ctx->opencl.queue,
+                                                             sColors_mem_14845.mem,
+                                                             mem_14869.mem,
+                                                             j_p_i_t_s_14724 *
+                                                             sizze_14582, 0, 4 *
+                                                             sizeof(int8_t), 0,
+                                                             NULL, NULL));
+                if (ctx->debugging)
+                    OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
             }
-            OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
-                                                            ctx->segmap_12814,
-                                                            1, NULL,
-                                                            global_work_sizze_13005,
-                                                            local_work_sizze_13009,
-                                                            0, NULL, NULL));
-            if (ctx->debugging) {
-                OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
-                time_end_13007 = get_wall_time();
-                
-                long time_diff_13008 = time_end_13007 - time_start_13006;
-                
-                ctx->segmap_12814_total_runtime += time_diff_13008;
-                ctx->segmap_12814_runs++;
-                fprintf(stderr, "kernel %s runtime: %ldus\n", "segmap_12814",
-                        time_diff_13008);
-            }
-        }
-        
-        int32_t segmap_group_sizze_12806;
-        
-        segmap_group_sizze_12806 = ctx->sizes.mainzisegmap_group_sizze_12805;
-        
-        int32_t y_12807 = segmap_group_sizze_12806 - 1;
-        int32_t x_12808 = y_12807 + convop_x_12898;
-        int32_t segmap_usable_groups_12809 = squot32(x_12808,
-                                                     segmap_group_sizze_12806);
-        struct memblock_device mem_12907;
-        
-        mem_12907.references = NULL;
-        if (memblock_alloc_device(ctx, &mem_12907, bytes_12897, "mem_12907"))
-            return 1;
-        
-        int call_ret_13010 = futrts__map_transpose_f32(ctx, mem_12907, 0,
-                                                       mem_12900, 0, 1,
-                                                       iota_arg_12581, 3,
-                                                       iota_arg_12581 * 3,
-                                                       iota_arg_12581 * 3);
-        
-        assert(call_ret_13010 == 0);
-        if (memblock_unref_device(ctx, &mem_12900, "mem_12900") != 0)
-            return 1;
-        
-        struct memblock_device mem_12912;
-        
-        mem_12912.references = NULL;
-        if (memblock_alloc_device(ctx, &mem_12912, bytes_12908, "mem_12912"))
-            return 1;
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12802, 0,
-                                                sizeof(iota_arg_12581),
-                                                &iota_arg_12581));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12802, 1,
-                                                sizeof(mem_12903.mem),
-                                                &mem_12903.mem));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12802, 2,
-                                                sizeof(mem_12907.mem),
-                                                &mem_12907.mem));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12802, 3,
-                                                sizeof(mem_12912.mem),
-                                                &mem_12912.mem));
-        if (1 * (segmap_usable_groups_12809 * segmap_group_sizze_12806) != 0) {
-            const size_t global_work_sizze_13011[1] =
-                         {segmap_usable_groups_12809 *
-                         segmap_group_sizze_12806};
-            const size_t local_work_sizze_13015[1] = {segmap_group_sizze_12806};
-            int64_t time_start_13012 = 0, time_end_13013 = 0;
+            if (memblock_set_device(ctx, &res_mem_14873, &mem_14869,
+                                    "mem_14869") != 0)
+                return 1;
+            if (memblock_unref_device(ctx, &mem_14869, "mem_14869") != 0)
+                return 1;
+        } else {
+            struct memblock_device mem_14872;
             
-            if (ctx->debugging) {
-                fprintf(stderr, "Launching %s with global work size [",
-                        "segmap_12802");
-                fprintf(stderr, "%zu", global_work_sizze_13011[0]);
-                fprintf(stderr, "] and local work size [");
-                fprintf(stderr, "%zu", local_work_sizze_13015[0]);
-                fprintf(stderr, "].\n");
-                time_start_13012 = get_wall_time();
-            }
-            OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
-                                                            ctx->segmap_12802,
-                                                            1, NULL,
-                                                            global_work_sizze_13011,
-                                                            local_work_sizze_13015,
-                                                            0, NULL, NULL));
-            if (ctx->debugging) {
-                OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
-                time_end_13013 = get_wall_time();
-                
-                long time_diff_13014 = time_end_13013 - time_start_13012;
-                
-                ctx->segmap_12802_total_runtime += time_diff_13014;
-                ctx->segmap_12802_runs++;
-                fprintf(stderr, "kernel %s runtime: %ldus\n", "segmap_12802",
-                        time_diff_13014);
-            }
-        }
-        if (memblock_unref_device(ctx, &mem_12903, "mem_12903") != 0)
-            return 1;
-        if (memblock_unref_device(ctx, &mem_12907, "mem_12907") != 0)
-            return 1;
-        
-        int64_t w_div_group_sizze_12736 = squot64(x_12735,
-                                                  segmap_group_sizze_12729);
-        int64_t num_groups_maybe_zzero_12737 =
-                smin64(segmap_max_num_groups_12732, w_div_group_sizze_12736);
-        int64_t num_groups_12738 = smax64(1, num_groups_maybe_zzero_12737);
-        int32_t num_groups_12740 = sext_i64_i32(num_groups_12738);
-        struct memblock_device mem_12916;
-        
-        mem_12916.references = NULL;
-        if (memblock_alloc_device(ctx, &mem_12916, bytes_12897, "mem_12916"))
-            return 1;
-        
-        int call_ret_13016 = futrts__map_transpose_f32(ctx, mem_12916, 0,
-                                                       mem_12912, 0, 1, 3,
-                                                       iota_arg_12581,
-                                                       iota_arg_12581 * 3,
-                                                       iota_arg_12581 * 3);
-        
-        assert(call_ret_13016 == 0);
-        if (memblock_unref_device(ctx, &mem_12912, "mem_12912") != 0)
-            return 1;
-        
-        struct memblock_device mem_12936;
-        
-        mem_12936.references = NULL;
-        if (memblock_alloc_device(ctx, &mem_12936, bytes_12901, "mem_12936"))
-            return 1;
-        
-        int32_t num_threads_12950 = segmap_group_sizze_12728 * num_groups_12740;
-        int64_t num_threads64_12951 = sext_i32_i64(num_threads_12950);
-        int64_t total_sizze_12952 = 4 * num_threads64_12951;
-        struct memblock_device mem_12939;
-        
-        mem_12939.references = NULL;
-        if (memblock_alloc_device(ctx, &mem_12939, total_sizze_12952,
-                                  "mem_12939"))
-            return 1;
-        
-        int64_t total_sizze_12953 = 4 * num_threads64_12951;
-        struct memblock_device mem_12943;
-        
-        mem_12943.references = NULL;
-        if (memblock_alloc_device(ctx, &mem_12943, total_sizze_12953,
-                                  "mem_12943"))
-            return 1;
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 0,
-                                                sizeof(s_12545), &s_12545));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 1,
-                                                sizeof(sizze_12548),
-                                                &sizze_12548));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 2,
-                                                sizeof(sizze_12549),
-                                                &sizze_12549));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 3,
-                                                sizeof(numS_12552),
-                                                &numS_12552));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 4,
-                                                sizeof(iota_arg_12581),
-                                                &iota_arg_12581));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 5,
-                                                sizeof(num_groups_12740),
-                                                &num_groups_12740));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 6,
-                                                sizeof(sPositions_mem_12887.mem),
-                                                &sPositions_mem_12887.mem));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 7,
-                                                sizeof(sRadii_mem_12888.mem),
-                                                &sRadii_mem_12888.mem));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 8,
-                                                sizeof(sColors_mem_12889.mem),
-                                                &sColors_mem_12889.mem));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 9,
-                                                sizeof(mem_12916.mem),
-                                                &mem_12916.mem));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 10,
-                                                sizeof(mem_12936.mem),
-                                                &mem_12936.mem));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 11,
-                                                sizeof(mem_12939.mem),
-                                                &mem_12939.mem));
-        OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->segmap_12725, 12,
-                                                sizeof(mem_12943.mem),
-                                                &mem_12943.mem));
-        if (1 * (num_groups_12740 * segmap_group_sizze_12728) != 0) {
-            const size_t global_work_sizze_13017[1] = {num_groups_12740 *
-                         segmap_group_sizze_12728};
-            const size_t local_work_sizze_13021[1] = {segmap_group_sizze_12728};
-            int64_t time_start_13018 = 0, time_end_13019 = 0;
+            mem_14872.references = NULL;
+            if (memblock_alloc_device(ctx, &mem_14872, 4, "mem_14872"))
+                return 1;
             
-            if (ctx->debugging) {
-                fprintf(stderr, "Launching %s with global work size [",
-                        "segmap_12725");
-                fprintf(stderr, "%zu", global_work_sizze_13017[0]);
-                fprintf(stderr, "] and local work size [");
-                fprintf(stderr, "%zu", local_work_sizze_13021[0]);
-                fprintf(stderr, "].\n");
-                time_start_13018 = get_wall_time();
-            }
-            OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
-                                                            ctx->segmap_12725,
-                                                            1, NULL,
-                                                            global_work_sizze_13017,
-                                                            local_work_sizze_13021,
-                                                            0, NULL, NULL));
-            if (ctx->debugging) {
-                OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
-                time_end_13019 = get_wall_time();
+            int32_t group_sizze_14948;
+            
+            group_sizze_14948 = ctx->sizes.mainzigroup_sizze_14948;
+            
+            int32_t num_groups_14949;
+            
+            num_groups_14949 = squot32(4 + sext_i32_i32(group_sizze_14948) - 1,
+                                       sext_i32_i32(group_sizze_14948));
+            OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->replicate_14945, 0,
+                                                    sizeof(mem_14872.mem),
+                                                    &mem_14872.mem));
+            if (1 * (num_groups_14949 * group_sizze_14948) != 0) {
+                const size_t global_work_sizze_14977[1] = {num_groups_14949 *
+                             group_sizze_14948};
+                const size_t local_work_sizze_14981[1] = {group_sizze_14948};
+                int64_t time_start_14978 = 0, time_end_14979 = 0;
                 
-                long time_diff_13020 = time_end_13019 - time_start_13018;
-                
-                ctx->segmap_12725_total_runtime += time_diff_13020;
-                ctx->segmap_12725_runs++;
-                fprintf(stderr, "kernel %s runtime: %ldus\n", "segmap_12725",
-                        time_diff_13020);
+                if (ctx->debugging) {
+                    fprintf(stderr, "Launching %s with global work size [",
+                            "replicate_14945");
+                    fprintf(stderr, "%zu", global_work_sizze_14977[0]);
+                    fprintf(stderr, "] and local work size [");
+                    fprintf(stderr, "%zu", local_work_sizze_14981[0]);
+                    fprintf(stderr, "].\n");
+                    time_start_14978 = get_wall_time();
+                }
+                OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
+                                                                ctx->replicate_14945,
+                                                                1, NULL,
+                                                                global_work_sizze_14977,
+                                                                local_work_sizze_14981,
+                                                                0, NULL, NULL));
+                if (ctx->debugging) {
+                    OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
+                    time_end_14979 = get_wall_time();
+                    
+                    long time_diff_14980 = time_end_14979 - time_start_14978;
+                    
+                    ctx->replicate_14945_total_runtime += time_diff_14980;
+                    ctx->replicate_14945_runs++;
+                    fprintf(stderr, "kernel %s runtime: %ldus\n",
+                            "replicate_14945", time_diff_14980);
+                }
             }
+            if (memblock_set_device(ctx, &res_mem_14873, &mem_14872,
+                                    "mem_14872") != 0)
+                return 1;
+            if (memblock_unref_device(ctx, &mem_14872, "mem_14872") != 0)
+                return 1;
         }
-        if (memblock_unref_device(ctx, &mem_12916, "mem_12916") != 0)
+        if (memblock_set_device(ctx, &res_mem_14874, &res_mem_14873,
+                                "res_mem_14873") != 0)
             return 1;
-        if (memblock_unref_device(ctx, &mem_12939, "mem_12939") != 0)
-            return 1;
-        if (memblock_unref_device(ctx, &mem_12943, "mem_12943") != 0)
-            return 1;
-        if (memblock_set_device(ctx, &res_mem_12937, &mem_12936, "mem_12936") !=
-            0)
-            return 1;
-        if (memblock_unref_device(ctx, &mem_12943, "mem_12943") != 0)
-            return 1;
-        if (memblock_unref_device(ctx, &mem_12939, "mem_12939") != 0)
-            return 1;
-        if (memblock_unref_device(ctx, &mem_12936, "mem_12936") != 0)
-            return 1;
-        if (memblock_unref_device(ctx, &mem_12916, "mem_12916") != 0)
-            return 1;
-        if (memblock_unref_device(ctx, &mem_12912, "mem_12912") != 0)
-            return 1;
-        if (memblock_unref_device(ctx, &mem_12907, "mem_12907") != 0)
-            return 1;
-        if (memblock_unref_device(ctx, &mem_12903, "mem_12903") != 0)
-            return 1;
-        if (memblock_unref_device(ctx, &mem_12900, "mem_12900") != 0)
+        if (memblock_unref_device(ctx, &res_mem_14873, "res_mem_14873") != 0)
             return 1;
     }
-    out_arrsizze_12955 = sizze_12582;
-    out_arrsizze_12956 = 4;
-    if (memblock_set_device(ctx, &out_mem_12954, &res_mem_12937,
-                            "res_mem_12937") != 0)
+    
+    int64_t binop_x_14876 = sext_i32_i64(iota_arg_14637);
+    int64_t bytes_14875 = 4 * binop_x_14876;
+    struct memblock_device mem_14878;
+    
+    mem_14878.references = NULL;
+    if (memblock_alloc_device(ctx, &mem_14878, bytes_14875, "mem_14878"))
         return 1;
-    (*out_mem_p_12997).references = NULL;
-    if (memblock_set_device(ctx, &*out_mem_p_12997, &out_mem_12954,
-                            "out_mem_12954") != 0)
+    
+    int32_t group_sizze_14953;
+    
+    group_sizze_14953 = ctx->sizes.mainzigroup_sizze_14953;
+    
+    int32_t num_groups_14954;
+    
+    num_groups_14954 = squot32(iota_arg_14637 * 4 +
+                               sext_i32_i32(group_sizze_14953) - 1,
+                               sext_i32_i32(group_sizze_14953));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->replicate_14950, 0,
+                                            sizeof(iota_arg_14637),
+                                            &iota_arg_14637));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->replicate_14950, 1,
+                                            sizeof(res_mem_14874.mem),
+                                            &res_mem_14874.mem));
+    OPENCL_SUCCEED_OR_RETURN(clSetKernelArg(ctx->replicate_14950, 2,
+                                            sizeof(mem_14878.mem),
+                                            &mem_14878.mem));
+    if (1 * (num_groups_14954 * group_sizze_14953) != 0) {
+        const size_t global_work_sizze_14982[1] = {num_groups_14954 *
+                     group_sizze_14953};
+        const size_t local_work_sizze_14986[1] = {group_sizze_14953};
+        int64_t time_start_14983 = 0, time_end_14984 = 0;
+        
+        if (ctx->debugging) {
+            fprintf(stderr, "Launching %s with global work size [",
+                    "replicate_14950");
+            fprintf(stderr, "%zu", global_work_sizze_14982[0]);
+            fprintf(stderr, "] and local work size [");
+            fprintf(stderr, "%zu", local_work_sizze_14986[0]);
+            fprintf(stderr, "].\n");
+            time_start_14983 = get_wall_time();
+        }
+        OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
+                                                        ctx->replicate_14950, 1,
+                                                        NULL,
+                                                        global_work_sizze_14982,
+                                                        local_work_sizze_14986,
+                                                        0, NULL, NULL));
+        if (ctx->debugging) {
+            OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
+            time_end_14984 = get_wall_time();
+            
+            long time_diff_14985 = time_end_14984 - time_start_14983;
+            
+            ctx->replicate_14950_total_runtime += time_diff_14985;
+            ctx->replicate_14950_runs++;
+            fprintf(stderr, "kernel %s runtime: %ldus\n", "replicate_14950",
+                    time_diff_14985);
+        }
+    }
+    if (memblock_unref_device(ctx, &res_mem_14874, "res_mem_14874") != 0)
         return 1;
-    *out_out_arrsizze_12998 = out_arrsizze_12955;
-    *out_out_arrsizze_12999 = out_arrsizze_12956;
-    if (memblock_unref_device(ctx, &res_mem_12937, "res_mem_12937") != 0)
+    out_arrsizze_14886 = iota_arg_14637;
+    out_arrsizze_14887 = 4;
+    if (memblock_set_device(ctx, &out_mem_14885, &mem_14878, "mem_14878") != 0)
         return 1;
-    if (memblock_unref_device(ctx, &out_mem_12954, "out_mem_12954") != 0)
+    (*out_mem_p_14955).references = NULL;
+    if (memblock_set_device(ctx, &*out_mem_p_14955, &out_mem_14885,
+                            "out_mem_14885") != 0)
+        return 1;
+    *out_out_arrsizze_14956 = out_arrsizze_14886;
+    *out_out_arrsizze_14957 = out_arrsizze_14887;
+    if (memblock_unref_device(ctx, &mem_14878, "mem_14878") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &res_mem_14874, "res_mem_14874") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &group_res_arr_mem_14906,
+                              "group_res_arr_mem_14906") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &group_res_arr_mem_14904,
+                              "group_res_arr_mem_14904") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &group_res_arr_mem_14902,
+                              "group_res_arr_mem_14902") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &mem_14864, "mem_14864") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &mem_14861, "mem_14861") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &mem_14859, "mem_14859") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &mem_14855, "mem_14855") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &mem_14852, "mem_14852") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &mem_14849, "mem_14849") != 0)
+        return 1;
+    if (memblock_unref_device(ctx, &out_mem_14885, "out_mem_14885") != 0)
         return 1;
     return 0;
 }
@@ -3381,50 +3470,50 @@ static int futrts__map_transpose_f32(struct futhark_context *ctx,
                 if (1 * (squot32(x_elems_5 + 16 - 1, 16) * 16) *
                     (squot32(squot32(y_elems_6 + muly_10 - 1, muly_10) + 16 - 1,
                              16) * 16) * (num_arrays_4 * 1) != 0) {
-                    const size_t global_work_sizze_13022[3] =
+                    const size_t global_work_sizze_14987[3] =
                                  {squot32(x_elems_5 + 16 - 1, 16) * 16,
                                   squot32(squot32(y_elems_6 + muly_10 - 1,
                                                   muly_10) + 16 - 1, 16) * 16,
                                   num_arrays_4 * 1};
-                    const size_t local_work_sizze_13026[3] = {16, 16, 1};
-                    int64_t time_start_13023 = 0, time_end_13024 = 0;
+                    const size_t local_work_sizze_14991[3] = {16, 16, 1};
+                    int64_t time_start_14988 = 0, time_end_14989 = 0;
                     
                     if (ctx->debugging) {
                         fprintf(stderr, "Launching %s with global work size [",
                                 "map_transpose_f32_low_width");
-                        fprintf(stderr, "%zu", global_work_sizze_13022[0]);
+                        fprintf(stderr, "%zu", global_work_sizze_14987[0]);
                         fprintf(stderr, ", ");
-                        fprintf(stderr, "%zu", global_work_sizze_13022[1]);
+                        fprintf(stderr, "%zu", global_work_sizze_14987[1]);
                         fprintf(stderr, ", ");
-                        fprintf(stderr, "%zu", global_work_sizze_13022[2]);
+                        fprintf(stderr, "%zu", global_work_sizze_14987[2]);
                         fprintf(stderr, "] and local work size [");
-                        fprintf(stderr, "%zu", local_work_sizze_13026[0]);
+                        fprintf(stderr, "%zu", local_work_sizze_14991[0]);
                         fprintf(stderr, ", ");
-                        fprintf(stderr, "%zu", local_work_sizze_13026[1]);
+                        fprintf(stderr, "%zu", local_work_sizze_14991[1]);
                         fprintf(stderr, ", ");
-                        fprintf(stderr, "%zu", local_work_sizze_13026[2]);
+                        fprintf(stderr, "%zu", local_work_sizze_14991[2]);
                         fprintf(stderr, "].\n");
-                        time_start_13023 = get_wall_time();
+                        time_start_14988 = get_wall_time();
                     }
                     OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
                                                                     ctx->map_transpose_f32_low_width,
                                                                     3, NULL,
-                                                                    global_work_sizze_13022,
-                                                                    local_work_sizze_13026,
+                                                                    global_work_sizze_14987,
+                                                                    local_work_sizze_14991,
                                                                     0, NULL,
                                                                     NULL));
                     if (ctx->debugging) {
                         OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
-                        time_end_13024 = get_wall_time();
+                        time_end_14989 = get_wall_time();
                         
-                        long time_diff_13025 = time_end_13024 -
-                             time_start_13023;
+                        long time_diff_14990 = time_end_14989 -
+                             time_start_14988;
                         
                         ctx->map_transpose_f32_low_width_total_runtime +=
-                            time_diff_13025;
+                            time_diff_14990;
                         ctx->map_transpose_f32_low_width_runs++;
                         fprintf(stderr, "kernel %s runtime: %ldus\n",
-                                "map_transpose_f32_low_width", time_diff_13025);
+                                "map_transpose_f32_low_width", time_diff_14990);
                     }
                 }
             } else {
@@ -3476,52 +3565,52 @@ static int futrts__map_transpose_f32(struct futhark_context *ctx,
                                                                   16 - 1, 16) *
                                                           16) * (num_arrays_4 *
                                                                  1) != 0) {
-                        const size_t global_work_sizze_13027[3] =
+                        const size_t global_work_sizze_14992[3] =
                                      {squot32(squot32(x_elems_5 + mulx_9 - 1,
                                                       mulx_9) + 16 - 1, 16) *
                                       16, squot32(y_elems_6 + 16 - 1, 16) * 16,
                                       num_arrays_4 * 1};
-                        const size_t local_work_sizze_13031[3] = {16, 16, 1};
-                        int64_t time_start_13028 = 0, time_end_13029 = 0;
+                        const size_t local_work_sizze_14996[3] = {16, 16, 1};
+                        int64_t time_start_14993 = 0, time_end_14994 = 0;
                         
                         if (ctx->debugging) {
                             fprintf(stderr,
                                     "Launching %s with global work size [",
                                     "map_transpose_f32_low_height");
-                            fprintf(stderr, "%zu", global_work_sizze_13027[0]);
+                            fprintf(stderr, "%zu", global_work_sizze_14992[0]);
                             fprintf(stderr, ", ");
-                            fprintf(stderr, "%zu", global_work_sizze_13027[1]);
+                            fprintf(stderr, "%zu", global_work_sizze_14992[1]);
                             fprintf(stderr, ", ");
-                            fprintf(stderr, "%zu", global_work_sizze_13027[2]);
+                            fprintf(stderr, "%zu", global_work_sizze_14992[2]);
                             fprintf(stderr, "] and local work size [");
-                            fprintf(stderr, "%zu", local_work_sizze_13031[0]);
+                            fprintf(stderr, "%zu", local_work_sizze_14996[0]);
                             fprintf(stderr, ", ");
-                            fprintf(stderr, "%zu", local_work_sizze_13031[1]);
+                            fprintf(stderr, "%zu", local_work_sizze_14996[1]);
                             fprintf(stderr, ", ");
-                            fprintf(stderr, "%zu", local_work_sizze_13031[2]);
+                            fprintf(stderr, "%zu", local_work_sizze_14996[2]);
                             fprintf(stderr, "].\n");
-                            time_start_13028 = get_wall_time();
+                            time_start_14993 = get_wall_time();
                         }
                         OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
                                                                         ctx->map_transpose_f32_low_height,
                                                                         3, NULL,
-                                                                        global_work_sizze_13027,
-                                                                        local_work_sizze_13031,
+                                                                        global_work_sizze_14992,
+                                                                        local_work_sizze_14996,
                                                                         0, NULL,
                                                                         NULL));
                         if (ctx->debugging) {
                             OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
-                            time_end_13029 = get_wall_time();
+                            time_end_14994 = get_wall_time();
                             
-                            long time_diff_13030 = time_end_13029 -
-                                 time_start_13028;
+                            long time_diff_14995 = time_end_14994 -
+                                 time_start_14993;
                             
                             ctx->map_transpose_f32_low_height_total_runtime +=
-                                time_diff_13030;
+                                time_diff_14995;
                             ctx->map_transpose_f32_low_height_runs++;
                             fprintf(stderr, "kernel %s runtime: %ldus\n",
                                     "map_transpose_f32_low_height",
-                                    time_diff_13030);
+                                    time_diff_14995);
                         }
                     }
                 } else {
@@ -3572,47 +3661,47 @@ static int futrts__map_transpose_f32(struct futhark_context *ctx,
                                                                 &srcmem_2.mem));
                         if (1 * (squot32(num_arrays_4 * x_elems_5 * y_elems_6 +
                                          256 - 1, 256) * 256) != 0) {
-                            const size_t global_work_sizze_13032[1] =
+                            const size_t global_work_sizze_14997[1] =
                                          {squot32(num_arrays_4 * x_elems_5 *
                                                   y_elems_6 + 256 - 1, 256) *
                                          256};
-                            const size_t local_work_sizze_13036[1] = {256};
-                            int64_t time_start_13033 = 0, time_end_13034 = 0;
+                            const size_t local_work_sizze_15001[1] = {256};
+                            int64_t time_start_14998 = 0, time_end_14999 = 0;
                             
                             if (ctx->debugging) {
                                 fprintf(stderr,
                                         "Launching %s with global work size [",
                                         "map_transpose_f32_small");
                                 fprintf(stderr, "%zu",
-                                        global_work_sizze_13032[0]);
+                                        global_work_sizze_14997[0]);
                                 fprintf(stderr, "] and local work size [");
                                 fprintf(stderr, "%zu",
-                                        local_work_sizze_13036[0]);
+                                        local_work_sizze_15001[0]);
                                 fprintf(stderr, "].\n");
-                                time_start_13033 = get_wall_time();
+                                time_start_14998 = get_wall_time();
                             }
                             OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
                                                                             ctx->map_transpose_f32_small,
                                                                             1,
                                                                             NULL,
-                                                                            global_work_sizze_13032,
-                                                                            local_work_sizze_13036,
+                                                                            global_work_sizze_14997,
+                                                                            local_work_sizze_15001,
                                                                             0,
                                                                             NULL,
                                                                             NULL));
                             if (ctx->debugging) {
                                 OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
-                                time_end_13034 = get_wall_time();
+                                time_end_14999 = get_wall_time();
                                 
-                                long time_diff_13035 = time_end_13034 -
-                                     time_start_13033;
+                                long time_diff_15000 = time_end_14999 -
+                                     time_start_14998;
                                 
                                 ctx->map_transpose_f32_small_total_runtime +=
-                                    time_diff_13035;
+                                    time_diff_15000;
                                 ctx->map_transpose_f32_small_runs++;
                                 fprintf(stderr, "kernel %s runtime: %ldus\n",
                                         "map_transpose_f32_small",
-                                        time_diff_13035);
+                                        time_diff_15000);
                             }
                         }
                     } else {
@@ -3663,58 +3752,58 @@ static int futrts__map_transpose_f32(struct futhark_context *ctx,
                         if (1 * (squot32(x_elems_5 + 32 - 1, 32) * 32) *
                             (squot32(y_elems_6 + 32 - 1, 32) * 8) *
                             (num_arrays_4 * 1) != 0) {
-                            const size_t global_work_sizze_13037[3] =
+                            const size_t global_work_sizze_15002[3] =
                                          {squot32(x_elems_5 + 32 - 1, 32) * 32,
                                           squot32(y_elems_6 + 32 - 1, 32) * 8,
                                           num_arrays_4 * 1};
-                            const size_t local_work_sizze_13041[3] = {32, 8, 1};
-                            int64_t time_start_13038 = 0, time_end_13039 = 0;
+                            const size_t local_work_sizze_15006[3] = {32, 8, 1};
+                            int64_t time_start_15003 = 0, time_end_15004 = 0;
                             
                             if (ctx->debugging) {
                                 fprintf(stderr,
                                         "Launching %s with global work size [",
                                         "map_transpose_f32");
                                 fprintf(stderr, "%zu",
-                                        global_work_sizze_13037[0]);
+                                        global_work_sizze_15002[0]);
                                 fprintf(stderr, ", ");
                                 fprintf(stderr, "%zu",
-                                        global_work_sizze_13037[1]);
+                                        global_work_sizze_15002[1]);
                                 fprintf(stderr, ", ");
                                 fprintf(stderr, "%zu",
-                                        global_work_sizze_13037[2]);
+                                        global_work_sizze_15002[2]);
                                 fprintf(stderr, "] and local work size [");
                                 fprintf(stderr, "%zu",
-                                        local_work_sizze_13041[0]);
+                                        local_work_sizze_15006[0]);
                                 fprintf(stderr, ", ");
                                 fprintf(stderr, "%zu",
-                                        local_work_sizze_13041[1]);
+                                        local_work_sizze_15006[1]);
                                 fprintf(stderr, ", ");
                                 fprintf(stderr, "%zu",
-                                        local_work_sizze_13041[2]);
+                                        local_work_sizze_15006[2]);
                                 fprintf(stderr, "].\n");
-                                time_start_13038 = get_wall_time();
+                                time_start_15003 = get_wall_time();
                             }
                             OPENCL_SUCCEED_OR_RETURN(clEnqueueNDRangeKernel(ctx->opencl.queue,
                                                                             ctx->map_transpose_f32,
                                                                             3,
                                                                             NULL,
-                                                                            global_work_sizze_13037,
-                                                                            local_work_sizze_13041,
+                                                                            global_work_sizze_15002,
+                                                                            local_work_sizze_15006,
                                                                             0,
                                                                             NULL,
                                                                             NULL));
                             if (ctx->debugging) {
                                 OPENCL_SUCCEED_FATAL(clFinish(ctx->opencl.queue));
-                                time_end_13039 = get_wall_time();
+                                time_end_15004 = get_wall_time();
                                 
-                                long time_diff_13040 = time_end_13039 -
-                                     time_start_13038;
+                                long time_diff_15005 = time_end_15004 -
+                                     time_start_15003;
                                 
                                 ctx->map_transpose_f32_total_runtime +=
-                                    time_diff_13040;
+                                    time_diff_15005;
                                 ctx->map_transpose_f32_runs++;
                                 fprintf(stderr, "kernel %s runtime: %ldus\n",
-                                        "map_transpose_f32", time_diff_13040);
+                                        "map_transpose_f32", time_diff_15005);
                             }
                         }
                     }
@@ -3998,61 +4087,61 @@ int futhark_entry_main(struct futhark_context *ctx, struct futhark_u8_2d **out0,
                        const struct futhark_f32_1d *in5, const
                        struct futhark_u8_2d *in6)
 {
-    struct memblock_device sPositions_mem_12887;
+    struct memblock_device sPositions_mem_14843;
     
-    sPositions_mem_12887.references = NULL;
+    sPositions_mem_14843.references = NULL;
     
-    struct memblock_device sRadii_mem_12888;
+    struct memblock_device sRadii_mem_14844;
     
-    sRadii_mem_12888.references = NULL;
+    sRadii_mem_14844.references = NULL;
     
-    struct memblock_device sColors_mem_12889;
+    struct memblock_device sColors_mem_14845;
     
-    sColors_mem_12889.references = NULL;
+    sColors_mem_14845.references = NULL;
     
-    int32_t s_12545;
-    int32_t s_12546;
-    int32_t s_12547;
-    int32_t sizze_12548;
-    int32_t sizze_12549;
-    int32_t width_12550;
-    int32_t height_12551;
-    int32_t numS_12552;
-    int32_t numL_12553;
-    struct memblock_device out_mem_12954;
+    int32_t s_14578;
+    int32_t s_14579;
+    int32_t s_14580;
+    int32_t sizze_14581;
+    int32_t sizze_14582;
+    int32_t width_14583;
+    int32_t height_14584;
+    int32_t numS_14585;
+    int32_t numL_14586;
+    struct memblock_device out_mem_14885;
     
-    out_mem_12954.references = NULL;
+    out_mem_14885.references = NULL;
     
-    int32_t out_arrsizze_12955;
-    int32_t out_arrsizze_12956;
+    int32_t out_arrsizze_14886;
+    int32_t out_arrsizze_14887;
     
     lock_lock(&ctx->lock);
-    width_12550 = in0;
-    height_12551 = in1;
-    numS_12552 = in2;
-    numL_12553 = in3;
-    sPositions_mem_12887 = in4->mem;
-    s_12545 = in4->shape[0];
-    sizze_12548 = in4->shape[1];
-    sRadii_mem_12888 = in5->mem;
-    s_12546 = in5->shape[0];
-    sColors_mem_12889 = in6->mem;
-    s_12547 = in6->shape[0];
-    sizze_12549 = in6->shape[1];
+    width_14583 = in0;
+    height_14584 = in1;
+    numS_14585 = in2;
+    numL_14586 = in3;
+    sPositions_mem_14843 = in4->mem;
+    s_14578 = in4->shape[0];
+    sizze_14581 = in4->shape[1];
+    sRadii_mem_14844 = in5->mem;
+    s_14579 = in5->shape[0];
+    sColors_mem_14845 = in6->mem;
+    s_14580 = in6->shape[0];
+    sizze_14582 = in6->shape[1];
     
-    int ret = futrts_main(ctx, &out_mem_12954, &out_arrsizze_12955,
-                          &out_arrsizze_12956, sPositions_mem_12887,
-                          sRadii_mem_12888, sColors_mem_12889, s_12545, s_12546,
-                          s_12547, sizze_12548, sizze_12549, width_12550,
-                          height_12551, numS_12552, numL_12553);
+    int ret = futrts_main(ctx, &out_mem_14885, &out_arrsizze_14886,
+                          &out_arrsizze_14887, sPositions_mem_14843,
+                          sRadii_mem_14844, sColors_mem_14845, s_14578, s_14579,
+                          s_14580, sizze_14581, sizze_14582, width_14583,
+                          height_14584, numS_14585, numL_14586);
     
     if (ret == 0) {
         assert((*out0 =
                 (struct futhark_u8_2d *) malloc(sizeof(struct futhark_u8_2d))) !=
             NULL);
-        (*out0)->mem = out_mem_12954;
-        (*out0)->shape[0] = out_arrsizze_12955;
-        (*out0)->shape[1] = out_arrsizze_12956;
+        (*out0)->mem = out_mem_14885;
+        (*out0)->shape[0] = out_arrsizze_14886;
+        (*out0)->shape[1] = out_arrsizze_14887;
     }
     lock_unlock(&ctx->lock);
     return ret;

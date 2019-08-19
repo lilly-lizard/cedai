@@ -9,28 +9,27 @@ enum RESULT {
 	FAILURE
 };
 
-// TODO init to 0
 typedef struct {
 	uint8_t r;
 	uint8_t g;
 	uint8_t b;
 	uint8_t a;
-} pixel;
+} Pixel;
 
 typedef struct {
 	size_t width;
 	size_t height;
-	pixel *pixels;
-} bitmap;
+	Pixel *pixels;
+} Bitmap;
 
-bitmap render();
-bitmap genGradient();
-pixel* getPixel(const bitmap *bm, int x, int y);
-enum RESULT writePNG(const bitmap *bm, const char *path);
+Bitmap render();
+Bitmap genGradient();
+Pixel* getPixel(const Bitmap *bm, int x, int y);
+enum RESULT writePNG(const Bitmap *bm, const char *path);
 
 int main() {
 	// futhark program
-	bitmap bm = render();
+	Bitmap bm = render();
 	//bitmap bm = genGradient();
 
 	// write to png file
@@ -43,16 +42,16 @@ int main() {
 	return res;
 }
 
-bitmap genGradient() {
-	bitmap gradient;
+Bitmap genGradient() {
+	Bitmap gradient;
 	gradient.width = 200;
 	gradient.height = 200;
-	gradient.pixels = calloc(gradient.width * gradient.height, sizeof(pixel));
+	gradient.pixels = calloc(gradient.width * gradient.height, sizeof(Pixel));
 
 	// set pixels
 	for (int x = 0; x < gradient.width; x++) {
 		for (int y = 0; y < gradient.height; y++) {
-			pixel *p = getPixel(&gradient, x, y);
+			Pixel *p = getPixel(&gradient, x, y);
 			p->r = 255 * x / gradient.width;
 			p->g = 255 * y / gradient.height;
 			p->b = 255;
@@ -63,13 +62,13 @@ bitmap genGradient() {
 	return gradient;
 }
 
-void convertFutharkPixels(bitmap *bm, uint8_t *pixels, size_t width, size_t height) {
+void convertFutharkPixels(Bitmap *bm, uint8_t *pixels, size_t width, size_t height) {
 	bm->width = width;
 	bm->height = height;
-	bm->pixels = calloc(width * height, sizeof(pixel));
+	bm->pixels = calloc(width * height, sizeof(Pixel));
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
-			pixel *p = bm->pixels + width * y + x;
+			Pixel *p = bm->pixels + width * y + x;
 			p->r = *pixels++;
 			p->g = *pixels++;
 			p->b = *pixels++;
@@ -78,35 +77,124 @@ void convertFutharkPixels(bitmap *bm, uint8_t *pixels, size_t width, size_t heig
 	}
 }
 
-bitmap render() {
+typedef struct {
+	float *positions;
+	float *radii;
+	uint8_t *colors;
+	int numElements;
+} SphereVector;
+
+void initVector(SphereVector *vector) {
+	vector->positions = NULL;
+	vector->radii = NULL;
+	vector->colors = NULL;
+	vector->numElements = 0;
+}
+
+typedef struct {
+	float position[3];
+	float radius;
+	uint8_t color[4];
+} Sphere;
+
+void addSphere(SphereVector *vector, Sphere sphere) {
+	vector->numElements++;
+
+	// resize arrays
+	vector->positions = realloc(vector->positions, sizeof(float) * 3 * vector->numElements);
+	vector->radii = realloc(vector->radii, sizeof(float) * vector->numElements);
+	vector->colors = realloc(vector->colors, sizeof(uint8_t) * 4 * vector->numElements);
+
+	// write position
+	float *p = vector->positions + 3 * (vector->numElements - 1);
+	*p = sphere.position[0];
+	*(p + 1) = sphere.position[1];
+	*(p + 2) = sphere.position[2];
+
+	// write radius
+	float *r = vector->radii + (vector->numElements - 1);
+	*r = sphere.radius;
+
+	// write color
+	uint8_t *c = vector->colors + 4 * (vector->numElements - 1);
+	*c = sphere.color[0];
+	*(c + 1) = sphere.color[1];
+	*(c + 2) = sphere.color[2];
+	*(c + 3) = sphere.color[3];
+}
+
+void freeVector(SphereVector *vector) {
+	free(vector->positions);
+	free(vector->radii);
+	free(vector->colors);
+	initVector(vector);
+}
+
+Bitmap render() {
 	struct futhark_context_config *cfg = futhark_context_config_new();
 	struct futhark_context *ctx = futhark_context_new(cfg);
 
-	int32_t width = 200;
-	int32_t height = 200;
+	// inputs
+	int32_t width = 640;
+	int32_t height = 480;
+
+	// primitives
+	SphereVector spheres;
+	initVector(&spheres);
+
+	// spheres
+	Sphere sphere1 = {.position = {5, 0, 0}, .radius = 1, .color = {50, 255, 255, 255}};
+	addSphere(&spheres, sphere1);
+	Sphere sphere2 = {.position = {10, 1, 1,}, .radius = 2, .color = {255, 200, 50, 255}};
+	addSphere(&spheres, sphere2);
+	Sphere sphere3 = {.position = {7, -1, -1}, .radius = 2, .color = {255, 90, 150, 255}};
+	addSphere(&spheres, sphere3);
+	int32_t numSpheres = spheres.numElements;
+
+	// lights
+	Sphere light1 = {.position = {0, 3, 4}, .radius = 0.1, .color = {255, 255, 255, 255}};
+	addSphere(&spheres, light1);
+	Sphere light2 = {.position = {3, -1, 0}, .radius = 0.1, .color = {255, 255, 255, 255}};
+	addSphere(&spheres, light2);
+	int32_t numLights = spheres.numElements - numSpheres;
+
+	struct futhark_f32_2d *sPositions = futhark_new_f32_2d(ctx, spheres.positions, spheres.numElements, 3);
+	struct futhark_f32_1d *sRadii = futhark_new_f32_1d(ctx, spheres.radii, spheres.numElements);
+	struct futhark_u8_2d *sColors = futhark_new_u8_2d(ctx, spheres.colors, spheres.numElements, 4);
+
+	// output
 	uint8_t *pixelsArray = calloc(width * height * 4, sizeof(uint8_t));
 	struct futhark_u8_2d *pixelsFuthark = futhark_new_u8_2d(ctx, pixelsArray, width * height, 4);
 
-	futhark_entry_main(ctx, &pixelsFuthark, width, height);
+	// run program
+	futhark_entry_main(ctx, &pixelsFuthark, width, height,
+		numSpheres, numLights, sPositions, sRadii, sColors);
 	futhark_context_sync(ctx);
 
+	// get pixels
 	futhark_values_u8_2d(ctx, pixelsFuthark, pixelsArray);
-	bitmap pixelsBitmap;
+	Bitmap pixelsBitmap;
 	convertFutharkPixels(&pixelsBitmap, pixelsArray, width, height);
 
+	// clean up
+	freeVector(&spheres);
+	futhark_free_f32_2d(ctx, sPositions);
+	futhark_free_f32_1d(ctx, sRadii);
+	futhark_free_u8_2d(ctx, sColors);
+
 	futhark_free_u8_2d(ctx, pixelsFuthark);
-		free(pixelsArray);
+	free(pixelsArray);
 	futhark_context_free(ctx);
 	futhark_context_config_free(cfg);
 
 	return pixelsBitmap;
 }
 
-pixel* getPixel(const bitmap *bm, int x, int y) {
+Pixel* getPixel(const Bitmap *bm, int x, int y) {
 	return bm->pixels + bm->width * y + x;
 }
 
-enum RESULT writePNG(const bitmap *bm, const char *path) {
+enum RESULT writePNG(const Bitmap *bm, const char *path) {
 	enum RESULT result = FAILURE;
 
 	FILE *fp = fopen(path, "wb");
@@ -138,7 +226,7 @@ enum RESULT writePNG(const bitmap *bm, const char *path) {
 		png_byte *row = png_malloc(png, sizeof(uint8_t) * bm->width * pixelSize);
 		rows[y] = row;
 		for (size_t x = 0; x < bm->width; x++) {
-			pixel *pixel = getPixel(bm, x, y);
+			Pixel *pixel = getPixel(bm, x, y);
 			*row++ = pixel->r;
 			*row++ = pixel->g;
 			*row++ = pixel->b;
