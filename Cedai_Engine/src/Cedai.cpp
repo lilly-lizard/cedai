@@ -36,6 +36,11 @@ void Cedai::Run() {
 
 	loop();
 
+	//cleanUp();
+}
+
+Cedai::~Cedai() {
+	CD_INFO("Application cleaning up...");
 	cleanUp();
 }
 
@@ -77,7 +82,11 @@ void Cedai::loop() {
 		// window resize check
 		resizeCheck();
 		
-		// queue a render operation (opencl pipeline)
+		// 1) transform vertices
+		vertexProcessor.vertexProcess(maize.GetBoneTransforms());
+		vertexProcessor.vertexBarrier();
+		
+		// 2) queue a render operation
 		double time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
 		renderer.renderQueue(view, (float)time);
 
@@ -92,16 +101,13 @@ void Cedai::loop() {
 		fpsHandle();
 
 		renderer.renderBarrier();
-		// process vertices and draw to the window (2 opengl pipelines)
-		vertexProcessor.vertexProcess(maize.GetBoneTransforms());
+		// 3) draw to window
 		interface.drawRun();
-		vertexProcessor.vertexBarrier();
 		interface.drawBarrier();
 	}
 }
 
 void Cedai::cleanUp() {
-	CD_INFO("Cleaning up...");
 	CD_INFO("Average fps = {}", fpsSum / fpsCount);
 
 	renderer.cleanUp();
@@ -127,7 +133,7 @@ void Cedai::createPrimitives() {
 
 	spheres.push_back(cd::Sphere(0.2,
 		cl_float3{ { 6, 3, 3 } },
-		cl_uchar4{ { 255, 200, 128, 255 } }));
+		cl_uchar4{ { 255, 230, 80, 255 } }));
 
 	// lights
 

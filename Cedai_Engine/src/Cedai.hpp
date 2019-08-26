@@ -21,6 +21,7 @@ the number of polygons rendered depends on the number of polygon colors passed t
 
 class Cedai {
 public:
+	~Cedai();
 	void Run();
 
 	static void windowResizeCallback(GLFWwindow *window, int width, int height);
