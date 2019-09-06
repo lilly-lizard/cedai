@@ -21,6 +21,11 @@
 #define KERNEL_PATH "kernels/kernel.cl"
 #define KERNEL_ENTRY "render"
 
+// using a macro so that CD_ERROR prints the apropriate line number
+#define checkCLError(err, message) if (err) { \
+	CD_ERROR("{}. error code = ({})", message, err); \
+	throw std::runtime_error("renderer error"); }
+
 // PUBLIC FUNCTIONS
 
 void Renderer::init(int image_width, int image_height,
@@ -141,7 +146,7 @@ void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& dev
 		std::string devName = dev.getInfo<CL_DEVICE_NAME>();
 		CD_TRACE("cl device {}: is GPU = {}; gl sharing = {}; half float support = {}", devName, isGPU, glSharing, halfFloat);
 		
-		if (isGPU && glSharing && halfFloat) {
+		if (isGPU && glSharing) {
 			// CL_DEVICE_TYPE_GPU 16 x 16 x 1 = 256
 			// CL_DEVICE_TYPE_CPU 128 x 60 x 1 < 8192
 			device = dev;
@@ -222,7 +227,8 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, 
 void Renderer::createOutputImage(cl_GLenum gl_texture_target, cl_GLuint gl_texture) {
 	cl_int result;
 	glBindTexture(gl_texture_target, gl_texture);
-	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_NO_ACCESS, gl_texture_target, 0, gl_texture, &result);
+	cd::checkErrorsGL("cl bind texture target");
+	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
 }
 
@@ -273,7 +279,7 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	const char* kernel_source = source.c_str();
 
 	// compiler options
-	std::string options = "-cl-fast-relaxed-math -cl-denorms-are-zero -Werror"; //  -cl-std=CL1.2
+	std::string options = "-cl-std=CL1.2 -cl-fast-relaxed-math -cl-denorms-are-zero -Werror"; // -cl-std=CL1.2
 
 	// Create an OpenCL program by performing runtime source compilation for the chosen device
 	cl::Program program = cl::Program(context, kernel_source);
@@ -288,8 +294,8 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 void Renderer::setWorkGroupSizes() {
 
 	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
-	int x = 16;
-	int y = 16;
+	int x = 32;
+	int y = 32;
 
 #	ifdef HALF_RESOLUTION
 	global_work = cl::NDRange(image_width / 2, image_height / 2);
@@ -300,13 +306,6 @@ void Renderer::setWorkGroupSizes() {
 }
 
 // HELPER FUNCTIONS
-
-void Renderer::checkCLError(cl_int err, std::string message) {
-	if (err) {
-		CD_ERROR("{}. error code = ({})", message, err);
-		throw std::runtime_error("renderer error");
-	}
-}
 
 void Renderer::printErrorLog(const cl::Program& program, const cl::Device& device) {
 

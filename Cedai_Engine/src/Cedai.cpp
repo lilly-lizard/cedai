@@ -80,7 +80,9 @@ void Cedai::loop() {
 
 	while (!quit && !interface.WindowCloseCheck()) {
 		// window resize check
+#		ifdef RESIZABLE
 		resizeCheck();
+#		endif
 		
 		// 1) transform vertices
 		vertexProcessor.vertexProcess(maize.GetBoneTransforms());
@@ -88,7 +90,7 @@ void Cedai::loop() {
 		
 		// 2) queue a render operation
 		double time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
-		renderer.renderQueue(view, (float)time);
+		//renderer.renderQueue(view, (float)time);
 
 		// input handling
 		interface.PollEvents();
@@ -100,7 +102,7 @@ void Cedai::loop() {
 		updateAnimation(time);
 		fpsHandle();
 
-		renderer.renderBarrier();
+		//renderer.renderBarrier();
 		// 3) draw to window
 		interface.drawRun();
 		interface.drawBarrier();

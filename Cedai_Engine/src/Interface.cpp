@@ -218,6 +218,7 @@ void cd::checkErrorsGL(std::string desc) {
 	while (e != GL_NO_ERROR) {
 		error_found = true;
 		CD_ERROR("OpenGL error with '{}': {:#x}", desc, e);
+		//e = GL_NO_ERROR;
 		e = glGetError();
 	}
 	if (error_found)

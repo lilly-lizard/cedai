@@ -66,6 +66,5 @@ private:
 	void createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint);
 	void setWorkGroupSizes();
 
-	void checkCLError(cl_int err, std::string message);
 	void printErrorLog(const cl::Program& program, const cl::Device& device);
 };

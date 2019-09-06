@@ -69,9 +69,9 @@ __kernel void render(// inputs
 
 	// create a camera ray
 	const float3 uv = (float3)(dim.x, (float)coord.x - (float)dim.x / 2, (float)dim.y / 2 - coord.y);
-	const float3 ray_d = fast_normalize((float3)(uv.x * view[0] + uv.y * view[4] + uv.z * view[8],
-												 uv.x * view[1] + uv.y * view[5] + uv.z * view[9],
-												 uv.x * view[2] + uv.y * view[6] + uv.z * view[10]));
+	const float3 ray_d = fast_normalize((float3)(uv.x * view.s0 + uv.y * view.s4 + uv.z * view.s8,
+												 uv.x * view.s1 + uv.y * view.s5 + uv.z * view.s9,
+												 uv.x * view.s2 + uv.y * view.s6 + uv.z * view.sA));
 
 	// check for intersections
 	uchar4 color = (uchar4)(0, 0, 0, 0);
@@ -152,6 +152,7 @@ __kernel void render(// inputs
 	}
 
 	// draw
+	color = (uchar4)(255, 255, 255, 255);
 #ifndef HALF_RESOLUTION
 	draw(output, color, ray_d, coord);
 #else
@@ -170,9 +171,9 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 	// a = P1 . P1 = 1 (assuming ray_d is normalized)
 	float3 d = center - ray_o;
 	float b = dot(d, ray_d);
-	float c = dot(d, d) - native_powr(radius, 2);
+	float c = dot(d, d) - radius * 2;
 
-	float discriminant = native_powr(b, 2) - c;
+	float discriminant = b * 2 - c;
 	if (discriminant < 0) return -1;
 
 	float t = b - native_sqrt(discriminant);

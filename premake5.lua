@@ -56,7 +56,7 @@ project "Cedai_Engine" -- game engine
 		libdirs {
 			"$(INTELOCLSDKROOT)/lib/x64",	-- opencl on intel
 			"$(AMDAPPSDKROOT)/lib/x86_64",	-- opencl on amd
-			"$(CUDA_LIB_PATH)"				-- opencl on nvidia
+			"$(CUDA_PATH)/lib/x64"			-- opencl on nvidia
 		}
 
 	filter "system:linux"
