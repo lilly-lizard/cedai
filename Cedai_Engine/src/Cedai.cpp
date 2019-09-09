@@ -102,7 +102,7 @@ void Cedai::loop() {
 		updateAnimation(time);
 		fpsHandle();
 
-		//renderer.renderBarrier();
+		renderer.renderBarrier();
 		// 3) draw to window
 		interface.drawRun();
 		interface.drawBarrier();

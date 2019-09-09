@@ -27,6 +27,7 @@ void Interface::init(Cedai *application, int window_width, int window_height) {
 #endif
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwSwapInterval(0);
 	window = glfwCreateWindow(windowWidth, windowHeight, WINDOW_TITLE, nullptr, nullptr);
 	if (!window) {
 		const char *message;
