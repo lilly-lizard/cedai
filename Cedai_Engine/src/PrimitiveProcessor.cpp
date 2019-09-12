@@ -120,7 +120,7 @@ void PrimitiveProcessor::setVertexAttributes() {
 
 	// bone weights
 	int weightsLocation = 2;
-	glVertexAttribPointer(weightsLocation, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsets[2]);
+	glVertexAttribPointer(weightsLocation, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsets[2]); // TODO normalize
 	glEnableVertexAttribArray(weightsLocation);
 }
 

@@ -13,6 +13,7 @@ class PrimitiveProcessor;
 class Renderer {
 public:
 
+	Renderer();
 	void init(int image_width, int image_height,
 		Interface* interface, PrimitiveProcessor* vertexProcessor,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygon_colors);
@@ -38,10 +39,14 @@ private:
 	cl::NDRange local_work;
 
 	cl::Buffer cl_spheres;
-	cl::Buffer cl_gl_vertices;
 	cl::Buffer cl_polygons;
-	cl::ImageGL cl_output;
+	// contents: [0] = cl::Buffer cl_gl_vertices; [1] = cl::ImageGL cl_output;
 	std::vector<cl::Memory> gl_objects;
+	enum gl_object_indices {
+		vertices,
+		output_image,
+		count
+	};
 
 	int sphere_count = 0;
 	int light_count = 0;
@@ -59,7 +64,6 @@ private:
 	void createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, cl_GLuint gl_vert_buffer,
 			std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygon_colors);
 	void createOutputImage(cl_GLenum gl_texture_target, cl_GLuint gl_texture);
-	void setGLObjects();
 
 	void createKernels();
 	void setOutArg();

@@ -7,6 +7,7 @@
 #include <string>
 
 #define MAX_BONES 50
+// also defined in primitive.vert and Config.hpp
 
 namespace cd
 {

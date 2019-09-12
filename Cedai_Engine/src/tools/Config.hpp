@@ -1,6 +1,6 @@
 #pragma once
 
-#define HALF_RESOLUTION /* MUST be the same in kernels/kernel.cl */
+//#define HALF_RESOLUTION /* MUST be the same in kernels/kernel.cl */
 #define PRINT_FPS
 //#define RESIZABLE
 
@@ -8,6 +8,7 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
 #define MAX_BONES 50
+// also defined in primitive.vert and AnimatedModel.h in the model converter
 #define WINDOW_TITLE "Cedai"
 
 #define CD_PI 3.14159f

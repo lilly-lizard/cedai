@@ -7,14 +7,14 @@ typedef struct
 {
 	float radius;
 	float3 pos;
-	uchar4 color;
+	uint4 color;
 } Sphere;
 
 enum primitive_type { NONE, SPHERE, LIGHT, POLYGON };
 
 // CONFIG AND CONSTANTS
 
-#define HALF_RESOLUTION /* MUST to be the same in src/tools/config.hpp */
+//#define HALF_RESOLUTION /* MUST to be the same in src/tools/config.hpp */
 #ifdef HALF_RESOLUTION
 #	define DITHER
 #endif
@@ -43,7 +43,7 @@ float diffuse_sphere(float3 normal, float3 intersection, float3 light);
 float diffuse_polygon(float3 normal, float3 intersection, float3 light_pos, float3 ray_d);
 float ceiling(float value, float multiple);
 bool shadow(float3 intersection, float3 light, int s_index, int p_index, const int sphere_count, const int polygon_count,
-			__constant Sphere* __restrict spheres, __constant float3* __restrict vertices);
+			__constant Sphere* __restrict spheres, __constant float4* __restrict vertices);
 int luminance(uchar4 color);
 
 void draw(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord);
@@ -59,7 +59,7 @@ __kernel void render(// inputs
 					 const int sphere_count, const int light_count, const int polygon_count,
 					 // buffers
 					 __constant Sphere* __restrict spheres,
-					 __constant float3* __restrict vertices,
+					 __constant float4* __restrict vertices,
 					 __constant uchar4* __restrict polygon_colors,
 					 // output
 					 __write_only image2d_t output)
@@ -89,7 +89,7 @@ __kernel void render(// inputs
 		if (0 < t && t < min_t) {
 			primitive_found = SPHERE;
 			min_t = t;
-			color = sphere.color;
+			color = convert_uchar4(sphere.color);
 			index = s;
 	}	}
 
@@ -100,13 +100,13 @@ __kernel void render(// inputs
 		if (0 < t && t < min_t) {
 			primitive_found = LIGHT;
 			min_t = t;
-			color = light.color;
+			color = convert_uchar4(light.color);
 			index = l;
 	}	}
 
 	// polygons
 	for (int p = 0; p < polygon_count; p++) {
-		float t = triangle_intersect(ray_o, ray_d, vertices[p * 3], vertices[p * 3 + 1], vertices[p * 3 + 2]);
+		float t = triangle_intersect(ray_o, ray_d, vertices[p * 3].xyz, vertices[p * 3 + 1].xyz, vertices[p * 3 + 2].xyz);
 		if (0 < t && t < min_t) {
 			primitive_found = POLYGON;
 			min_t = t;
@@ -137,9 +137,9 @@ __kernel void render(// inputs
 	} else if (primitive_found == POLYGON) {
 		float light = AMBIENT;
 		float3 intersection = mad(min_t, ray_d, ray_o);
-		float3 v0 = vertices[index * 3];
-		float3 v1 = vertices[index * 3 + 1];
-		float3 v2 = vertices[index * 3 + 2];
+		float3 v0 = vertices[index * 3].xyz;
+		float3 v1 = vertices[index * 3 + 1].xyz;
+		float3 v2 = vertices[index * 3 + 2].xyz;
 
 		for (int l = sphere_count; l < sphere_total; l++) {
 			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
@@ -152,7 +152,6 @@ __kernel void render(// inputs
 	}
 
 	// draw
-	color = (uchar4)(255, 255, 255, 255);
 #ifndef HALF_RESOLUTION
 	draw(output, color, ray_d, coord);
 #else
@@ -171,9 +170,9 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 	// a = P1 . P1 = 1 (assuming ray_d is normalized)
 	float3 d = center - ray_o;
 	float b = dot(d, ray_d);
-	float c = dot(d, d) - radius * 2;
+	float c = dot(d, d) - native_powr(radius, 2);
 
-	float discriminant = b * 2 - c;
+	float discriminant = native_powr(b, 2) - c;
 	if (discriminant < 0) return -1;
 
 	float t = b - native_sqrt(discriminant);
@@ -221,9 +220,8 @@ float ceiling(float value, float multiple)
 	return ceil(value/multiple) * multiple;
 }
 
-bool shadow(float3 intersection, float3 light, int s_index, int p_index,
-			const int sphere_count, const int polygon_count,
-			__constant Sphere* __restrict spheres, __constant float3* __restrict vertices) {
+bool shadow(float3 intersection, float3 light, int s_index, int p_index, const int sphere_count, const int polygon_count,
+			__constant Sphere* __restrict spheres, __constant float4* __restrict vertices) {
 	float3 ray_d = fast_normalize(light - intersection);
 	float3 ray_o = intersection;
 
@@ -238,7 +236,7 @@ bool shadow(float3 intersection, float3 light, int s_index, int p_index,
 	// polygons
 	for (int p = 0; p < polygon_count; p++) {
 		if (p == p_index) continue;
-		float t = triangle_intersect(ray_o, ray_d, vertices[p * 3], vertices[p * 3 + 1], vertices[p * 3 + 2]);
+		float t = triangle_intersect(ray_o, ray_d, vertices[p * 3].xyz, vertices[p * 3 + 1].xyz, vertices[p * 3 + 2].xyz);
 		if (0 < t) return true;
 	}
 

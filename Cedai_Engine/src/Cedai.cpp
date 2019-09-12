@@ -90,7 +90,7 @@ void Cedai::loop() {
 		
 		// 2) queue a render operation
 		double time = duration<double, seconds::period>(high_resolution_clock::now() - timeStart).count();
-		//renderer.renderQueue(view, (float)time);
+		renderer.renderQueue(view, (float)time);
 
 		// input handling
 		interface.PollEvents();
@@ -99,7 +99,7 @@ void Cedai::loop() {
 
 		// game logic
 		processInputs();
-		updateAnimation(time);
+		//updateAnimation(time);
 		fpsHandle();
 
 		renderer.renderBarrier();
@@ -127,25 +127,25 @@ void Cedai::createPrimitives() {
 
 	spheres.push_back(cd::Sphere(1.0,
 		cl_float3{ { 3, 2, -4 } },
-		cl_uchar4{ { 200, 128, 254, 255 } }));
+		cl_uint4{ { 200, 128, 254, 255 } }));
 
 	spheres.push_back(cd::Sphere(0.5,
 		cl_float3{ { -2, 2, 2.5 } },
-		cl_uchar4{ { 128, 255, 180, 255 } }));
+		cl_uint4{ { 128, 255, 180, 255 } }));
 
 	spheres.push_back(cd::Sphere(0.2,
 		cl_float3{ { 6, 3, 3 } },
-		cl_uchar4{ { 255, 230, 80, 255 } }));
+		cl_uint4{ { 255, 230, 80, 255 } }));
 
 	// lights
 
 	lights.push_back(cd::Sphere(0.1,
 		cl_float3{ { 2, 3, 4 } },
-		cl_uchar4{ { 255, 255, 205, 255 } }));
+		cl_uint4{ { 255, 255, 205, 255 } }));
 
 	lights.push_back(cd::Sphere(0.1,
 		cl_float3{ { -1, -6, -4 } },
-		cl_uchar4{ { 255, 255, 205, 255 } }));
+		cl_uint4{ { 255, 255, 205, 255 } }));
 
 	// animated model
 

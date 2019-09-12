@@ -21,15 +21,18 @@
 #define KERNEL_PATH "kernels/kernel.cl"
 #define KERNEL_ENTRY "render"
 
-// using a macro so that CD_ERROR prints the apropriate line number
+// using a macro so that CD_ERROR prints the appropriate line number
 #define checkCLError(err, message) if (err) { \
 	CD_ERROR("{}. error code = ({})", message, err); \
 	throw std::runtime_error("renderer error"); }
 
 // PUBLIC FUNCTIONS
 
-void Renderer::init(int image_width, int image_height,
-		Interface* interface, PrimitiveProcessor* vertexProcessor,
+Renderer::Renderer() {
+	gl_objects.resize(gl_object_indices::count);
+}
+
+void Renderer::init(int image_width, int image_height, Interface* interface, PrimitiveProcessor* vertexProcessor,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygon_colors) {
 	CD_INFO("Initialising renderer...");
 
@@ -80,11 +83,10 @@ void Renderer::resize(int image_width, int image_height, Interface *interface) {
 	this->image_height = image_height;
 	setWorkGroupSizes();
 
-	// trust that OpenCL handles buffer release
-	gl_objects.clear();
+	// trust that OpenCL handles buffer release TODO: garbage collection or what?
+	gl_objects[gl_object_indices::output_image] = nullptr;
 	createOutputImage(interface->getTexTarget(), interface->getTexHandle());
 	setOutArg();
-	setGLObjects();
 }
 
 void Renderer::cleanUp() {
@@ -191,7 +193,7 @@ void Renderer::createContext(Interface* interface) {
 
 void Renderer::createQueue() {
 	cl_int res;
-	queue = cl::CommandQueue(context, device, 0, &res); // CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+	queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &res); // CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
 	checkCLError(res, "Failed openCL queue creation");
 }
 
@@ -211,7 +213,7 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, 
 
 	// gl vertices
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, gl_vert_buffer);
-	cl_gl_vertices = cl::BufferGL(context, CL_MEM_READ_WRITE, gl_vert_buffer, &result);
+	gl_objects[gl_object_indices::vertices] = cl::BufferGL(context, CL_MEM_READ_WRITE, gl_vert_buffer, &result);
 	checkCLError(result, "gl vertex buffer create");
 
 	// polygons
@@ -228,13 +230,8 @@ void Renderer::createOutputImage(cl_GLenum gl_texture_target, cl_GLuint gl_textu
 	cl_int result;
 	glBindTexture(gl_texture_target, gl_texture);
 	cd::checkErrorsGL("cl bind texture target");
-	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
+	gl_objects[gl_object_indices::output_image] = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
-}
-
-void Renderer::setGLObjects() {
-	gl_objects.push_back(cl_gl_vertices);
-	gl_objects.push_back(cl_output);
 }
 
 void Renderer::createKernels() {
@@ -250,14 +247,14 @@ void Renderer::createKernels() {
 	kernel.setArg(5, polygon_count);
 
 	kernel.setArg(6, cl_spheres);
-	kernel.setArg(7, cl_gl_vertices);
+	kernel.setArg(7, gl_objects[gl_object_indices::vertices]);
 	kernel.setArg(8, cl_polygons);
 
 	setOutArg();
 }
 
 void Renderer::setOutArg() {
-	kernel.setArg(9, cl_output);
+	kernel.setArg(9, gl_objects[gl_object_indices::output_image]);
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
