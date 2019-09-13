@@ -40,6 +40,7 @@ private:
 
 	cl::Buffer cl_spheres;
 	cl::Buffer cl_polygons;
+
 	// contents: [0] = cl::Buffer cl_gl_vertices; [1] = cl::ImageGL cl_output;
 	std::vector<cl::Memory> gl_objects;
 	enum gl_object_indices {
@@ -52,11 +53,12 @@ private:
 	int light_count = 0;
 	int polygon_count = 0;
 
-	void createPlatform();
-	void createDevive();
-
-	void pickPlatform(cl::Platform& platform, const std::vector<cl::Platform>& platforms);
-	void pickDevice(cl::Device& device, const std::vector<cl::Device>& devices);
+	void createDevice();
+	struct DeviceDetails {
+		cl::Device device;
+		cl::Platform platform;
+	};
+	bool checkDevice(DeviceDetails &deviceDetails);
 
 	void createContext(Interface* interface);
 	void createQueue();

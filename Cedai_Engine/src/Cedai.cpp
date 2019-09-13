@@ -162,7 +162,6 @@ void Cedai::createPrimitives() {
 
 	CD_INFO("number of vertices = {}", maize.vertices.size());
 	CD_INFO("number of polygons = {}", cl_polygonColors.size());
-	CD_INFO("animation period = {}", maize.animation.duration);
 }
 
 // GAME LOGIC

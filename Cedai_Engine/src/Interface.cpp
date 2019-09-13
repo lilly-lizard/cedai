@@ -55,6 +55,11 @@ void Interface::init(Cedai *application, int window_width, int window_height) {
 		throw std::runtime_error("openGL version");
 	}
 
+	// TODO print relevent system parameters
+	//GLint value;
+	//glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS , &value);
+	//glGetIntegerv(GL_UNIFORM_BUFFER_SIZE, &value);
+
 	// resize callback
 	glfwSetWindowUserPointer(window, application);
 	glfwSetFramebufferSizeCallback(window, application->windowResizeCallback);
