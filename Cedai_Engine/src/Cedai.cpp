@@ -99,7 +99,7 @@ void Cedai::loop() {
 
 		// game logic
 		processInputs();
-		//updateAnimation(time);
+		updateAnimation(time);
 		fpsHandle();
 
 		renderer.renderBarrier();

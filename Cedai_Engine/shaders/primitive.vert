@@ -16,7 +16,7 @@ uniform mat4 bones[GL_BONES];
 
 void main()
 {
-	mat4 animation;
+	mat4 animation = mat4(0);
 	float weight_remaining = 1;
 	for (int b = 0; b < 4; b++) {
 		int bone_index = bone_indices[b];
@@ -27,5 +27,4 @@ void main()
 	animation += mat4(1) * clamp(weight_remaining, 0.0f, 1.0f);
 	
 	position_out[gl_VertexID] = animation * position_in + animation[3];
-	//position_out[gl_VertexID] = position_in;
 }
