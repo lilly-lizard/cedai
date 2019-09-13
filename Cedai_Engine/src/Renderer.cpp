@@ -106,7 +106,8 @@ void Renderer::createDevice() {
 	// print platforms
 	std::cout << "~ Available OpenCL platforms: \n";
 	for (int i = 0; i < platforms.size(); i++)
-		std::cout << "~ \t" << i + 1 << ": " << platforms[i].getInfo<CL_PLATFORM_NAME>() << "\n~ \n";
+		std::cout << "~ \t" << i + 1 << ": " << platforms[i].getInfo<CL_PLATFORM_NAME>() << std::endl;
+	std::cout << "~\n";
 
 	// loop through platforms and find suitable devices
 	std::vector<DeviceDetails> suitableDevices;

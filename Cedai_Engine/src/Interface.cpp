@@ -91,7 +91,7 @@ void Interface::drawRun() {
 	glEnableVertexAttribArray(vertexLocation);
 
 	glUseProgram(drawPipeline.programHandle);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
 
 	cd::checkErrorsGL("GL draw");
 }
@@ -304,19 +304,17 @@ void Interface::setProgramIO() {
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 
 	float data[] = {
-		-1.0f, -1.0f,
-		-1.0f,  1.0f,
-		 1.0f, -1.0f,
-		 1.0f,  1.0f
+		0.0f, 0.0f,
+		2.0f, 0.0f,
+		0.0f, 2.0f,
 	};
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 8, data, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, data, GL_STREAM_DRAW);
 
 	vertexLocation = glGetAttribLocation(drawPipeline.programHandle, "pos");
 	glVertexAttribPointer(vertexLocation, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(vertexLocation);
 
 	glBindFragDataLocation(drawPipeline.programHandle, 0, "color");
-	//glUniform1i(glGetUniformLocation(drawPipeline.programHandle, "srcTex"), 0);
 }
 
 /*
