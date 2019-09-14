@@ -14,7 +14,6 @@ enum primitive_type { NONE, SPHERE, LIGHT, POLYGON };
 
 // CONFIG AND CONSTANTS
 
-#define HALF_RESOLUTION /* MUST to be the same in src/tools/config.hpp */
 #ifdef HALF_RESOLUTION
 #	define DITHER
 #endif
@@ -46,9 +45,7 @@ bool shadow(float3 intersection, float3 light, int s_index, int p_index, const i
 			__constant Sphere* __restrict spheres, __constant float3* __restrict vertices);
 int luminance(uchar4 color);
 
-void draw(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord);
-void draw_half_res(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord);
-void draw_dither(__write_only image2d_t output, uchar4 color, bool no_color_found, float3 ray_d, int2 coord);
+void draw(__write_only image2d_t output, uchar4 color, int2 coord, bool no_color_found);
 uchar4 background_color(float3 ray_d);
 
 // ENTRY POINT
@@ -127,8 +124,7 @@ __kernel void render(// inputs
 			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
 			bool in_shadow = shadow(intersection, light_pos, index, -1, sphere_count, polygon_count, spheres, vertices);
 			if (!in_shadow)
-				light += diffuse_sphere(intersection - spheres[index].pos, intersection,
-										spheres[l].pos + light_offset * (l % 2 * 2 - 1));
+				light += diffuse_sphere(intersection - spheres[index].pos, intersection, spheres[l].pos + light_offset * (l % 2 * 2 - 1));
 		}
 		light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
 		color = convert_uchar4(convert_float4(color) * light);
@@ -151,16 +147,8 @@ __kernel void render(// inputs
 		color = convert_uchar4(convert_float4(color) * light);
 	}
 
-	// draw
-#ifndef HALF_RESOLUTION
-	draw(output, color, ray_d, coord);
-#else
-#ifdef DITHER
-	draw_dither(output, color, primitive_found == NONE, ray_d, coord);
-#else
-	draw_half_res(output, color, ray_d, coord);
-#endif
-#endif
+	// write pixel to the output image
+	draw(output, color, coord, primitive_found == NONE);
 }
 
 // INTERSECTION FUNCTIONS
@@ -170,9 +158,9 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 	// a = P1 . P1 = 1 (assuming ray_d is normalized)
 	float3 d = center - ray_o;
 	float b = dot(d, ray_d);
-	float c = dot(d, d) - native_powr(radius, 2);
+	float c = dot(d, d) - radius * radius;
 
-	float discriminant = native_powr(b, 2) - c;
+	float discriminant = b * b - c;
 	if (discriminant < 0) return -1;
 
 	float t = b - native_sqrt(discriminant);
@@ -254,30 +242,15 @@ int luminance(uchar4 color) {
 
 // DRAWING FUNCTIONS
 
-void draw(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord)
+void draw(__write_only image2d_t output, uchar4 color, int2 coord, bool no_color_found)
 {
 	uint4 color_out = convert_uint4(color);
-	write_imageui(output, coord, color_out);
-}
-
-void draw_half_res(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord)
-{
-	uint4 color_out = convert_uint4(color);
-	write_imageui(output, (int2)(coord.x * 2, coord.y * 2), color_out);
-	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2 + 1), color_out);
-	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2), color_out);
-	write_imageui(output, (int2)(coord.x * 2, coord.y * 2 + 1), color_out);
-}
-
-void draw_dither(__write_only image2d_t output, uchar4 color, bool no_color_found, float3 ray_d, int2 coord)
-{
+#ifdef HALF_RESOLUTION
+#ifdef DITHER
 	int dither;
 	if (no_color_found) dither = 2;
 	else dither = luminance(color) / 64;
-	//int dither = select(luminance(color) / 64, 2, (int)no_color_found);
-
-	// write
-	uint4 color_out = convert_uint4(color);
+	
 	write_imageui(output, (int2)(coord.x * 2, coord.y * 2), color_out);
 
 	if (dither < 1) color_out = (uint4)(0,0,0,0);
@@ -288,6 +261,17 @@ void draw_dither(__write_only image2d_t output, uchar4 color, bool no_color_foun
 
 	if (dither < 3) color_out = (uint4)(0,0,0,0);
 	write_imageui(output, (int2)(coord.x * 2, coord.y * 2 + 1), color_out);
+#else // DITHER
+
+	write_imageui(output, (int2)(coord.x * 2, coord.y * 2), color_out);
+	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2 + 1), color_out);
+	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2), color_out);
+	write_imageui(output, (int2)(coord.x * 2, coord.y * 2 + 1), color_out);
+#endif
+#else // HALF_RESOLUTION
+
+	write_imageui(output, coord, color_out);
+#endif
 }
 
 uchar4 background_color(float3 ray_d)

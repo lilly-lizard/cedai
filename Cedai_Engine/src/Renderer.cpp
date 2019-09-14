@@ -135,6 +135,7 @@ void Renderer::pickPlatform(cl::Platform& platform, const std::vector<cl::Platfo
 void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& devices) {
 	for (cl::Device dev : devices) {
 		std::string extensions = dev.getInfo<CL_DEVICE_EXTENSIONS>();
+		//std::cout << extensions << std::endl;
 		bool isGPU = dev.getInfo< CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU;
 		bool glSharing = extensions.find("cl_khr_gl_sharing") != std::string::npos;
 		bool halfFloat = extensions.find("cl_khr_fp16") != std::string::npos;
@@ -165,7 +166,7 @@ void Renderer::createContext(Interface* interface) {
 	context = cl::Context(device, contextProps, NULL, NULL, &result);
 	checkCLError(result, "Error during windows opencl context creation");
 
-#	else
+#	else // CD_PLATFORM_WINDOWS
 #	ifdef CD_PLATFORM_LINUX
 	cl_context_properties contextProps[] = {
 		CL_GL_CONTEXT_KHR,   (cl_context_properties)glfwGetGLXContext(interface->getWindow()),	// GLX Context
@@ -177,7 +178,7 @@ void Renderer::createContext(Interface* interface) {
 	context = cl::Context(device, contextProps, NULL, NULL, &result);
 	checkCLError(result, "Error during linux opencl context creation");
 
-#	else
+#	else // CD_PLATFORM_LINUX
 	CD_ERROR("Unsupported platform: only windows and linux are supported at this time.");
 	throw std::runtime_error("platform error");
 #	endif // CD_PLATFORM_LINUX
@@ -186,7 +187,7 @@ void Renderer::createContext(Interface* interface) {
 
 void Renderer::createQueue() {
 	cl_int res;
-	queue = cl::CommandQueue(context, device, 0, &res); // CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+	queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &res);
 	checkCLError(res, "Failed openCL queue creation");
 }
 
@@ -222,7 +223,7 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, 
 void Renderer::createOutputImage(cl_GLenum gl_texture_target, cl_GLuint gl_texture) {
 	cl_int result;
 	glBindTexture(gl_texture_target, gl_texture);
-	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_NO_ACCESS, gl_texture_target, 0, gl_texture, &result);
+	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
 }
 
@@ -258,6 +259,9 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 
 	// Convert the OpenCL source code to a string
 	std::string source;
+#ifdef HALF_RESOLUTION
+	source = "#define HALF_RESOLUTION\n";
+#endif
 	std::ifstream file(filename);
 	if (!file) {
 		CD_ERROR("{} file not found!\nExiting...", filename);
@@ -273,7 +277,7 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	const char* kernel_source = source.c_str();
 
 	// compiler options
-	std::string options = "-cl-fast-relaxed-math -cl-denorms-are-zero -Werror"; //  -cl-std=CL1.2
+	std::string options = "-cl-std=CL1.2 -cl-fast-relaxed-math -cl-denorms-are-zero -Werror";
 
 	// Create an OpenCL program by performing runtime source compilation for the chosen device
 	cl::Program program = cl::Program(context, kernel_source);

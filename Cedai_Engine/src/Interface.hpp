@@ -13,7 +13,7 @@
 class Cedai;
 
 namespace cd {
-	void createProgramGL(GLuint &program, std::string vertPath, std::string fragPath);
+	void createProgramGL(GLuint &program, std::string vertPath, std::string fragPath, bool defineBones);
 	void checkErrorsGL(std::string desc);
 	std::string readFile(const std::string& filename);
 }

@@ -12,7 +12,7 @@ void PrimitiveProcessor::init(Interface *interface, std::vector<cd::Vertex> &ver
 	vertexCount = vertices.size();
 
 	// create program
-	cd::createProgramGL(program, VERT_PATH, FRAG_PATH);
+	cd::createProgramGL(program, VERT_PATH, FRAG_PATH, true);
 	setProgramIO(vertices);
 
 	// make dummy render target
