@@ -73,6 +73,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="kernels\acceleration.cl">
+      <Filter>kernels</Filter>
+    </None>
     <None Include="kernels\kernel.cl">
       <Filter>kernels</Filter>
     </None>

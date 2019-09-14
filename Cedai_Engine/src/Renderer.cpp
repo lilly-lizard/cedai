@@ -21,18 +21,25 @@
 #define KERNEL_PATH "kernels/kernel.cl"
 #define KERNEL_ENTRY "render"
 
+// using a macro so that CD_ERROR prints the appropriate line number
+#define checkCLError(err, message) if (err) { \
+	CD_ERROR("{}. error code = ({})", message, err); \
+	throw std::runtime_error("renderer error"); }
+
 // PUBLIC FUNCTIONS
 
-void Renderer::init(int image_width, int image_height,
-		Interface* interface, PrimitiveProcessor* vertexProcessor,
+Renderer::Renderer() {
+	gl_objects.resize(gl_object_indices::count);
+}
+
+void Renderer::init(int image_width, int image_height, Interface* interface, PrimitiveProcessor* vertexProcessor,
 		std::vector<cd::Sphere>& spheres, std::vector<cd::Sphere>& lights, std::vector<cl_uchar4>& polygon_colors) {
 	CD_INFO("Initialising renderer...");
 
 	this->image_width = image_width;
 	this->image_height = image_height;
 
-	createPlatform();
-	createDevive();
+	createDevice();
 
 	createContext(interface);
 	createQueue();
@@ -40,7 +47,7 @@ void Renderer::init(int image_width, int image_height,
 	createBuffers(interface->getTexTarget(), interface->getTexHandle(), vertexProcessor->getVertexBuffer(),
 		spheres, lights, polygon_colors);
 	createKernels();
-	setWorkGroupSizes();
+	setGlobalWork();
 
 	queue.finish();
 }
@@ -73,13 +80,12 @@ void Renderer::renderBarrier() {
 void Renderer::resize(int image_width, int image_height, Interface *interface) {
 	this->image_width = image_width;
 	this->image_height = image_height;
-	setWorkGroupSizes();
+	setGlobalWork();
 
-	// trust that OpenCL handles buffer release
-	gl_objects.clear();
+	// trust that OpenCL handles buffer release TODO: garbage collection or what?
+	gl_objects[gl_object_indices::output_image] = nullptr;
 	createOutputImage(interface->getTexTarget(), interface->getTexHandle());
 	setOutArg();
-	setGLObjects();
 }
 
 void Renderer::cleanUp() {
@@ -88,70 +94,66 @@ void Renderer::cleanUp() {
 
 // INIT FUNCTIONS
 
-void Renderer::createPlatform() {
-
-	// Get all available OpenCL platforms (e.g. AMD OpenCL, Nvidia CUDA, Intel OpenCL)
+void Renderer::createDevice() {
+	// get platforms (e.g. AMD OpenCL, Nvidia CUDA, Intel OpenCL)
 	std::vector<cl::Platform> platforms;
 	cl::Platform::get(&platforms);
 	if (platforms.size() < 1) {
 		CD_ERROR("Renderer init error: no opencl implementation found");
 		throw std::runtime_error("no opencl platform");
 	}
-	std::cout << "~ " << platforms.size() << " available OpenCL platforms: \n~ \n";
+
+	// print platforms
+	std::cout << "~ Available OpenCL platforms: \n";
 	for (int i = 0; i < platforms.size(); i++)
 		std::cout << "~ \t" << i + 1 << ": " << platforms[i].getInfo<CL_PLATFORM_NAME>() << std::endl;
+	std::cout << "~\n";
 
-	// Pick one platform
-	pickPlatform(platform, platforms);
-	std::cout << "~ \n~ using OpenCL platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
-}
+	// loop through platforms and find suitable devices
+	std::vector<DeviceDetails> suitableDevices;
+	std::cout << "~ Available OpenCL devices: \n";
+	for (cl::Platform platform : platforms) {
+		std::vector<cl::Device> devices;
+		platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
 
-void Renderer::createDevive() {
-
-	// Get available OpenCL devices on platform
-	std::vector<cl::Device> devices;
-	platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
-
-	std::cout << "~ \n~ " << devices.size() << " available OpenCL devices on this platform: " << "\n~ \n";
-	for (int i = 0; i < devices.size(); i++) {
-		std::cout << "~ \t" << i + 1 << ": " << devices[i].getInfo<CL_DEVICE_NAME>() << std::endl;
-		std::cout << "~ \t\tMax compute units: " << devices[i].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
-		std::cout << "~ \t\tMax constant buffer size: " << devices[i].getInfo<CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE>() << std::endl;
-		std::cout << "~ \t\tMax constant args: " << devices[i].getInfo<CL_DEVICE_MAX_CONSTANT_ARGS>() << std::endl;
-		std::cout << "~ \t\tMax mem alloc: " << devices[i].getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>() << std::endl;
-		std::cout << "~ \t\tMax work group size: " << devices[i].getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << "\n~ \n";
-	}
-
-	// Pick one device
-	pickDevice(device, devices);
-	std::cout << "~ \n~ OpenCL using device: \t" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
-}
-
-void Renderer::pickPlatform(cl::Platform& platform, const std::vector<cl::Platform>& platforms) {
-	platform = platforms[0];
-	return;
-}
-
-void Renderer::pickDevice(cl::Device& device, const std::vector<cl::Device>& devices) {
-	for (cl::Device dev : devices) {
-		std::string extensions = dev.getInfo<CL_DEVICE_EXTENSIONS>();
-		//std::cout << extensions << std::endl;
-		bool isGPU = dev.getInfo< CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU;
-		bool glSharing = extensions.find("cl_khr_gl_sharing") != std::string::npos;
-		bool halfFloat = extensions.find("cl_khr_fp16") != std::string::npos;
-		std::string devName = dev.getInfo<CL_DEVICE_NAME>();
-		CD_TRACE("cl device {}: is GPU = {}; gl sharing = {}; half float support = {}", devName, isGPU, glSharing, halfFloat);
-		
-		if (isGPU && glSharing && halfFloat) {
-			// CL_DEVICE_TYPE_GPU 16 x 16 x 1 = 256
-			// CL_DEVICE_TYPE_CPU 128 x 60 x 1 < 8192
-			device = dev;
-			return;
+		for (cl::Device device : devices) {
+			DeviceDetails deviceDetails = { device, platform };
+			if (checkDevice(deviceDetails))
+				suitableDevices.push_back(deviceDetails);
 		}
 	}
 
-	CD_ERROR("Renderer init error: no suitable opencl device found");
-	throw std::runtime_error("no suitable opencl device");
+	if (suitableDevices.size() == 0) {
+		CD_ERROR("OpenCL: failed to find suitable device!");
+		throw std::runtime_error("OpenCL device creation");
+	}
+
+	device = suitableDevices[0].device;
+	platform = suitableDevices[0].platform;
+	std::cout << "~ Using OpenCL device:   \t" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+	std::cout << "~ Using OpenCL platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
+
+	// set ND range to equal CL_DEVICE_MAX_WORK_GROUP_SIZE
+	setLocalWork(device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>());
+}
+
+bool Renderer::checkDevice(DeviceDetails &deviceDetails) {
+	// check extension support
+	std::string extensions = deviceDetails.device.getInfo<CL_DEVICE_EXTENSIONS>();
+	bool glSharing = extensions.find("cl_khr_gl_sharing") != std::string::npos;
+	bool halfFloat = extensions.find("cl_khr_fp16") != std::string::npos;
+	bool isGPU = deviceDetails.device.getInfo<CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU;
+
+	// print device info
+	std::cout << "~ \t" << deviceDetails.device.getInfo<CL_DEVICE_NAME>() << std::endl;
+	std::cout << "~ \t\tMax compute units: " << deviceDetails.device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
+	std::cout << "~ \t\tMax constant buffer size: " << deviceDetails.device.getInfo<CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE>() << std::endl;
+	std::cout << "~ \t\tMax constant args: " << deviceDetails.device.getInfo<CL_DEVICE_MAX_CONSTANT_ARGS>() << std::endl;
+	std::cout << "~ \t\tMax mem alloc: " << deviceDetails.device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>() << std::endl;
+	std::cout << "~ \t\tMax work group size: " << deviceDetails.device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << std::endl;
+	std::cout << "~ \t\tRelevant extensions: gl sharing = " << glSharing << "; half float support = " << halfFloat << ";\n~ \n";
+
+	return glSharing && isGPU;
 }
 
 void Renderer::createContext(Interface* interface) {
@@ -207,7 +209,7 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, 
 
 	// gl vertices
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, gl_vert_buffer);
-	cl_gl_vertices = cl::BufferGL(context, CL_MEM_READ_WRITE, gl_vert_buffer, &result);
+	gl_objects[gl_object_indices::vertices] = cl::BufferGL(context, CL_MEM_READ_WRITE, gl_vert_buffer, &result);
 	checkCLError(result, "gl vertex buffer create");
 
 	// polygons
@@ -223,13 +225,9 @@ void Renderer::createBuffers(cl_GLenum gl_texture_target, cl_GLuint gl_texture, 
 void Renderer::createOutputImage(cl_GLenum gl_texture_target, cl_GLuint gl_texture) {
 	cl_int result;
 	glBindTexture(gl_texture_target, gl_texture);
-	cl_output = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
+	cd::checkErrorsGL("cl bind texture target");
+	gl_objects[gl_object_indices::output_image] = cl::ImageGL(context, CL_MEM_WRITE_ONLY, gl_texture_target, 0, gl_texture, &result);
 	checkCLError(result, "Error during cl_output creation");
-}
-
-void Renderer::setGLObjects() {
-	gl_objects.push_back(cl_gl_vertices);
-	gl_objects.push_back(cl_output);
 }
 
 void Renderer::createKernels() {
@@ -245,14 +243,14 @@ void Renderer::createKernels() {
 	kernel.setArg(5, polygon_count);
 
 	kernel.setArg(6, cl_spheres);
-	kernel.setArg(7, cl_gl_vertices);
+	kernel.setArg(7, gl_objects[gl_object_indices::vertices]);
 	kernel.setArg(8, cl_polygons);
 
 	setOutArg();
 }
 
 void Renderer::setOutArg() {
-	kernel.setArg(9, cl_output);
+	kernel.setArg(9, gl_objects[gl_object_indices::output_image]);
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
@@ -289,28 +287,20 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	kernel = cl::Kernel(program, entryPoint);
 }
 
-void Renderer::setWorkGroupSizes() {
-
-	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
-	int x = 16;
-	int y = 16;
-
+void Renderer::setGlobalWork() {
 #	ifdef HALF_RESOLUTION
 	global_work = cl::NDRange(image_width / 2, image_height / 2);
 #	else
 	global_work = cl::NDRange(image_width, image_height);
 #	endif
-	local_work = cl::NDRange(x, y);
+}
+
+void Renderer::setLocalWork(uint32_t localSize) {
+	uint32_t dim = (uint32_t)sqrt((float)localSize);
+	local_work = cl::NDRange(dim, dim);
 }
 
 // HELPER FUNCTIONS
-
-void Renderer::checkCLError(cl_int err, std::string message) {
-	if (err) {
-		CD_ERROR("{}. error code = ({})", message, err);
-		throw std::runtime_error("renderer error");
-	}
-}
 
 void Renderer::printErrorLog(const cl::Program& program, const cl::Device& device) {
 

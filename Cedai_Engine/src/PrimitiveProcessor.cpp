@@ -92,7 +92,7 @@ void PrimitiveProcessor::setProgramIO(std::vector<cd::Vertex> &vertices) {
 
 	setVertexAttributes();
 
-	// vertex output
+	// vertex output TODO use transform feedback
 
 	glGenBuffers(1, &vertexBufferOut);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertexBufferOut);
@@ -109,26 +109,26 @@ void PrimitiveProcessor::setVertexAttributes() {
 	size_t stride = sizeof(glm::vec4) + sizeof(glm::ivec4) + sizeof(glm::vec4);
 
 	// position
-	int positionLocation = 0;
+	const GLuint positionLocation = 0;
 	glVertexAttribPointer(positionLocation, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsets[0]);
 	glEnableVertexAttribArray(positionLocation);
 
 	// bone indices
-	int indicesLocation = 1;
+	const GLuint indicesLocation = 1;
 	glVertexAttribIPointer(indicesLocation, 4, GL_INT, stride, (void*)offsets[1]);
 	glEnableVertexAttribArray(indicesLocation);
 
 	// bone weights
-	int weightsLocation = 2;
-	glVertexAttribPointer(weightsLocation, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsets[2]);
+	const GLuint weightsLocation = 2;
+	glVertexAttribPointer(weightsLocation, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsets[2]); // TODO normalize
 	glEnableVertexAttribArray(weightsLocation);
 }
 
 void PrimitiveProcessor::updateUniforms(std::array<glm::mat4, MAX_BONES> bones) {
 	GLint location = glGetUniformLocation(program, "bones");
-
+	// TODO ROWS AND COLUMNS GETTING SWAPPED AROUND HERE!!!
 	if (location != -1)
-		glUniformMatrix4fv(location, MAX_BONES, GL_FALSE, (const GLfloat*)bones.data());
+		glUniformMatrix4fv(location, BONES_GL, GL_FALSE, (const GLfloat*)bones.data()); // TODO use uniform buffer object (50 * vec4...) large number of uniforms changing in bulk
 	else
 		CD_WARN("PrimitiveProcessor::updateUniforms invalid bone transform write");
 }

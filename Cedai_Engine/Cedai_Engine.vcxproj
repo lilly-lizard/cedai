@@ -28,7 +28,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>llvm</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -59,7 +59,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>CD_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;vendor\OpenCL-Headers;vendor\glm;vendor\glfw_custom\include;vendor\gl3w\include;vendor\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>src;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include;vendor\glm;vendor\glfw_custom\include;vendor\gl3w\include;vendor\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -68,7 +68,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>gl3w.lib;glfw3.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>vendor\gl3w\lib;vendor\glfw_custom\lib;$(INTELOCLSDKROOT)\lib\x64;$(AMDAPPSDKROOT)\lib\x86_64;$(CUDA_LIB_PATH);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>vendor\gl3w\lib;vendor\glfw_custom\lib;$(INTELOCLSDKROOT)\lib\x64;$(AMDAPPSDKROOT)\lib\x86_64;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
@@ -89,7 +89,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>gl3w.lib;glfw3.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>vendor\gl3w\lib;vendor\glfw_custom\lib;$(INTELOCLSDKROOT)\lib\x64;$(AMDAPPSDKROOT)\lib\x86_64;$(CUDA_LIB_PATH);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>vendor\gl3w\lib;vendor\glfw_custom\lib;$(INTELOCLSDKROOT)\lib\x64;$(AMDAPPSDKROOT)\lib\x86_64;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -114,6 +114,7 @@
     <ClCompile Include="src\tools\Log.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="kernels\acceleration.cl" />
     <None Include="kernels\kernel.cl" />
     <None Include="shaders\draw.frag" />
     <None Include="shaders\draw.vert" />
