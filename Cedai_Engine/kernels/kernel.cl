@@ -50,7 +50,7 @@ uchar4 background_color(float3 ray_d);
 
 // ENTRY POINT
 
-__attribute__((work_group_size_hint(16, 16, 1)))
+__attribute__((work_group_size_hint(WG_SIZE, WG_SIZE, 1)))
 __kernel void render(// inputs
 					 const float16 view, const float3 ray_o, const float time,
 					 const int sphere_count, const int light_count, const int polygon_count,

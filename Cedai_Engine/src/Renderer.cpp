@@ -17,6 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include <CL/cl_gl.h>
+#include <cmath>
 
 #define KERNEL_PATH "kernels/kernel.cl"
 #define KERNEL_ENTRY "render"
@@ -254,12 +255,15 @@ void Renderer::setOutArg() {
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
+	std::string source = "#define WG_SIZE ";
+	source += std::to_string(wgSize) + "\n";
+
+	// define resolution
+#ifdef HALF_RESOLUTION
+	source += "#define HALF_RESOLUTION\n";
+#endif
 
 	// Convert the OpenCL source code to a string
-	std::string source;
-#ifdef HALF_RESOLUTION
-	source = "#define HALF_RESOLUTION\n";
-#endif
 	std::ifstream file(filename);
 	if (!file) {
 		CD_ERROR("{} file not found!\nExiting...", filename);
@@ -296,8 +300,8 @@ void Renderer::setGlobalWork() {
 }
 
 void Renderer::setLocalWork(uint32_t localSize) {
-	uint32_t dim = (uint32_t)sqrt((float)localSize);
-	local_work = cl::NDRange(dim, dim);
+	wgSize = std::trunc(std::sqrt((float)localSize));
+	local_work = cl::NDRange(wgSize, wgSize);
 }
 
 // HELPER FUNCTIONS

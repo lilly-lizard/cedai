@@ -36,6 +36,7 @@ private:
 
 	int image_width = 0, image_height = 0;
 	cl::NDRange global_work;
+	int wgSize = -1;
 	cl::NDRange local_work;
 
 	cl::Buffer cl_spheres;
