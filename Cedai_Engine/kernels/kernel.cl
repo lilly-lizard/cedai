@@ -48,6 +48,17 @@ int luminance(uchar4 color);
 void draw(__write_only image2d_t output, uchar4 color, int2 coord, bool no_color_found);
 uchar4 background_color(float3 ray_d);
 
+typedef packed { uint value; };
+
+packed pack(uint4 convert) {
+	uint value = 0;
+	value |= (convert.x & 0xFF000000);
+	value |= (convert.y & 0xFF000000) << 8;
+	value |= (convert.z & 0xFF000000) << 16;
+	value |= (convert.w & 0xFF000000) << 24;
+	return value;
+}
+
 // ENTRY POINT
 
 __attribute__((work_group_size_hint(WG_SIZE, WG_SIZE, 1)))
@@ -71,13 +82,9 @@ __kernel void render(// inputs
 												 uv.x * view.s2 + uv.y * view.s6 + uv.z * view.sA));
 
 	// check for intersections
-	uchar4 color = (uchar4)(0, 0, 0, 0);
 	float min_t = DROP_OFF; // drop off distance
 	int index = 0;
 	enum primitive_type primitive_found = NONE;
-
-	const int sphere_total = sphere_count + light_count;
-	const float3 light_offset = (float3)(LIGHT_RADIUS * cos(LIGHT_W * time), LIGHT_RADIUS * sin(LIGHT_W * time), 0);
 
 	// spheres
 	for (int s = 0; s < sphere_count; s++) {
@@ -86,18 +93,17 @@ __kernel void render(// inputs
 		if (0 < t && t < min_t) {
 			primitive_found = SPHERE;
 			min_t = t;
-			color = convert_uchar4(sphere.color);
 			index = s;
 	}	}
 
 	// lights
-	for (int l = sphere_count; l < sphere_total; l++) {
+	for (int l = sphere_count; l < sphere_count + light_count; l++) {
 		Sphere light = spheres[l];
+		float3 light_offset = (float3)(LIGHT_RADIUS * cos(LIGHT_W * time), LIGHT_RADIUS * sin(LIGHT_W * time), 0);
 		float t = sphere_intersect(ray_o, ray_d, light.pos + light_offset * (l % 2 * 2 - 1), light.radius);
 		if (0 < t && t < min_t) {
 			primitive_found = LIGHT;
 			min_t = t;
-			color = convert_uchar4(light.color);
 			index = l;
 	}	}
 
@@ -107,27 +113,32 @@ __kernel void render(// inputs
 		if (0 < t && t < min_t) {
 			primitive_found = POLYGON;
 			min_t = t;
-			color = polygon_colors[p];
 			index = p;
 	}	}
+	
+	uchar4 color = (uchar4)(0, 0, 0, 0);
 
 	// no intersection
 	if (primitive_found == NONE) {
 		color = background_color(ray_d);
+
+	// light intersection
+	} else if (primitive_found == LIGHT) {
+		color = convert_uchar4(spheres[index].color);
 
 	// sphere lighting
 	} else if (primitive_found == SPHERE) {
 		float light = 0;
 		float3 intersection = mad(min_t, ray_d, ray_o);
 
-		for (int l = sphere_count; l < sphere_total; l++) {
+		for (int l = sphere_count; l < sphere_count + light_count; l++) {
 			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
 			bool in_shadow = shadow(intersection, light_pos, index, -1, sphere_count, polygon_count, spheres, vertices);
 			if (!in_shadow)
 				light += diffuse_sphere(intersection - spheres[index].pos, intersection, spheres[l].pos + light_offset * (l % 2 * 2 - 1));
 		}
 		light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
-		color = convert_uchar4(convert_float4(color) * light);
+		color = convert_uchar4(convert_float4(spheres[index].color) * light);
 
 	// polygon lighting
 	} else if (primitive_found == POLYGON) {
@@ -137,14 +148,14 @@ __kernel void render(// inputs
 		float3 v1 = vertices[index * 3 + 1].xyz;
 		float3 v2 = vertices[index * 3 + 2].xyz;
 
-		for (int l = sphere_count; l < sphere_total; l++) {
+		for (int l = sphere_count; l < sphere_count + light_count; l++) {
 			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
 			bool in_shadow = shadow(intersection, light_pos, -1, index, sphere_count, polygon_count, spheres, vertices);
 			if (!in_shadow)
 				light += diffuse_polygon(cross(v1 - v0, v2 - v0), intersection, light_pos, ray_d);
 		}
 		light = clamp(light, 0.0f, 1.0f);
-		color = convert_uchar4(convert_float4(color) * light);
+		color = convert_uchar4(convert_float4(polygon_colors[index]) * light);
 	}
 
 	// write pixel to the output image
