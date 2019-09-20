@@ -14,7 +14,6 @@ enum primitive_type { NONE, SPHERE, LIGHT, POLYGON };
 
 // CONFIG AND CONSTANTS
 
-//#define HALF_RESOLUTION /* MUST to be the same in src/tools/config.hpp */
 #ifdef HALF_RESOLUTION
 #	define DITHER
 #endif
@@ -46,14 +45,23 @@ bool shadow(float3 intersection, float3 light, int s_index, int p_index, const i
 			__constant Sphere* __restrict spheres, __constant float4* __restrict vertices);
 int luminance(uchar4 color);
 
-void draw(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord);
-void draw_half_res(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord);
-void draw_dither(__write_only image2d_t output, uchar4 color, bool no_color_found, float3 ray_d, int2 coord);
+void draw(__write_only image2d_t output, uchar4 color, int2 coord, bool no_color_found);
 uchar4 background_color(float3 ray_d);
+
+typedef packed { uint value; };
+
+packed pack(uint4 convert) {
+	uint value = 0;
+	value |= (convert.x & 0xFF000000);
+	value |= (convert.y & 0xFF000000) << 8;
+	value |= (convert.z & 0xFF000000) << 16;
+	value |= (convert.w & 0xFF000000) << 24;
+	return value;
+}
 
 // ENTRY POINT
 
-__attribute__((work_group_size_hint(16, 16, 1)))
+__attribute__((work_group_size_hint(WG_SIZE, WG_SIZE, 1)))
 __kernel void render(// inputs
 					 const float16 view, const float3 ray_o, const float time,
 					 const int sphere_count, const int light_count, const int polygon_count,
@@ -74,13 +82,9 @@ __kernel void render(// inputs
 												 uv.x * view.s2 + uv.y * view.s6 + uv.z * view.sA));
 
 	// check for intersections
-	uchar4 color = (uchar4)(0, 0, 0, 0);
 	float min_t = DROP_OFF; // drop off distance
 	int index = 0;
 	enum primitive_type primitive_found = NONE;
-
-	const int sphere_total = sphere_count + light_count;
-	const float3 light_offset = (float3)(LIGHT_RADIUS * cos(LIGHT_W * time), LIGHT_RADIUS * sin(LIGHT_W * time), 0);
 
 	// spheres
 	for (int s = 0; s < sphere_count; s++) {
@@ -89,18 +93,17 @@ __kernel void render(// inputs
 		if (0 < t && t < min_t) {
 			primitive_found = SPHERE;
 			min_t = t;
-			color = convert_uchar4(sphere.color);
 			index = s;
 	}	}
 
 	// lights
-	for (int l = sphere_count; l < sphere_total; l++) {
+	for (int l = sphere_count; l < sphere_count + light_count; l++) {
 		Sphere light = spheres[l];
+		float3 light_offset = (float3)(LIGHT_RADIUS * cos(LIGHT_W * time), LIGHT_RADIUS * sin(LIGHT_W * time), 0);
 		float t = sphere_intersect(ray_o, ray_d, light.pos + light_offset * (l % 2 * 2 - 1), light.radius);
 		if (0 < t && t < min_t) {
 			primitive_found = LIGHT;
 			min_t = t;
-			color = convert_uchar4(light.color);
 			index = l;
 	}	}
 
@@ -110,28 +113,32 @@ __kernel void render(// inputs
 		if (0 < t && t < min_t) {
 			primitive_found = POLYGON;
 			min_t = t;
-			color = polygon_colors[p];
 			index = p;
 	}	}
+	
+	uchar4 color = (uchar4)(0, 0, 0, 0);
 
 	// no intersection
 	if (primitive_found == NONE) {
 		color = background_color(ray_d);
+
+	// light intersection
+	} else if (primitive_found == LIGHT) {
+		color = convert_uchar4(spheres[index].color);
 
 	// sphere lighting
 	} else if (primitive_found == SPHERE) {
 		float light = 0;
 		float3 intersection = mad(min_t, ray_d, ray_o);
 
-		for (int l = sphere_count; l < sphere_total; l++) {
+		for (int l = sphere_count; l < sphere_count + light_count; l++) {
 			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
 			bool in_shadow = shadow(intersection, light_pos, index, -1, sphere_count, polygon_count, spheres, vertices);
 			if (!in_shadow)
-				light += diffuse_sphere(intersection - spheres[index].pos, intersection,
-										spheres[l].pos + light_offset * (l % 2 * 2 - 1));
+				light += diffuse_sphere(intersection - spheres[index].pos, intersection, spheres[l].pos + light_offset * (l % 2 * 2 - 1));
 		}
 		light = clamp(ceiling(light, LIGHT_STEP), AMBIENT, 1.0f);
-		color = convert_uchar4(convert_float4(color) * light);
+		color = convert_uchar4(convert_float4(spheres[index].color) * light);
 
 	// polygon lighting
 	} else if (primitive_found == POLYGON) {
@@ -141,26 +148,18 @@ __kernel void render(// inputs
 		float3 v1 = vertices[index * 3 + 1].xyz;
 		float3 v2 = vertices[index * 3 + 2].xyz;
 
-		for (int l = sphere_count; l < sphere_total; l++) {
+		for (int l = sphere_count; l < sphere_count + light_count; l++) {
 			float3 light_pos = spheres[l].pos + light_offset * (l % 2 * 2 - 1);
 			bool in_shadow = shadow(intersection, light_pos, -1, index, sphere_count, polygon_count, spheres, vertices);
 			if (!in_shadow)
 				light += diffuse_polygon(cross(v1 - v0, v2 - v0), intersection, light_pos, ray_d);
 		}
 		light = clamp(light, 0.0f, 1.0f);
-		color = convert_uchar4(convert_float4(color) * light);
+		color = convert_uchar4(convert_float4(polygon_colors[index]) * light);
 	}
 
-	// draw
-#ifndef HALF_RESOLUTION
-	draw(output, color, ray_d, coord);
-#else
-#ifdef DITHER
-	draw_dither(output, color, primitive_found == NONE, ray_d, coord);
-#else
-	draw_half_res(output, color, ray_d, coord);
-#endif
-#endif
+	// write pixel to the output image
+	draw(output, color, coord, primitive_found == NONE);
 }
 
 // INTERSECTION FUNCTIONS
@@ -170,9 +169,9 @@ float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius)
 	// a = P1 . P1 = 1 (assuming ray_d is normalized)
 	float3 d = center - ray_o;
 	float b = dot(d, ray_d);
-	float c = dot(d, d) - native_powr(radius, 2);
+	float c = dot(d, d) - radius * radius;
 
-	float discriminant = native_powr(b, 2) - c;
+	float discriminant = b * b - c;
 	if (discriminant < 0) return -1;
 
 	float t = b - native_sqrt(discriminant);
@@ -253,30 +252,15 @@ int luminance(uchar4 color) {
 
 // DRAWING FUNCTIONS
 
-void draw(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord)
+void draw(__write_only image2d_t output, uchar4 color, int2 coord, bool no_color_found)
 {
 	uint4 color_out = convert_uint4(color);
-	write_imageui(output, coord, color_out);
-}
-
-void draw_half_res(__write_only image2d_t output, uchar4 color, float3 ray_d, int2 coord)
-{
-	uint4 color_out = convert_uint4(color);
-	write_imageui(output, (int2)(coord.x * 2, coord.y * 2), color_out);
-	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2 + 1), color_out);
-	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2), color_out);
-	write_imageui(output, (int2)(coord.x * 2, coord.y * 2 + 1), color_out);
-}
-
-void draw_dither(__write_only image2d_t output, uchar4 color, bool no_color_found, float3 ray_d, int2 coord)
-{
+#ifdef HALF_RESOLUTION
+#ifdef DITHER
 	int dither;
 	if (no_color_found) dither = 2;
 	else dither = luminance(color) / 64;
-	//int dither = select(luminance(color) / 64, 2, (int)no_color_found);
-
-	// write
-	uint4 color_out = convert_uint4(color);
+	
 	write_imageui(output, (int2)(coord.x * 2, coord.y * 2), color_out);
 
 	if (dither < 1) color_out = (uint4)(0,0,0,0);
@@ -287,6 +271,17 @@ void draw_dither(__write_only image2d_t output, uchar4 color, bool no_color_foun
 
 	if (dither < 3) color_out = (uint4)(0,0,0,0);
 	write_imageui(output, (int2)(coord.x * 2, coord.y * 2 + 1), color_out);
+#else // DITHER
+
+	write_imageui(output, (int2)(coord.x * 2, coord.y * 2), color_out);
+	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2 + 1), color_out);
+	write_imageui(output, (int2)(coord.x * 2 + 1, coord.y * 2), color_out);
+	write_imageui(output, (int2)(coord.x * 2, coord.y * 2 + 1), color_out);
+#endif
+#else // HALF_RESOLUTION
+
+	write_imageui(output, coord, color_out);
+#endif
 }
 
 uchar4 background_color(float3 ray_d)

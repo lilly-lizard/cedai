@@ -36,6 +36,7 @@ private:
 
 	int image_width = 0, image_height = 0;
 	cl::NDRange global_work;
+	int wgSize = -1;
 	cl::NDRange local_work;
 
 	cl::Buffer cl_spheres;
@@ -70,7 +71,8 @@ private:
 	void createKernels();
 	void setOutArg();
 	void createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint);
-	void setWorkGroupSizes();
+	void setGlobalWork();
+	void setLocalWork(uint32_t localSize);
 
 	void printErrorLog(const cl::Program& program, const cl::Device& device);
 };

@@ -73,6 +73,7 @@ void Cedai::init() {
 	view[0][0] = 1; view[1][1] = 1; view[2][2] = 1;
 	CD_INFO("Engine initialised.");
 	quit = false;
+	bool *ptr = &quit;
 }
 
 void Cedai::loop() {

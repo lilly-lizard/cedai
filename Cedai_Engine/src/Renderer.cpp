@@ -17,6 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include <CL/cl_gl.h>
+#include <cmath>
 
 #define KERNEL_PATH "kernels/kernel.cl"
 #define KERNEL_ENTRY "render"
@@ -47,7 +48,7 @@ void Renderer::init(int image_width, int image_height, Interface* interface, Pri
 	createBuffers(interface->getTexTarget(), interface->getTexHandle(), vertexProcessor->getVertexBuffer(),
 		spheres, lights, polygon_colors);
 	createKernels();
-	setWorkGroupSizes();
+	setGlobalWork();
 
 	queue.finish();
 }
@@ -80,7 +81,7 @@ void Renderer::renderBarrier() {
 void Renderer::resize(int image_width, int image_height, Interface *interface) {
 	this->image_width = image_width;
 	this->image_height = image_height;
-	setWorkGroupSizes();
+	setGlobalWork();
 
 	// trust that OpenCL handles buffer release TODO: garbage collection or what?
 	gl_objects[gl_object_indices::output_image] = nullptr;
@@ -132,6 +133,9 @@ void Renderer::createDevice() {
 	platform = suitableDevices[0].platform;
 	std::cout << "~ Using OpenCL device:   \t" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
 	std::cout << "~ Using OpenCL platform: \t" << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
+
+	// set ND range to equal CL_DEVICE_MAX_WORK_GROUP_SIZE
+	setLocalWork(device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>());
 }
 
 bool Renderer::checkDevice(DeviceDetails &deviceDetails) {
@@ -165,7 +169,7 @@ void Renderer::createContext(Interface* interface) {
 	context = cl::Context(device, contextProps, NULL, NULL, &result);
 	checkCLError(result, "Error during windows opencl context creation");
 
-#	else
+#	else // CD_PLATFORM_WINDOWS
 #	ifdef CD_PLATFORM_LINUX
 	cl_context_properties contextProps[] = {
 		CL_GL_CONTEXT_KHR,   (cl_context_properties)glfwGetGLXContext(interface->getWindow()),	// GLX Context
@@ -177,7 +181,7 @@ void Renderer::createContext(Interface* interface) {
 	context = cl::Context(device, contextProps, NULL, NULL, &result);
 	checkCLError(result, "Error during linux opencl context creation");
 
-#	else
+#	else // CD_PLATFORM_LINUX
 	CD_ERROR("Unsupported platform: only windows and linux are supported at this time.");
 	throw std::runtime_error("platform error");
 #	endif // CD_PLATFORM_LINUX
@@ -186,7 +190,7 @@ void Renderer::createContext(Interface* interface) {
 
 void Renderer::createQueue() {
 	cl_int res;
-	queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &res); // CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+	queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &res);
 	checkCLError(res, "Failed openCL queue creation");
 }
 
@@ -251,9 +255,15 @@ void Renderer::setOutArg() {
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
+	std::string source = "#define WG_SIZE ";
+	source += std::to_string(wgSize) + "\n";
+
+	// define resolution
+#ifdef HALF_RESOLUTION
+	source += "#define HALF_RESOLUTION\n";
+#endif
 
 	// Convert the OpenCL source code to a string
-	std::string source;
 	std::ifstream file(filename);
 	if (!file) {
 		CD_ERROR("{} file not found!\nExiting...", filename);
@@ -269,7 +279,7 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	const char* kernel_source = source.c_str();
 
 	// compiler options
-	std::string options = "-cl-std=CL1.2 -cl-fast-relaxed-math -cl-denorms-are-zero -Werror"; // -cl-std=CL1.2
+	std::string options = "-cl-std=CL1.2 -cl-fast-relaxed-math -cl-denorms-are-zero -Werror";
 
 	// Create an OpenCL program by performing runtime source compilation for the chosen device
 	cl::Program program = cl::Program(context, kernel_source);
@@ -281,18 +291,17 @@ void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char
 	kernel = cl::Kernel(program, entryPoint);
 }
 
-void Renderer::setWorkGroupSizes() {
-
-	// TODO: query CL_DEVICE_MAX_WORK_GROUP_SIZE
-	int x = 32;
-	int y = 32;
-
+void Renderer::setGlobalWork() {
 #	ifdef HALF_RESOLUTION
 	global_work = cl::NDRange(image_width / 2, image_height / 2);
 #	else
 	global_work = cl::NDRange(image_width, image_height);
 #	endif
-	local_work = cl::NDRange(x, y);
+}
+
+void Renderer::setLocalWork(uint32_t localSize) {
+	wgSize = std::trunc(std::sqrt((float)localSize));
+	local_work = cl::NDRange(wgSize, wgSize);
 }
 
 // HELPER FUNCTIONS

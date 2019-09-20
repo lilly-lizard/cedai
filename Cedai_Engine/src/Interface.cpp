@@ -70,7 +70,7 @@ void Interface::init(Cedai *application, int window_width, int window_height) {
 	glfwGetCursorPos(window, &mousePosPrev[0], &mousePosPrev[1]); // get mouse position
 
 	// set up opengl draw program
-	cd::createProgramGL(drawPipeline.programHandle, VERT_PATH, FRAG_PATH);
+	cd::createProgramGL(drawPipeline.programHandle, VERT_PATH, FRAG_PATH, false);
 	createDrawTexture();
 	setProgramIO();
 	cd::checkErrorsGL("draw program create");
@@ -164,7 +164,7 @@ void Interface::cleanUp() {
 
 // OPENGL HELPER FUNCTIONS
 
-void cd::createProgramGL(GLuint &program, std::string vertPath, std::string fragPath) {
+void cd::createProgramGL(GLuint &program, std::string vertPath, std::string fragPath, bool defineBones) {
 	program = glCreateProgram();
 
 	GLuint vert = glCreateShader(GL_VERTEX_SHADER);
@@ -172,6 +172,15 @@ void cd::createProgramGL(GLuint &program, std::string vertPath, std::string frag
 
 	std::string vertSrc = cd::readFile(vertPath.c_str());
 	std::string fragSrc = cd::readFile(fragPath.c_str());
+
+	// define bone array size
+	if (0) {
+		// find the #version line
+		char c = '\0';
+		while (c != '\0') {
+
+		}
+	}
 
 	GLchar const* vertString[] = { vertSrc.c_str() };
 	GLchar const* fragString[] = { fragSrc.c_str() };

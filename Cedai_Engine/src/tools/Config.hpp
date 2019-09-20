@@ -18,5 +18,5 @@
 
 #define CD_PI 3.14159f
 
-#define GL_BONES 16 /* also defined in primitive.vert */
+#define BONES_GL 16 /* also defined in primitive.vert */
 #define MAX_BONES 50 /* also defined in AnimatedModel.h in the model converter */

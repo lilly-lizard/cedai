@@ -12,7 +12,7 @@ void PrimitiveProcessor::init(Interface *interface, std::vector<cd::Vertex> &ver
 	vertexCount = vertices.size();
 
 	// create program
-	cd::createProgramGL(program, VERT_PATH, FRAG_PATH);
+	cd::createProgramGL(program, VERT_PATH, FRAG_PATH, true);
 	setProgramIO(vertices);
 
 	// make dummy render target
@@ -128,7 +128,7 @@ void PrimitiveProcessor::updateUniforms(std::array<glm::mat4, MAX_BONES> bones) 
 	GLint location = glGetUniformLocation(program, "bones");
 	// TODO ROWS AND COLUMNS GETTING SWAPPED AROUND HERE!!!
 	if (location != -1)
-		glUniformMatrix4fv(location, GL_BONES, GL_FALSE, (const GLfloat*)bones.data()); // TODO use uniform buffer object (50 * vec4...) large number of uniforms changing in bulk
+		glUniformMatrix4fv(location, BONES_GL, GL_FALSE, (const GLfloat*)bones.data()); // TODO use uniform buffer object (50 * vec4...) large number of uniforms changing in bulk
 	else
 		CD_WARN("PrimitiveProcessor::updateUniforms invalid bone transform write");
 }
