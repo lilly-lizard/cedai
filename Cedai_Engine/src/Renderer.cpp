@@ -96,6 +96,8 @@ void Renderer::cleanUp() {
 // INIT FUNCTIONS
 
 void Renderer::createDevice() {
+	// TODO gl device selection https://devtalk.nvidia.com/default/topic/521379/cuda-programming-and-performance/choose-opencl-platform-and-device-corresponding-to-current-active-graphics-card/post/3700637/
+
 	// get platforms (e.g. AMD OpenCL, Nvidia CUDA, Intel OpenCL)
 	std::vector<cl::Platform> platforms;
 	cl::Platform::get(&platforms);

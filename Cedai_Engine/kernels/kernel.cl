@@ -31,8 +31,6 @@ enum primitive_type { NONE, SPHERE, LIGHT, POLYGON };
 
 #define PI 3.14159265359f
 
-const sampler_t sampler = CLK_FILTER_NEAREST | CLK_ADDRESS_CLAMP | CLK_NORMALIZED_COORDS_FALSE;
-
 // DECLARATIONS
 
 float sphere_intersect(float3 ray_o, float3 ray_d, float3 center, float radius);
@@ -48,15 +46,24 @@ int luminance(uchar4 color);
 void draw(__write_only image2d_t output, uchar4 color, int2 coord, bool no_color_found);
 uchar4 background_color(float3 ray_d);
 
-typedef packed { uint value; };
+typedef uint Packed;
 
-packed pack(uint4 convert) {
-	uint value = 0;
-	value |= (convert.x & 0xFF000000);
-	value |= (convert.y & 0xFF000000) << 8;
-	value |= (convert.z & 0xFF000000) << 16;
-	value |= (convert.w & 0xFF000000) << 24;
-	return value;
+Packed pack(uint4 convert) {
+	Packed packed = { 0 };
+	packed |= (convert.x & 0x000000FF);
+	packed |= (convert.y & 0x000000FF) << 8;
+	packed |= (convert.z & 0x000000FF) << 16;
+	packed |= (convert.w & 0x000000FF) << 24;
+	return packed;
+}
+
+uint4 unpack(Packed packed) {
+	uint4 unpacked;
+	unpacked.x = (packed & 0x000000FF);
+	unpacked.y = (packed & 0x0000FF00) >> 8;;
+	unpacked.z = (packed & 0x00FF0000) >> 16;
+	unpacked.w = (packed & 0xFF000000) >> 24;
+	return unpacked;
 }
 
 // ENTRY POINT
@@ -97,9 +104,9 @@ __kernel void render(// inputs
 	}	}
 
 	// lights
+	float3 light_offset = (float3)(LIGHT_RADIUS * cos(LIGHT_W * time), LIGHT_RADIUS * sin(LIGHT_W * time), 0);
 	for (int l = sphere_count; l < sphere_count + light_count; l++) {
 		Sphere light = spheres[l];
-		float3 light_offset = (float3)(LIGHT_RADIUS * cos(LIGHT_W * time), LIGHT_RADIUS * sin(LIGHT_W * time), 0);
 		float t = sphere_intersect(ray_o, ray_d, light.pos + light_offset * (l % 2 * 2 - 1), light.radius);
 		if (0 < t && t < min_t) {
 			primitive_found = LIGHT;
