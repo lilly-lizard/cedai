@@ -126,7 +126,6 @@ void PrimitiveProcessor::setVertexAttributes() {
 
 void PrimitiveProcessor::updateUniforms(std::array<glm::mat4, MAX_BONES> bones) {
 	GLint location = glGetUniformLocation(program, "bones");
-	// TODO ROWS AND COLUMNS GETTING SWAPPED AROUND HERE!!!
 	if (location != -1)
 		glUniformMatrix4fv(location, BONES_GL, GL_FALSE, (const GLfloat*)bones.data()); // TODO use uniform buffer object (50 * vec4...) large number of uniforms changing in bulk
 	else

@@ -312,6 +312,7 @@ void Interface::setProgramIO() {
 	glGenBuffers(1, &vertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 
+	// full screen triangle
 	float data[] = {
 		0.0f, 0.0f,
 		2.0f, 0.0f,
