@@ -257,6 +257,7 @@ void Renderer::setOutArg() {
 }
 
 void Renderer::createKernel(const char* filename, cl::Kernel& kernel, const char* entryPoint) {
+	// define work group size to allow compiler to optimize
 	std::string source = "#define WG_SIZE ";
 	source += std::to_string(wgSize) + "\n";
 
@@ -302,7 +303,7 @@ void Renderer::setGlobalWork() {
 }
 
 void Renderer::setLocalWork(uint32_t localSize) {
-	wgSize = std::trunc(std::sqrt((float)localSize));
+	wgSize = std::trunc(std::sqrt(static_cast<float>(localSize)));
 	local_work = cl::NDRange(wgSize, wgSize);
 }
 
