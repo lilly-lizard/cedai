@@ -27,6 +27,10 @@ void PrimitiveProcessor::vertexProcess(std::array<glm::mat4, MAX_BONES> bones) {
 
 	// setup the program
 
+	// TODO disable writes to color buffer
+	//glDrawBuffer(GL_NONE);
+	//glReadBuffer(GL_NONE);
+
 	glUseProgram(program);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
